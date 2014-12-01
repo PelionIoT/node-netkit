@@ -16,6 +16,8 @@ node module for network interface &amp; routing manipulation
 * interface up / down
 * *more to come*
 
+Bear in mind, most of the time you need to be root / sudo to run these commands.
+
 Right now the code is the documentation...
 
 ```javascript

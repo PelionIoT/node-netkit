@@ -3,7 +3,7 @@
  */
 
 
-var network = require('./index.js');
+var network = require('../index.js');
 
 var util = require('util');
 

@@ -1,8 +1,8 @@
 {
   "name": "netkit",
-  "version": "0.0.10",
+  "version": "0.0.1",
   "description": "Network utility kit",
-  "main": "./index.js",
+  "main": "index.js",
   "keywords": [
     "network", "routing"
   ],
@@ -12,5 +12,9 @@
       "type": "MIT"
     }
   ],
+  "repository" :
+  { "type" : "git"
+  , "url" : "https://github.com/WigWagCo/node-netkit"
+  },
   "gypfile": true
 }

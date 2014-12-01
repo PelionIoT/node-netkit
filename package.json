@@ -1,0 +1,16 @@
+{
+  "name": "netkit",
+  "version": "0.0.10",
+  "description": "Network utility kit",
+  "main": "./index.js",
+  "keywords": [
+    "network", "routing"
+  ],
+  "author": "Ed Hemphill<@ed.wigwag.com> (http://www.wigwag.com)",
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
+  "gypfile": true
+}

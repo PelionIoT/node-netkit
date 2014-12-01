@@ -2,11 +2,7 @@
 {
   "targets": [
     {
-      "target_name": "network",
-
-#      "dependencies": [
-#        "<(module_root_dir)/vendor/libgit2.gyp:libgit2"
-#      ],
+      "target_name": "netkit",
 
       "sources": [
         "tuninterface.cc",

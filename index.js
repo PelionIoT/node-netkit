@@ -11,9 +11,9 @@ var build_opts = {
 };
 var colors = require('./colors.js');
 if(build_opts.debug)
-	var nativelib = require('./build/Debug/network.node');
+	var nativelib = require('./build/Debug/netkit.node');
 else
-	var nativelib = require('./build/Release/network.node');
+	var nativelib = require('./build/Release/netkit.node');
 
 var Stream = require('stream');
 var util = require('util');

@@ -948,4 +948,4 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 
 }
 
-NODE_MODULE(network, InitAll)
+NODE_MODULE(netkit, InitAll)

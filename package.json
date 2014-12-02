@@ -6,7 +6,7 @@
   "keywords": [
     "network", "routing"
   ],
-  "author": "Ed Hemphill<@ed.wigwag.com> (http://www.wigwag.com)",
+  "author": "WigWag<npm@wigwag.com> (http://www.wigwag.com)",
   "licenses": [
     {
       "type": "MIT"
@@ -17,7 +17,7 @@
   , "url" : "https://github.com/WigWagCo/node-netkit"
   },
   "bugs": {
-    "url": "https://github.com/WigWagCo/node-netkit/issues"
+    "url": "https://github.com/WigWagCo/node-/issues"
   },
   "gypfile": true
 }

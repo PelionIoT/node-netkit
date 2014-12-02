@@ -10,10 +10,16 @@ var build_opts = {
 	debug: 1 
 };
 var colors = require('./colors.js');
-if(build_opts.debug)
-	var nativelib = require('./build/Debug/netkit.node');
-else
-	var nativelib = require('./build/Release/netkit.node');
+
+var nativelib = null;
+try {
+	nativelib = require('./build/Release/netkit.node');
+} catch(e) {
+	if(e.code == 'MODULE_NOT_FOUND')
+		nativelib = require('./build/Debug/netkit.node');
+	else
+		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
+}
 
 var Stream = require('stream');
 var util = require('util');

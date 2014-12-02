@@ -1,3 +1,9 @@
+/**
+ * (c) 2014 WigWag Inc.
+ *
+ *  Author: ed
+ */
+
 #include "tuninterface.h"
 
 #include <v8.h>

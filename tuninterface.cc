@@ -3,7 +3,7 @@
  *
  *  Created on: Aug 27, 2014
  *      Author: ed
- * (c) 2014, Framez Inc
+ * (c) 2014, WigWag Inc.
  */
 
 

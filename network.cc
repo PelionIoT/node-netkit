@@ -1,7 +1,7 @@
 /**
  * (c) 2014 WigWag Inc.
  *
- *  Author: ed
+ * Author: ed
  */
 
 #include "tuninterface.h"
@@ -280,7 +280,7 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
 #define RTACTION_IN6_MESSAGE 3
 
 
-bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags, int &_err, int action) {
+bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, uint32_t flags, int &_err, int action) {
 //	struct sockaddr_in6 sai;
 //	struct _net::in6_ifreq ifr6;
 
@@ -303,6 +303,7 @@ bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags,
     rt.rtmsg_flags = flags;
     rt.rtmsg_metric = 1;        // NOTE: 1 becomes '50' when viewed with 'ip route' - still looking into why this is
     char *workingroute = NULL;
+    char *viart = NULL;
 	int mask = 0;
 
     if(route) {
@@ -330,6 +331,25 @@ bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags,
 
 
 //		v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
+	if(hostnet) {
+	    struct sockaddr_in6 sa6_via;
+	    viart = strdup(hostnet);
+	    int mask = 0;
+
+	    if(!_net::quickParseIPv6Mask(hostnet, mask))
+	    	mask = 128; // doesn't matter - if it's a gw it should be a host
+
+	    memset(&sa6_via,0,sizeof(sockaddr_in6));
+	    // convert addr to bytes...
+
+	    if(inet_pton(AF_INET6, viart, (void *)&sa6_via.sin6_addr) <= 0) {
+			ERROR_OUT("Bad via address passed in?\n");
+			error = true;
+		} else {
+			// copy address in...
+			memcpy(&rt.rtmsg_gateway, sa6_via.sin6_addr.s6_addr, sizeof(struct in6_addr));
+		}
+	}
 
 
 	if(!error && sockfd > 0) {
@@ -344,6 +364,7 @@ bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags,
 		} else
 			rt.rtmsg_ifindex = 0;
 
+
 		rt.rtmsg_metric = metric;
 
 	    rt.rtmsg_flags = flags; // | RTF_UP;
@@ -355,19 +376,19 @@ bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags,
 		if(!error) {
 			if(action == RTACTION_IN6_ADD) {
 				if (ioctl(sockfd, SIOCADDRT, &rt) < 0) {
-					ERROR_OUT("IP set route issue: error on add route.");
+					ERROR_OUT("IP set route issue > error on add route > ");
 					perror("SIOCADDRT");
 					error = true;
 				}
 			} else if (action == RTACTION_IN6_DEL){
 				if (ioctl(sockfd, SIOCDELRT, &rt) < 0) {
-					ERROR_OUT("IP del route issue: error on delete route.");
+					ERROR_OUT("IP del route issue > error on delete route > ");
 					perror("SIOCDELRT");
 					error = true;
 				}
 			} else if (action == RTACTION_IN6_MESSAGE) {
 				if (ioctl(sockfd, SIOCRTMSG, &rt) < 0) {
-					ERROR_OUT("IP msg route issue: error on messaging route.");
+					ERROR_OUT("IP msg route issue > error on messaging route > ");
 					perror("SIOCRTMSG");
 					error = true;
 				}
@@ -375,6 +396,10 @@ bool set_inet6route(char *route, char *devname, uint32_t metric, uint32_t flags,
 		}
 	} else
 		error = true;
+
+	if(viart) free(viart);
+	if(workingroute) free(workingroute);
+
 	return !error;
 }
 
@@ -708,6 +733,9 @@ void process_route(Handle<Object> obj, int &err, int action) {
 		}
 		char *_if=NULL;
 		char _ifname[IFNAMSIZ]; // IFNAMSIZ is defined in net/if.h
+		char *_net=NULL; // or host
+		char _netname[INET6_ADDRSTRLEN*2];
+
 		v8::String::Utf8Value v8_dest(js_dest->ToString());
 		Handle<Value> js_via_if = obj->Get(String::New("via_if"));
 		if(!js_via_if->IsUndefined() && js_via_if->IsString()) {
@@ -715,6 +743,14 @@ void process_route(Handle<Object> obj, int &err, int action) {
 			strncpy(_ifname, v8_if.operator *(), IFNAMSIZ);
 			_if = _ifname;
 		}
+
+		Handle<Value> js_via_net = obj->Get(String::New("via_network"));
+		if(!js_via_net->IsUndefined() && js_via_net->IsString()) {
+			v8::String::Utf8Value v8_netname(js_via_net->ToString());
+			strncpy(_netname, v8_netname.operator *(), INET6_ADDRSTRLEN*2);
+			_net = _netname;
+		}
+
 		Handle<Value> js_metric = obj->Get(String::New("metric"));
 		if(!js_metric->IsUndefined()) {
 			if(!js_metric->IsUint32()) {
@@ -733,7 +769,12 @@ void process_route(Handle<Object> obj, int &err, int action) {
 				flags |= js_flags->Uint32Value();
 			}
 		}
-		_net::set_inet6route(v8_dest.operator *(),_if,metric,flags,err,action);
+		if(_if)
+			_net::set_inet6route(v8_dest.operator *(),_if,NULL,metric,flags,err,action);
+		else if(_net)
+			_net::set_inet6route(v8_dest.operator *(),NULL,_net,metric,flags,err,action);
+		else
+			ERROR_OUT("route entry has no valid destination. skipping.\n");
 	} else {
 		ERROR_OUT("route entry has no 'dest' key. Invalid. Skipping.\n");
 	}
@@ -741,6 +782,8 @@ void process_route(Handle<Object> obj, int &err, int action) {
 
 Handle<Value> AssignRoute(const Arguments& args) {
 	HandleScope scope;
+
+	// TODO need IPv4 support
 
 //	char _ifname[IFNAMSIZ]; // IFNAMSIZ is defined in net/if.h
 

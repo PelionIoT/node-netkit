@@ -15,6 +15,9 @@
 #include "node_version.h"
 #include "v8.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 /**
  * LICENSE_IMPORT_BEGIN 9/7/14
  *
@@ -110,7 +113,29 @@ Copyright (c) 2010, Ben Noordhuis <info@bnoordhuis.nl>
 namespace _net {
 	char *get_error_str(int _errno);
 	void free_error_str(char *b);
-	v8::Local<v8::Object> errno_to_JS(int _errno, char *prefix);
+	v8::Local<v8::Value> errno_to_JS(int _errno, const char *prefix);
+	struct err_ev {
+		char *errstr;
+		int _errno;
+		err_ev(void) : errstr(NULL), _errno(0) {};
+		void setError(int e,char *m=NULL);
+		err_ev(int e) : err_ev() {
+			setError(e);
+		}
+		err_ev(const err_ev &o) = delete;
+		inline err_ev &operator=(const err_ev &o) = delete;
+		inline err_ev &operator=(err_ev &&o) {
+			this->errstr = o.errstr;  // transfer string to other guy...
+			this->_errno = o._errno;
+			o.errstr = NULL; o._errno = 0;
+			return *this;
+		}
+		~err_ev() {
+			if(errstr) ::free(errstr);
+		}
+		bool hasErr() { return (_errno != 0); }
+	};
+	v8::Local<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix);
 }
 
 

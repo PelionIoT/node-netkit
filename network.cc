@@ -110,23 +110,22 @@ int generic_ipv6_socket = -1;
 int generic_ipv4_socket = -1;
 int generic_dgram_socket = -1;
 
-int get_generic_ipv6_sock(int &_err) {
+int get_generic_ipv6_sock(_net::err_ev &_err) {
 	if(generic_ipv6_socket < 0) {
 		generic_ipv6_socket = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
 		if (generic_ipv6_socket < 0) {
-			_err = errno;
+			_err.setError(errno);
 			ERROR_OUT("Could not create generic IPv6 socket.\n");
-		} else
-			_err = 0;
+		}
 	}
 	return generic_ipv6_socket;
 }
 
-int get_generic_ipv4_sock(int &_err) {
+int get_generic_ipv4_sock(_net::err_ev &_err) {
 	if(generic_ipv4_socket < 0) {
 		generic_ipv4_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
 		if (generic_ipv4_socket < 0) {
-			_err = errno;
+			_err.setError(errno);
 			ERROR_OUT("Could not create generic IPv4 socket.\n");
 		} else
 			_err = 0;
@@ -134,47 +133,46 @@ int get_generic_ipv4_sock(int &_err) {
 	return generic_ipv4_socket;
 }
 
-int get_generic_dgram_sock(int &_err) {
+int get_generic_dgram_sock(_net::err_ev &_err) {
 	if(generic_dgram_socket < 0) {
 		generic_dgram_socket = socket(AF_PACKET, SOCK_DGRAM, 0);  // open a generic socket (anything with a Layer 2 protocol)
 		if (generic_dgram_socket < 0) {
-			_err = errno;
+			_err.setError(errno);
 			ERROR_OUT("Could not create generic AF_PACKET socket.\n");
-		} else
-			_err = 0;
+		}
 	}
 	return generic_dgram_socket;
 }
 
-bool get_index_if_generic(	struct ifreq &ifr, int &_err) {
+bool get_index_if_generic(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_dgram_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 		ERROR_OUT("IP addr assignment problem.");
 		perror("SIOGIFINDEX");
-		return false;
-	} else
-		return true;
+		_err.setError(errno);
+	}
+	return _err.hasErr();
 }
 
 
-bool get_index_if4(	struct ifreq &ifr, int &_err) {
+bool get_index_if4(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_ipv4_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 		ERROR_OUT("IP addr assignment problem.");
 		perror("SIOGIFINDEX");
-		return false;
-	} else
-		return true;
+		_err.setError(errno);
+	}
+	return _err.hasErr();
 }
 
-bool get_index_if6(	struct ifreq &ifr, int &_err) {
+bool get_index_if6(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_ipv6_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 		ERROR_OUT("IP addr assignment problem.");
 		perror("SIOGIFINDEX");
-		return false;
-	} else
-		return true;
+		_err.setError(errno);
+	}
+	return _err.hasErr();
 }
 
 // quickly takes a NULL terminated string like: "fe80::1/64" and turns it into "fe80::1/0" and mask = 64
@@ -201,7 +199,7 @@ bool quickParseIPv6Mask( char *str, int &mask ) {
 }
 
 
-bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
+bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err) {
 	struct sockaddr_in6 sai;
 	struct _net::in6_ifreq ifr6;
 
@@ -228,6 +226,7 @@ bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
 			ifr6.ifr6_ifindex = ifr.ifr_ifindex;
 			ifr6.ifr6_prefixlen = bitmask;
 			if (ioctl(sockfd, SIOCSIFADDR, &ifr6) < 0) {
+				_err.setError(errno);
 				ERROR_OUT("IP addr assignment problem.");
 				perror("SIOCSIFADDR");
 				error = true;
@@ -238,7 +237,7 @@ bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
 	return !error;
 }
 
-bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
+bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err) {
 	struct sockaddr_in6 sai;
 	struct _net::in6_ifreq ifr6;
 
@@ -265,6 +264,7 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
 			ifr6.ifr6_ifindex = ifr.ifr_ifindex;
 			ifr6.ifr6_prefixlen = bitmask;
 			if (ioctl(sockfd, SIOCDIFADDR, &ifr6) < 0) {
+				_err.setError(errno);
 				ERROR_OUT("IP addr removal problem.");
 				perror("SIOCDIFADDR");
 				error = true;
@@ -280,7 +280,7 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, int &_err) {
 #define RTACTION_IN6_MESSAGE 3
 
 
-bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, uint32_t flags, int &_err, int action) {
+bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, uint32_t flags, _net::err_ev &_err, int action) {
 //	struct sockaddr_in6 sai;
 //	struct _net::in6_ifreq ifr6;
 
@@ -313,19 +313,20 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 
 	    if(mask < 0 || mask > 128) {
 			ERROR_OUT("IP set route issue: mask out of range.");
-			_err = 1;
+			_err.setError(1,"IP set route issue: mask out of range.");
 			error = true;
 	    }
 
 	    if(inet_pton(AF_INET6, workingroute, (void *)&sa6.sin6_addr) <= 0) {
 			ERROR_OUT("Bad address passed in?\n");
+			_err.setError(1,"Bad address passed in?");
 			error = true;
 		} else {
 			// copy address in...
 			memcpy(&rt.rtmsg_dst, sa6.sin6_addr.s6_addr, sizeof(struct in6_addr));
 		}
     } else {
-    	_err = 1;
+		_err.setError(1,"No route passed in.");
     	return false;
     }
 
@@ -344,6 +345,7 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 
 	    if(inet_pton(AF_INET6, viart, (void *)&sa6_via.sin6_addr) <= 0) {
 			ERROR_OUT("Bad via address passed in?\n");
+			_err.setError(1,"Bad via address passed in?");
 			error = true;
 		} else {
 			// copy address in...
@@ -358,6 +360,7 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 			if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 				ERROR_OUT("IP set route issue: unknown interface.");
 				perror("SIOGIFINDEX");
+				_err.setError(errno);
 				error = true;
 			}
 			rt.rtmsg_ifindex = ifr.ifr_ifindex;
@@ -377,22 +380,29 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 			if(action == RTACTION_IN6_ADD) {
 				if (ioctl(sockfd, SIOCADDRT, &rt) < 0) {
 					ERROR_OUT("IP set route issue > error on add route > ");
+					_err.setError(errno);
 					perror("SIOCADDRT");
 					error = true;
 				}
 			} else if (action == RTACTION_IN6_DEL){
 				if (ioctl(sockfd, SIOCDELRT, &rt) < 0) {
 					ERROR_OUT("IP del route issue > error on delete route > ");
+					_err.setError(errno);
 					perror("SIOCDELRT");
 					error = true;
 				}
 			} else if (action == RTACTION_IN6_MESSAGE) {
 				if (ioctl(sockfd, SIOCRTMSG, &rt) < 0) {
 					ERROR_OUT("IP msg route issue > error on messaging route > ");
+					_err.setError(errno);
 					perror("SIOCRTMSG");
 					error = true;
 				}
 			}
+
+//			if(error) {
+//				_err.setError(errno);
+//			}
 		}
 	} else
 		error = true;
@@ -463,7 +473,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 	bool error = false;
 
-	int _errno = 0;
+	_net::err_ev errev;
 
 	struct ifreq ifr;
 
@@ -478,8 +488,8 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	// ****************** MTU assignment **********************
 	Handle<Value> js_mtu = params->Get(String::New("mtu"));
 	if(js_mtu->IsUint32()) {
-		int sockfd = _net::get_generic_ipv6_sock(_errno);
-		if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+		int sockfd = _net::get_generic_ipv6_sock(errev);
+		if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 	    ifr.ifr_mtu = (int) js_mtu->Uint32Value();
 	    if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
 			ERROR_OUT("Could not set MTU.\n");
@@ -492,7 +502,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	// ****************** IPv6 address **********************
 	Handle<Value> js_inet6val = params->Get(String::New("inet6"));
 	if(js_inet6val->IsObject()) { // IPv6 assignment!
-		int sockfd = _net::get_generic_ipv6_sock(_errno);
+		int sockfd = _net::get_generic_ipv6_sock(errev);
 
 //		sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
 		if (sockfd == -1) {
@@ -528,10 +538,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					   sizeof(struct in6_addr));
 
-					if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+					if(!have_index) have_index = _net::get_index_if6(ifr,errev);
 
 					if(have_index) {
-						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,_errno);
+						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
 					}
 				}
 			}
@@ -560,10 +570,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 							sizeof(struct in6_addr));
 
-					if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+					if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
 					if(have_index) {
-						_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,_errno);
+						_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
 					}
 				}
 			} else { // it's an Array
@@ -581,10 +591,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 							memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 									sizeof(struct in6_addr));
 
-							if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+							if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
 							if(have_index) {
-								_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,_errno);
+								_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
 							}
 						}
 					}
@@ -616,10 +626,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 							sizeof(struct in6_addr));
 
-					if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+					if(!have_index) have_index = _net::get_index_if6(ifr,errev);
 
 					if(have_index) {
-						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,_errno);
+						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
 					}
 				}
 			} else { // it's an Array
@@ -638,10 +648,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 							memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 									sizeof(struct in6_addr));
 
-							if(!have_index) have_index = _net::get_index_if6(ifr, _errno);
+							if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
 							if(have_index) {
-								_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,_errno);
+								_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
 							}
 						}
 
@@ -723,7 +733,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	return scope.Close(Boolean::New(!error)); // return false if error
 }
 
-void process_route(Handle<Object> obj, int &err, int action) {
+void process_route(Handle<Object> obj, _net::err_ev &err, int action) {
 	Handle<Value> js_dest = obj->Get(String::New("dest"));
 	if(js_dest->IsString()) {
 		uint32_t metric = 1;
@@ -775,6 +785,7 @@ void process_route(Handle<Object> obj, int &err, int action) {
 			_net::set_inet6route(v8_dest.operator *(),NULL,_net,metric,flags,err,action);
 		else
 			ERROR_OUT("route entry has no valid destination. skipping.\n");
+
 	} else {
 		ERROR_OUT("route entry has no 'dest' key. Invalid. Skipping.\n");
 	}
@@ -804,8 +815,8 @@ Handle<Value> AssignRoute(const Arguments& args) {
 
 	bool error = false;
 
-	int _errno = 0;
-
+	_net::err_ev err;
+	Local<Value> v8err;
 //	struct ifreq ifr;
 	// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
 //	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
@@ -824,8 +835,8 @@ Handle<Value> AssignRoute(const Arguments& args) {
 			for(uint32_t n=0;n<len;n++) {
 				Handle<Value> el = arrayAddr->Get(n)->ToObject();
 				if(el->IsObject()) {
-					process_route(el->ToObject(),_errno, RTACTION_IN6_ADD);
-					if(_errno > 0)
+					process_route(el->ToObject(),err, RTACTION_IN6_ADD);
+					if(err.hasErr())
 						error = true;
 				} else {
 					ERROR_OUT("Array in add_route6 has a non-object! Invalid. Skipping.\n");
@@ -833,9 +844,7 @@ Handle<Value> AssignRoute(const Arguments& args) {
 				}
 			}
 		} else {  // object
-			process_route(js_addroute->ToObject(),_errno, RTACTION_IN6_ADD);
-			if(_errno > 0)
-				error = true;
+			process_route(js_addroute->ToObject(),err, RTACTION_IN6_ADD);
 		}
 	}
 	Handle<Value> js_delroute = params->Get(String::New("del_route6"));
@@ -848,18 +857,14 @@ Handle<Value> AssignRoute(const Arguments& args) {
 			for(uint32_t n=0;n<len;n++) {
 				Handle<Value> el = arrayAddr->Get(n)->ToObject();
 				if(el->IsObject()) {
-					process_route(el->ToObject(),_errno, RTACTION_IN6_DEL);
-					if(_errno > 0)
-						error = true;
+					process_route(el->ToObject(),err, RTACTION_IN6_DEL);
 				} else {
 					ERROR_OUT("Array in del_route6 has a non-object! Invalid. Skipping.\n");
 					error = true;
 				}
 			}
 		} else {  // object
-			process_route(js_delroute->ToObject(),_errno, RTACTION_IN6_DEL);
-			if(_errno > 0)
-				error = true;
+			process_route(js_delroute->ToObject(),err, RTACTION_IN6_DEL);
 		}
 	}
 	Handle<Value> js_msgroute = params->Get(String::New("msg_route6"));
@@ -872,22 +877,34 @@ Handle<Value> AssignRoute(const Arguments& args) {
 			for(uint32_t n=0;n<len;n++) {
 				Handle<Value> el = arrayAddr->Get(n)->ToObject();
 				if(el->IsObject()) {
-					process_route(el->ToObject(),_errno, RTACTION_IN6_MESSAGE);
-					if(_errno > 0)
-						error = true;
+					process_route(el->ToObject(),err, RTACTION_IN6_MESSAGE);
 				} else {
 					ERROR_OUT("Array in msg_route6 has a non-object! Invalid. Skipping.\n");
-					error = true;
 				}
 			}
 		} else {  // object
-			process_route(js_msgroute->ToObject(),_errno, RTACTION_IN6_MESSAGE);
-			if(_errno > 0)
-				error = true;
+			process_route(js_msgroute->ToObject(),err, RTACTION_IN6_MESSAGE);
 		}
 	}
 
-	scope.Close(Boolean::New(!error));
+	if(err.hasErr()) {
+		v8err = _net::err_ev_to_JS(err, "assignRoute: ");
+	}
+
+
+	if(args.Length() > 1 && args[1]->IsFunction()) {
+		const unsigned outargc = 1;
+		Local<Value> outargv[outargc];
+		Local<Function> cb = Local<Function>::Cast(args[1]);
+		if(!v8err.IsEmpty()) {
+			outargv[0] = v8err;
+			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+		} else {
+			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+		}
+	}
+
+	scope.Close(Undefined());
 }
 
 
@@ -913,7 +930,7 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 		short int flags = args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
-		int err = 0;
+		_net::err_ev err;
 		int fd = _net::get_generic_dgram_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
@@ -943,15 +960,15 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
 		v8::String::Utf8Value v8ifname(args[0]->ToString());
 
-		int len = v8ifname.length() + 1;
-		if(v8ifname.length() > IFNAMSIZ) {
-			len = IFNAMSIZ;
-		}
+//		int len = v8ifname.length() + 1;
+//		if(v8ifname.length() > IFNAMSIZ) {
+//			len = IFNAMSIZ;
+//		}
 
 		short int flags = args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
-		int err = 0;
+		_net::err_ev err;
 		int fd = _net::get_generic_dgram_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {

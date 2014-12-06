@@ -7,7 +7,6 @@ var netkit = require('../index.js');
 
 var util = require('util');
 
-
 netkit.assignRoute({
 	add_route6: 
 		   		[  // ipv6 routes: dest
@@ -19,6 +18,10 @@ netkit.assignRoute({
 					  flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'  
 					}
 				]
+},function(err){
+	if(err) {
+		console.log("Error: " + util.inspect(err));
+	} else
+     	console.log('route added successfully.');
 });
 
-	

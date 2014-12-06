@@ -16,7 +16,8 @@
 
       "cflags": [
         "-Wall",
-        "-std=c++11"
+        "-std=c++11",
+        "-D_POSIX_C_SOURCE=200809L"  
       ],
 
       "conditions": [

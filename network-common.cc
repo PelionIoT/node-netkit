@@ -95,11 +95,11 @@ namespace _net {
 				strcpy(temp, prefix);
 				strcat(temp, e.errstr);
 //				retobj->Set(v8::String::New("message"), v8::String::New(temp));
-//				retobj = v8::Exception::Error(v8::String::New(temp));
+				retobj = v8::Exception::Error(v8::String::New(temp));
 				free(temp);
 			}
-//			else retobj = v8::Exception::Error(v8::String::New("Error"));0
-//			retobj->ToObject()->Set(v8::String::New("errno"), v8::Integer::New(e._errno));
+			else retobj = v8::Exception::Error(v8::String::New("Error"));
+			retobj->ToObject()->Set(v8::String::New("errno"), v8::Integer::New(e._errno));
 		}
 		return retobj;
 	}

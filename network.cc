@@ -147,32 +147,32 @@ int get_generic_dgram_sock(_net::err_ev &_err) {
 bool get_index_if_generic(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_dgram_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
-		ERROR_OUT("IP addr assignment problem.");
-		perror("SIOGIFINDEX");
+//		ERROR_OUT("IP addr assignment problem.");
+//		perror("SIOGIFINDEX");
 		_err.setError(errno);
 	}
-	return _err.hasErr();
+	return !_err.hasErr();
 }
 
 
 bool get_index_if4(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_ipv4_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
-		ERROR_OUT("IP addr assignment problem.");
-		perror("SIOGIFINDEX");
+//		ERROR_OUT("IP addr assignment problem.");
+//		perror("SIOGIFINDEX");
 		_err.setError(errno);
 	}
-	return _err.hasErr();
+	return !_err.hasErr();
 }
 
 bool get_index_if6(	struct ifreq &ifr, _net::err_ev &_err) {
 	int sockfd = get_generic_ipv6_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
-		ERROR_OUT("IP addr assignment problem.");
-		perror("SIOGIFINDEX");
+//		ERROR_OUT("IP addr assignment problem.");
+//		perror("SIOGIFINDEX");
 		_err.setError(errno);
 	}
-	return _err.hasErr();
+	return !_err.hasErr();
 }
 
 // quickly takes a NULL terminated string like: "fe80::1/64" and turns it into "fe80::1/0" and mask = 64
@@ -912,7 +912,8 @@ Handle<Value> AssignRoute(const Arguments& args) {
 
 
 /**
- * ifUp = function(string,flags) {}
+ * ifUp = function(string,flags,callback) {}
+ * @param callback {Function} is of the form: cb(err) {}
  * @param ifname {string} Interface name as a string
  */
 Handle<Value> SetIfFlags(const Arguments& args) {
@@ -931,20 +932,36 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
+		Local<Value> v8err;
 		int fd = _net::get_generic_dgram_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
 			ifr.ifr_flags |=  flags;
 		    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
-		    	perror("SIOCSIFFLAGS");
-				return ThrowException(Exception::TypeError(String::New("Error: Could not set interface flags." )));
+//		    	perror("SIOCSIFFLAGS");
+		    	err.setError(errno);
 		    }
-		} else {
-			return ThrowException(Exception::TypeError(String::New("Error: Could not index interface." )));
 		}
+
+		if(err.hasErr()) {
+			v8err = _net::err_ev_to_JS(err, "setIfFlags: ");
+		}
+
+    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    		const unsigned outargc = 1;
+    		Local<Value> outargv[outargc];
+    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		if(!v8err.IsEmpty()) {
+    			outargv[0] = v8err;
+    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    		} else {
+    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+    		}
+    	}
+
 		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is setIfFlags(string,flags)")));
+		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is setIfFlags(string,flags,[callback])")));
 	}
 }
 
@@ -964,25 +981,41 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 //		if(v8ifname.length() > IFNAMSIZ) {
 //			len = IFNAMSIZ;
 //		}
+		_net::err_ev err;
+		Local<Value> v8err;
 
 		short int flags = args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
-		_net::err_ev err;
 		int fd = _net::get_generic_dgram_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
 			ifr.ifr_flags &= !flags;
 		    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
-		    	perror("SIOCSIFFLAGS");
-				return ThrowException(Exception::TypeError(String::New("Error: Could not unset interface flags." )));
+		    	err.setError(errno);
+//		    	perror("SIOCSIFFLAGS");
 		    }
-		} else {
-			return ThrowException(Exception::TypeError(String::New("Error: Could not index interface." )));
 		}
+
+		if(err.hasErr()) {
+			v8err = _net::err_ev_to_JS(err, "unsetIfFlags: ");
+		}
+
+    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    		const unsigned outargc = 1;
+    		Local<Value> outargv[outargc];
+    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		if(!v8err.IsEmpty()) {
+    			outargv[0] = v8err;
+    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    		} else {
+    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+    		}
+    	}
+
 		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is unsetIfFlags(string,flags)")));
+		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is unsetIfFlags(string,flags,[callback])")));
 	}
 }
 

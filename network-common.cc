@@ -68,7 +68,7 @@ namespace _net {
 			char *temp = NULL;
 			char *errstr = get_error_str(_errno);
 			if(prefix) {
-				temp = (char *) malloc(strlen(prefix)+strlen(errstr));
+				temp = (char *) malloc(strlen(prefix)+strlen(errstr)+1);
 				strcpy(temp, prefix);
 				strcat(temp, errstr);
 				retobj = v8::Exception::Error(v8::String::New(temp));
@@ -91,7 +91,7 @@ namespace _net {
 		if(e.hasErr()) {
 			char *temp = NULL;
 			if(prefix && e.errstr) {
-				temp = (char *) malloc(strlen(prefix)+strlen(e.errstr));
+				temp = (char *) malloc(strlen(prefix)+strlen(e.errstr)+1);
 				strcpy(temp, prefix);
 				strcat(temp, e.errstr);
 //				retobj->Set(v8::String::New("message"), v8::String::New(temp));

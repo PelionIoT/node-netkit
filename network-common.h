@@ -111,6 +111,8 @@ Copyright (c) 2010, Ben Noordhuis <info@bnoordhuis.nl>
 // LICENSE_IMPORT_END
 
 namespace _net {
+    /** NOTE: you should always pass in a string with this when using setError() */
+	const int OTHER_ERROR = 0x1FFF;
 	char *get_error_str(int _errno);
 	void free_error_str(char *b);
 	v8::Local<v8::Value> errno_to_JS(int _errno, const char *prefix);
@@ -118,7 +120,7 @@ namespace _net {
 		char *errstr;
 		int _errno;
 		err_ev(void) : errstr(NULL), _errno(0) {};
-		void setError(int e,char *m=NULL);
+		void setError(int e,const char *m=NULL);
 		err_ev(int e) : err_ev() {
 			setError(e);
 		}

@@ -3,11 +3,11 @@
  */
 
 
-var network = require('../index.js');
+var netkit = require('../index.js');
 
 var util = require('util');
 
-var tun0 = network.newTunInterfaceRaw();
+var tun0 = netkit.newTunInterfaceRaw();
 
 tun0.ifname = "tun_test";
 
@@ -17,7 +17,7 @@ if(tun0.create()) {
 	setTimeout(function(){
 		if(tun0.open()) {
 			console.log("Opened successfully.");
-			network.assignAddress({
+			netkit.assignAddress({
 				ifname:tun0.ifname,         // required
 				mtu: 1501,                  // test MTU - set it bigger than default
 				inet6: {
@@ -26,8 +26,14 @@ if(tun0.create()) {
 					add_addr: [ "aaaa::1/64" ] // assign multiple IPs. Also hand just a string: "aaaa::1"
 
 				}
+			},function(err){
+				if(err) {
+					console.log("Error: " + util.inspect(err));
+				} else {
+					console.log("assignAddress called successfully.");
+				}
 			});
-			network.assignRoute({
+			netkit.assignRoute({
 				add_route6: 
 					[  // ipv6 routes: dest
 						{ 
@@ -35,12 +41,18 @@ if(tun0.create()) {
 						  via_if: "tun_test",       // via the interface 'tun_test'
 //						  via_network: "2001::/16", 
 						  metric: 2400,
-						  flags: network.FLAGS.RT_MODIFIED | network.FLAGS.RT_DYNAMIC  // network.FLAGS.RT_GATEWAY | 
+						  flags: netkit.FLAGS.RT_MODIFIED | netkit.FLAGS.RT_DYNAMIC  // netkit.FLAGS.RT_GATEWAY | 
 						}
 					],
 				del_route6: []
+			},function(err){
+				if(err) {
+					console.log("Error: " + util.inspect(err));
+				} else {
+					console.log("assignRoute called successfully.");
+				}				
 			});
-			network.setIfFlags(tun0.ifname,network.FLAGS.IFF_UP | network.FLAGS.IFF_RUNNING); // turn the interface up
+			netkit.setIfFlags(tun0.ifname,netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING); // turn the interface up
 
 			tun0.stream.on('readable', function() {
 				var chunk;
@@ -55,7 +67,7 @@ if(tun0.create()) {
 			});
 
 			setTimeout(function(){
-			network.assignRoute({
+			netkit.assignRoute({
 				del_route6: 
 					[  // ipv6 routes: dest
 						{ 
@@ -64,7 +76,7 @@ if(tun0.create()) {
 //						  via_network: "2001::/16", 
 						  metric: 2400,             // if you have a specific metric in add_route6 you will need to use the same metric so the 
 						                            // kernel can find the correct route
-						  flags: network.FLAGS.RT_GATEWAY | network.FLAGS.RT_MODIFIED | network.FLAGS.RT_DYNAMIC
+						  flags: netkit.FLAGS.RT_GATEWAY | netkit.FLAGS.RT_MODIFIED | netkit.FLAGS.RT_DYNAMIC
 						}
 					]
 				});
@@ -80,6 +92,6 @@ console.log("You can type 'ifconfig -a' in a terminal to see if the interface ex
 setTimeout(function(){
 	console.log("done.");
 	// turn down the interface...
-//	network.unsetIfFlags(tun0.ifname,network.FLAGS.IFF_UP | network.FLAGS.IFF_RUNNING);
+//	netkit.unsetIfFlags(tun0.ifname,network.FLAGS.IFF_UP | network.FLAGS.IFF_RUNNING);
 }, 15000);
 

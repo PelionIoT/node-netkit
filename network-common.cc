@@ -26,8 +26,10 @@
 
 // bc we are using the XSI compiant version via the above macros
 // strdup must be declared manually.
+extern "C" {
 extern char *strdup (const char *__s)
      __THROW __attribute_malloc__ __nonnull ((1));
+};
 
 
 #include <v8.h>
@@ -37,6 +39,7 @@ extern char *strdup (const char *__s)
 namespace _net {
 
 	const int max_error_buf = 255;
+
 
 	char *get_error_str(int _errno) {
 		char *ret = (char *) malloc(max_error_buf);
@@ -49,7 +52,7 @@ namespace _net {
 		free(b);
 	}
 
-	void err_ev::setError(int e,char *m)
+	void err_ev::setError(int e,const char *m)
 	{
 		_errno = e;
 		if(errstr) free(errstr);

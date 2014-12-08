@@ -1,6 +1,6 @@
 {
   "name": "netkit",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Network utility kit",
   "main": "index.js",
   "keywords": [

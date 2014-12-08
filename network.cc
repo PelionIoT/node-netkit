@@ -204,7 +204,6 @@ bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err)
 	struct _net::in6_ifreq ifr6;
 
 	int sockfd = get_generic_ipv6_sock(_err);
-	bool error = false;
 
 	if(sockfd > 0) {
 		memset(&sai, 0, sizeof(struct sockaddr));
@@ -213,13 +212,16 @@ bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err)
 		sai.sin6_scope_id = 0;
 
 //		v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
-
-		if(inet_pton(AF_INET6, ip, (void *)&sai.sin6_addr) <= 0) {
-			ERROR_OUT("Bad address passed in?\n");
-			error = true;
+		int ret = 0;
+		if((ret = inet_pton(AF_INET6, ip, (void *)&sai.sin6_addr)) <= 0) {
+			if(ret == 0) {
+				_err.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
+			} else {
+				_err.setError(errno,"Error on inet_pton.");
+			}
 		}
 
-		if(!error) {
+		if(!_err.hasErr()) {
 			memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					sizeof(struct in6_addr));
 
@@ -229,12 +231,13 @@ bool add_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err)
 				_err.setError(errno);
 				ERROR_OUT("IP addr assignment problem.");
 				perror("SIOCSIFADDR");
-				error = true;
 			}
 		}
-	} else
-		error = true;
-	return !error;
+	} else {
+		_err.setError(_net::OTHER_ERROR,"Bad file descriptor.");
+	}
+
+	return !_err.hasErr();
 }
 
 bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_err) {
@@ -242,7 +245,6 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_e
 	struct _net::in6_ifreq ifr6;
 
 	int sockfd = get_generic_ipv6_sock(_err);
-	bool error = false;
 
 	if(sockfd > 0) {
 		memset(&sai, 0, sizeof(struct sockaddr));
@@ -251,13 +253,16 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_e
 		sai.sin6_scope_id = 0;
 
 //		v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
-
-		if(inet_pton(AF_INET6, ip, (void *)&sai.sin6_addr) <= 0) {
-			ERROR_OUT("Bad address passed in?\n");
-			error = true;
+		int ret = 0;
+		if((ret = inet_pton(AF_INET6, ip, (void *)&sai.sin6_addr)) <= 0) {
+			if(ret == 0) {
+				_err.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
+			} else {
+				_err.setError(errno,"Error on inet_pton.");
+			}
 		}
 
-		if(!error) {
+		if(!_err.hasErr()) {
 			memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					sizeof(struct in6_addr));
 
@@ -265,14 +270,13 @@ bool remove_inet6addr(char *ip, struct ifreq &ifr, int bitmask, _net::err_ev &_e
 			ifr6.ifr6_prefixlen = bitmask;
 			if (ioctl(sockfd, SIOCDIFADDR, &ifr6) < 0) {
 				_err.setError(errno);
-				ERROR_OUT("IP addr removal problem.");
 				perror("SIOCDIFADDR");
-				error = true;
 			}
 		}
-	} else
-		error = true;
-	return !error;
+	} else {
+		_err.setError(_net::OTHER_ERROR,"Bad file descriptor.");
+	}
+	return !_err.hasErr();
 }
 
 #define RTACTION_IN6_ADD 1
@@ -297,7 +301,6 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
     memset((char *) &rt, 0, sizeof(struct in6_rtmsg));
 
 	int sockfd = get_generic_ipv6_sock(_err);
-	bool error = false;
 
 //    rt.rtmsg_flags = RTF_UP;
     rt.rtmsg_flags = flags;
@@ -305,6 +308,7 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
     char *workingroute = NULL;
     char *viart = NULL;
 	int mask = 0;
+	int ret = 0;
 
     if(route) {
     	workingroute = strdup(route);
@@ -313,20 +317,21 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 
 	    if(mask < 0 || mask > 128) {
 			ERROR_OUT("IP set route issue: mask out of range.");
-			_err.setError(1,"IP set route issue: mask out of range.");
-			error = true;
+			_err.setError(_net::OTHER_ERROR,"IP set route issue: mask out of range.");
 	    }
 
-	    if(inet_pton(AF_INET6, workingroute, (void *)&sa6.sin6_addr) <= 0) {
-			ERROR_OUT("Bad address passed in?\n");
-			_err.setError(1,"Bad address passed in?");
-			error = true;
+	    if((ret = inet_pton(AF_INET6, workingroute, (void *)&sa6.sin6_addr)) <= 0) {
+			if(ret == 0) {
+				_err.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
+			} else {
+				_err.setError(errno,"Error on inet_pton.");
+			}
 		} else {
 			// copy address in...
 			memcpy(&rt.rtmsg_dst, sa6.sin6_addr.s6_addr, sizeof(struct in6_addr));
 		}
     } else {
-		_err.setError(1,"No route passed in.");
+		_err.setError(_net::OTHER_ERROR,"No route passed in.");
     	return false;
     }
 
@@ -336,6 +341,7 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 	    struct sockaddr_in6 sa6_via;
 	    viart = strdup(hostnet);
 	    int mask = 0;
+	    int ret = 0;
 
 	    if(!_net::quickParseIPv6Mask(hostnet, mask))
 	    	mask = 128; // doesn't matter - if it's a gw it should be a host
@@ -343,10 +349,12 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 	    memset(&sa6_via,0,sizeof(sockaddr_in6));
 	    // convert addr to bytes...
 
-	    if(inet_pton(AF_INET6, viart, (void *)&sa6_via.sin6_addr) <= 0) {
-			ERROR_OUT("Bad via address passed in?\n");
-			_err.setError(1,"Bad via address passed in?");
-			error = true;
+	    if((ret = inet_pton(AF_INET6, viart, (void *)&sa6_via.sin6_addr)) <= 0) {
+			if(ret == 0) {
+				_err.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in? (via route)");
+			} else {
+				_err.setError(errno,"Error on inet_pton. (via route)");
+			}
 		} else {
 			// copy address in...
 			memcpy(&rt.rtmsg_gateway, sa6_via.sin6_addr.s6_addr, sizeof(struct in6_addr));
@@ -354,14 +362,13 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 	}
 
 
-	if(!error && sockfd > 0) {
+	if(!_err.hasErr() && sockfd > 0) {
 		if(devname) {
 			strncpy(ifr.ifr_name, devname, IFNAMSIZ);
 			if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 				ERROR_OUT("IP set route issue: unknown interface.");
 				perror("SIOGIFINDEX");
 				_err.setError(errno);
-				error = true;
 			}
 			rt.rtmsg_ifindex = ifr.ifr_ifindex;
 		} else
@@ -376,27 +383,24 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 	    rt.rtmsg_dst_len = (uint16_t) mask;
 
 
-		if(!error) {
+		if(!_err.hasErr()) {
 			if(action == RTACTION_IN6_ADD) {
 				if (ioctl(sockfd, SIOCADDRT, &rt) < 0) {
 					ERROR_OUT("IP set route issue > error on add route > ");
 					_err.setError(errno);
 					perror("SIOCADDRT");
-					error = true;
 				}
 			} else if (action == RTACTION_IN6_DEL){
 				if (ioctl(sockfd, SIOCDELRT, &rt) < 0) {
 					ERROR_OUT("IP del route issue > error on delete route > ");
 					_err.setError(errno);
 					perror("SIOCDELRT");
-					error = true;
 				}
 			} else if (action == RTACTION_IN6_MESSAGE) {
 				if (ioctl(sockfd, SIOCRTMSG, &rt) < 0) {
 					ERROR_OUT("IP msg route issue > error on messaging route > ");
 					_err.setError(errno);
 					perror("SIOCRTMSG");
-					error = true;
 				}
 			}
 
@@ -404,13 +408,16 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 //				_err.setError(errno);
 //			}
 		}
-	} else
-		error = true;
+	} else {
+		if(!_err.hasErr()) {
+			_err.setError(_net::OTHER_ERROR,"Bad file descriptor.");
+		}
+	}
 
 	if(viart) free(viart);
 	if(workingroute) free(workingroute);
 
-	return !error;
+	return !_err.hasErr();
 }
 
 
@@ -471,9 +478,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	_net::jsToIfName(_ifname,v8ifname.operator *(),v8ifname.length());
 	//	obj->setIfName(v8str.operator *(),v8ifname.length());
 
-	bool error = false;
+//	bool error = false;
 
 	_net::err_ev errev;
+	Local<Value> v8err;
 
 	struct ifreq ifr;
 
@@ -492,9 +500,9 @@ Handle<Value> AssignAddress(const Arguments& args) {
 		if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 	    ifr.ifr_mtu = (int) js_mtu->Uint32Value();
 	    if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
+	    	errev.setError(errno);
 			ERROR_OUT("Could not set MTU.\n");
 			// TODO assign error info to object
-			error = true;
 	    }
 	}
 	have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
@@ -507,8 +515,9 @@ Handle<Value> AssignAddress(const Arguments& args) {
 //		sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
 		if (sockfd == -1) {
 			ERROR_OUT("Could not create socket for IP addr assignment.\n");
-			// TODO assign error info to object
-			error = true;
+			if(!errev.hasErr()) {
+				errev.setError(_net::OTHER_ERROR,"Could not create socket for IP addr assignment.\n");
+			}
 		}
 
 		Handle<Object> js_inet6 = js_inet6val->ToObject();
@@ -517,13 +526,13 @@ Handle<Value> AssignAddress(const Arguments& args) {
 		// do we have an IP to assign?
 		Handle<Value> js_inet6addr = js_inet6->Get(String::New("addr"));
 
-		if(!error && js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
+		if(!errev.hasErr() && js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
 
 
 			struct sockaddr_in6 sai;
 			struct _net::in6_ifreq ifr6;
 
-			if(!error) {
+			if(!errev.hasErr()) {
 
 				memset(&sai, 0, sizeof(struct sockaddr));
 				sai.sin6_family = AF_INET6;
@@ -534,7 +543,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 				v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
 				_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
 
-				if(!error) {
+				if(!errev.hasErr()) {
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					   sizeof(struct in6_addr));
 
@@ -551,7 +560,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 		Handle<Value> js_inet6rm = js_inet6->Get(String::New("remove_addr"));
 
-		if(!error && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
+		if(!errev.hasErr() && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
 
 			struct sockaddr_in6 sai;
 			struct _net::in6_ifreq ifr6;
@@ -565,7 +574,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 				v8::String::Utf8Value v8ip6hostaddr(js_inet6rm->ToString());
 
-				if(!error) {
+				if(!errev.hasErr()) {
 					_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 							sizeof(struct in6_addr));
@@ -577,7 +586,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 					}
 				}
 			} else { // it's an Array
-				if(!error) {
+				if(!errev.hasErr()) {
 
 					Handle<Object> arrayAddr = js_inet6rm->ToObject();
 
@@ -608,7 +617,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 		Handle<Value> js_inet6add = js_inet6->Get(String::New("add_addr"));
 
-		if(!error && (js_inet6add->IsArray() || js_inet6add->IsString())) {
+		if(!errev.hasErr() && (js_inet6add->IsArray() || js_inet6add->IsString())) {
 
 			struct sockaddr_in6 sai;
 			struct _net::in6_ifreq ifr6;
@@ -621,7 +630,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 			if(js_inet6add->IsString()) {
 
 				v8::String::Utf8Value v8ip6hostaddr(js_inet6add->ToString());
-				if(!error) {
+				if(!errev.hasErr()) {
 					_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 							sizeof(struct in6_addr));
@@ -633,7 +642,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 					}
 				}
 			} else { // it's an Array
-				if(!error) {
+				if(!errev.hasErr()) {
 
 					Handle<Object> arrayAddr = js_inet6add->ToObject();
 
@@ -682,7 +691,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 //				error = true;
 //			}
 
-			if(!error) {
+			if(!errev.hasErr()) {
 				/* get interface name */
 				strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
 
@@ -692,20 +701,24 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 				v8::String::Utf8Value v8ip6hostmask(js_inet6mask->ToString());
 
-				if(inet_pton(AF_INET6, v8ip6hostmask.operator *(), (void *)&sai.sin6_addr) <= 0) {
-					ERROR_OUT("Bad address passed in?\n");
-					error = true;
+				int ret = 0;
+
+				if((ret = inet_pton(AF_INET6, v8ip6hostmask.operator *(), (void *)&sai.sin6_addr)) <= 0) {
+					if(ret == 0) {
+						errev.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
+					} else {
+						errev.setError(errno,"Error on inet_pton.");
+					}
 				}
 
-				if(!error) {
+				if(!errev.hasErr()) {
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					   sizeof(struct in6_addr));
 
 					if(!have_index) {
 						if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
-							ERROR_OUT("IP mask assignment problem.");
+							errev.setError(errno);
 							perror("SIOGIFINDEX");
-							error = true;
 						} else
 							have_index = true;
 					}
@@ -714,9 +727,8 @@ Handle<Value> AssignAddress(const Arguments& args) {
 						ifr6.ifr6_ifindex = ifr.ifr_ifindex;
 						ifr6.ifr6_prefixlen = 64;
 						if (ioctl(sockfd, SIOCSIFNETMASK, &ifr6) < 0) {
-							ERROR_OUT("IP mask assignment problem.");
+							errev.setError(errno);
 							perror("SIOCSIFNETMASK");
-							error = true;
 						}
 					}
 
@@ -727,10 +739,23 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 	} // end assign IPv6 address
 
+	if(errev.hasErr()) {
+		v8err = _net::err_ev_to_JS(errev, "assignAddress: ");
+	}
 
+	if(args.Length() > 1 && args[1]->IsFunction()) {
+		const unsigned outargc = 1;
+		Local<Value> outargv[outargc];
+		Local<Function> cb = Local<Function>::Cast(args[1]);
+		if(!v8err.IsEmpty()) {
+			outargv[0] = v8err;
+			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+		} else {
+			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+		}
+	}
 
-
-	return scope.Close(Boolean::New(!error)); // return false if error
+	return scope.Close(Boolean::New(!errev.hasErr())); // return false if error
 }
 
 void process_route(Handle<Object> obj, _net::err_ev &err, int action) {

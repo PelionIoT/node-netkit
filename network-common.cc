@@ -86,8 +86,8 @@ namespace _net {
 	}
 
 
-	v8::Local<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix) {
-	//	HandleScope scope;
+	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix) {
+		v8::HandleScope scope;
 //		v8::Local<v8::Object> retobj = v8::Object::New();
 		v8::Local<v8::Value> retobj = v8::Local<v8::Primitive>::New(v8::Undefined());
 
@@ -104,7 +104,7 @@ namespace _net {
 			else retobj = v8::Exception::Error(v8::String::New("Error"));
 			retobj->ToObject()->Set(v8::String::New("errno"), v8::Integer::New(e._errno));
 		}
-		return retobj;
+		return scope.Close(retobj);
 	}
 
 }

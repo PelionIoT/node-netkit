@@ -481,7 +481,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 //	bool error = false;
 
 	_net::err_ev errev;
-	Local<Value> v8err;
+	Handle<Value> v8err;
 
 	struct ifreq ifr;
 
@@ -748,7 +748,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 		Local<Value> outargv[outargc];
 		Local<Function> cb = Local<Function>::Cast(args[1]);
 		if(!v8err.IsEmpty()) {
-			outargv[0] = v8err;
+			outargv[0] = v8err->ToObject();
 			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
 		} else {
 			cb->Call(Context::GetCurrent()->Global(),0,NULL);
@@ -841,7 +841,7 @@ Handle<Value> AssignRoute(const Arguments& args) {
 	bool error = false;
 
 	_net::err_ev err;
-	Local<Value> v8err;
+	Handle<Value> v8err;
 //	struct ifreq ifr;
 	// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
 //	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
@@ -922,14 +922,17 @@ Handle<Value> AssignRoute(const Arguments& args) {
 		Local<Value> outargv[outargc];
 		Local<Function> cb = Local<Function>::Cast(args[1]);
 		if(!v8err.IsEmpty()) {
-			outargv[0] = v8err;
+			outargv[0] = v8err->ToObject();
+//			fprintf(stderr,"PRE CALL!!");
 			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+//			fprintf(stderr,"POST CALL!!");
 		} else {
 			cb->Call(Context::GetCurrent()->Global(),0,NULL);
 		}
 	}
 
-	scope.Close(Undefined());
+//	fprintf(stderr,"At .Close() !!");
+	return scope.Close(Undefined());
 }
 
 
@@ -957,7 +960,7 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
-		Local<Value> v8err;
+		Handle<Value> v8err;
 		int fd = _net::get_generic_dgram_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
@@ -977,7 +980,7 @@ Handle<Value> SetIfFlags(const Arguments& args) {
     		Local<Value> outargv[outargc];
     		Local<Function> cb = Local<Function>::Cast(args[2]);
     		if(!v8err.IsEmpty()) {
-    			outargv[0] = v8err;
+    			outargv[0] = v8err->ToObject();
     			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
     		} else {
     			cb->Call(Context::GetCurrent()->Global(),0,NULL);
@@ -1007,7 +1010,7 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 //			len = IFNAMSIZ;
 //		}
 		_net::err_ev err;
-		Local<Value> v8err;
+		Handle<Value> v8err;
 
 		short int flags = args[1]->Int32Value();
 
@@ -1031,7 +1034,7 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
     		Local<Value> outargv[outargc];
     		Local<Function> cb = Local<Function>::Cast(args[2]);
     		if(!v8err.IsEmpty()) {
-    			outargv[0] = v8err;
+    			outargv[0] = v8err->ToObject();
     			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
     		} else {
     			cb->Call(Context::GetCurrent()->Global(),0,NULL);

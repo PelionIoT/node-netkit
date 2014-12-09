@@ -137,7 +137,7 @@ namespace _net {
 		}
 		bool hasErr() { return (_errno != 0); }
 	};
-	v8::Local<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix);
+	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix);
 }
 
 

@@ -20,7 +20,7 @@ netkit.setIfFlags("tap0",netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING,function
 		   		[  // ipv6 routes: dest
 					{ 
 					  dest: "aaaa::/64",        // ip -6 route add 2003::/16 dev tun_test
-//						  via_if: "tun_test",       // via the interface 'tun_test'
+//					  via_if: "tap0",       // via the interface 'tun_test'
 					  via_network: "bbbb::100", 
 //						  metric: 2400,
 					  flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'  
@@ -30,10 +30,9 @@ netkit.setIfFlags("tap0",netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING,function
 				if(err) {
 					console.log("Error: " + util.inspect(err));
 				} else
-				console.log('route added successfully.');
+				    console.log('route added successfully.');
 			});
-		}, 3000);
-
+ 		}, 3000);
 	}
 
 });

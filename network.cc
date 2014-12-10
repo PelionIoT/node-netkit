@@ -534,332 +534,339 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 	char _ifname[IFNAMSIZ]; // IFNAMSIZ is defined in net/if.h
 
-	if(args.Length() < 1 || !args[0]->IsObject()) {
-		return scope.Close(Boolean::New(false));
-	}
-
-	Handle<Object> params = args[0]->ToObject();
-
-	Handle<Value> js_ifname = params->Get(String::New("ifname"));
-	if(!js_ifname->IsString()) {
-		ERROR_OUT("No ifname provided. Doing nothing.\n");
-		return scope.Close(Boolean::New(false));
-	}
-
-
-	v8::String::Utf8Value v8ifname(js_ifname->ToString());
-	_net::jsToIfName(_ifname,v8ifname.operator *(),v8ifname.length());
-	//	obj->setIfName(v8str.operator *(),v8ifname.length());
-
-//	bool error = false;
-
 	_net::err_ev errev;
 	Handle<Value> v8err;
 
-	struct ifreq ifr;
-	memset(&ifr,0,sizeof(ifreq));
+	Handle<Object> params;
+	Handle<Value> js_ifname;
 
-	// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
-	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
-	// but we need a socket (really an fd to an interface) to do this - so we will defer until we open one..
-	bool have_index = false;
+	if(args.Length() < 1 || !args[0]->IsObject()) {
+		errev.setError(_net::OTHER_ERROR,"Wrong params. No ifname provided. Doing nothing.\n");
+	} else {
+		params = args[0]->ToObject();
+		js_ifname = params->Get(String::New("ifname"));
+	}
 
-	// ok... now let's see what we need to set
+
+	if(js_ifname.IsEmpty() || (!errev.hasErr() && !js_ifname->IsString())) {
+		errev.setError(_net::OTHER_ERROR,"No ifname provided in object. Doing nothing.\n");
+		ERROR_OUT("No ifname provided. Doing nothing.\n");
+//		return scope.Close(Boolean::New(false));
+	} else {
+
+		v8::String::Utf8Value v8ifname(js_ifname->ToString());
+		_net::jsToIfName(_ifname,v8ifname.operator *(),v8ifname.length());
+		//	obj->setIfName(v8str.operator *(),v8ifname.length());
+
+	//	bool error = false;
 
 
-	// ****************** MTU assignment **********************
-	Handle<Value> js_mtu = params->Get(String::New("mtu"));
-	if(js_mtu->IsUint32()) {
-		int sockfd = _net::get_generic_ipv6_sock(errev);
-		if(!have_index) have_index = _net::get_index_if6(ifr, errev);
-		if(!errev.hasErr()) {
-			ifr.ifr_mtu = (int) js_mtu->Uint32Value();
-			if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
-				errev.setError(errno);
-				ERROR_OUT("Could not set MTU.\n");
-				// TODO assign error info to object
+		struct ifreq ifr;
+		memset(&ifr,0,sizeof(ifreq));
+
+		// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
+		strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
+		// but we need a socket (really an fd to an interface) to do this - so we will defer until we open one..
+		bool have_index = false;
+
+		// ok... now let's see what we need to set
+
+
+		// ****************** MTU assignment **********************
+		Handle<Value> js_mtu = params->Get(String::New("mtu"));
+		if(!errev.hasErr() && js_mtu->IsUint32()) {
+			int sockfd = _net::get_generic_ipv6_sock(errev);
+			if(!have_index) have_index = _net::get_index_if6(ifr, errev);
+			if(!errev.hasErr()) {
+				ifr.ifr_mtu = (int) js_mtu->Uint32Value();
+				if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
+					errev.setError(errno);
+					ERROR_OUT("Could not set MTU.\n");
+					// TODO assign error info to object
+				}
 			}
 		}
-	}
-	have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
+		have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
 
 
-	// ******************** MAC address *********************
+		// ******************** MAC address *********************
 
-	Handle<Value> js_mac = params->Get(String::New("mac"));
-	if(js_mac->IsString()) {
-		uint8_t mac[6];
-		memset(mac,0,6);
-		v8::String::Utf8Value v8mac(js_mac->ToString());
-		toBytesMACAddr(v8mac.operator *(), mac, errev);
+		Handle<Value> js_mac = params->Get(String::New("mac"));
+		if(!errev.hasErr() && js_mac->IsString()) {
+			uint8_t mac[6];
+			memset(mac,0,6);
+			v8::String::Utf8Value v8mac(js_mac->ToString());
+			toBytesMACAddr(v8mac.operator *(), mac, errev);
 
-		if(!errev.hasErr()) {
-			int sockfd = _net::get_generic_inet_sock(errev);
-			short flags = 0;
-			bool was_up = false;
-//			if(!errev.hasErr()) {
-				memset(&ifr,0,sizeof(ifreq));
-				strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
-//				if(!have_index) have_index = _net::get_index_if6(ifr, errev);
+			if(!errev.hasErr()) {
+				int sockfd = _net::get_generic_inet_sock(errev);
+				short flags = 0;
+				bool was_up = false;
+	//			if(!errev.hasErr()) {
+					memset(&ifr,0,sizeof(ifreq));
+					strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
+	//				if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
-				get_if_flags(sockfd,ifr, flags, errev);
-				if(!errev.hasErr() && (flags & IFF_UP)) {
-					set_if_flags(sockfd, ifr, flags & ~IFF_UP, errev);
-					was_up = true;
-				}
-				if(!errev.hasErr()) {
-					ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
-					memcpy(&ifr.ifr_hwaddr.sa_data,mac,sizeof(mac));
-					// set MAC address
-					if (ioctl(sockfd, SIOCSIFHWADDR, &ifr) < 0) {
-						errev.setError(errno);
-						ERROR_OUT("Could not set MAC addr: %x:%x:%x:%x:%x:%x\n", mac[0], mac[1],mac[2],mac[3],mac[4],mac[5]);
-					} else {
-						DBG_OUT("Set MAC address\n");
+					get_if_flags(sockfd,ifr, flags, errev);
+					if(!errev.hasErr() && (flags & IFF_UP)) {
+						set_if_flags(sockfd, ifr, flags & ~IFF_UP, errev);
+						was_up = true;
 					}
-					if(was_up)
-						set_if_flags(sockfd, ifr, flags | IFF_UP, errev);
-				}
-//			}
-		}
-	}
-	have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
-	memset(&ifr,0,sizeof(ifreq));
-	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
-
-
-	// ****************** IPv6 address **********************
-	Handle<Value> js_inet6val = params->Get(String::New("inet6"));
-	if(js_inet6val->IsObject()) { // IPv6 assignment!
-		int sockfd = _net::get_generic_ipv6_sock(errev);
-
-//		sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
-		if (sockfd == -1) {
-			ERROR_OUT("Could not create socket for IP addr assignment.\n");
-			if(!errev.hasErr()) {
-				errev.setError(_net::OTHER_ERROR,"Could not create socket for IP addr assignment.\n");
+					if(!errev.hasErr()) {
+						ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+						memcpy(&ifr.ifr_hwaddr.sa_data,mac,sizeof(mac));
+						// set MAC address
+						if (ioctl(sockfd, SIOCSIFHWADDR, &ifr) < 0) {
+							errev.setError(errno);
+							ERROR_OUT("Could not set MAC addr: %x:%x:%x:%x:%x:%x\n", mac[0], mac[1],mac[2],mac[3],mac[4],mac[5]);
+						} else {
+							DBG_OUT("Set MAC address\n");
+						}
+						if(was_up)
+							set_if_flags(sockfd, ifr, flags | IFF_UP, errev);
+					}
+	//			}
 			}
 		}
-
-		Handle<Object> js_inet6 = js_inet6val->ToObject();
-
-		// ------------------ inet6.addr ---------------------------------------------
-		// do we have an IP to assign?
-		Handle<Value> js_inet6addr = js_inet6->Get(String::New("addr"));
-
-		if(!errev.hasErr() && js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
+		have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
+		memset(&ifr,0,sizeof(ifreq));
+		strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
 
 
-			struct sockaddr_in6 sai;
-			struct _net::in6_ifreq ifr6;
+		// ****************** IPv6 address **********************
+		Handle<Value> js_inet6val = params->Get(String::New("inet6"));
+		if(!errev.hasErr() && js_inet6val->IsObject()) { // IPv6 assignment!
+			int sockfd = _net::get_generic_ipv6_sock(errev);
 
-			if(!errev.hasErr()) {
+	//		sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
+			if (sockfd == -1) {
+				ERROR_OUT("Could not create socket for IP addr assignment.\n");
+				if(!errev.hasErr()) {
+					errev.setError(_net::OTHER_ERROR,"Could not create socket for IP addr assignment.\n");
+				}
+			}
 
+			Handle<Object> js_inet6 = js_inet6val->ToObject();
+
+			// ------------------ inet6.addr ---------------------------------------------
+			// do we have an IP to assign?
+			Handle<Value> js_inet6addr = js_inet6->Get(String::New("addr"));
+
+			if(!errev.hasErr() && js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
+
+
+				struct sockaddr_in6 sai;
+				struct _net::in6_ifreq ifr6;
+
+				if(!errev.hasErr()) {
+
+					memset(&sai, 0, sizeof(struct sockaddr));
+					sai.sin6_family = AF_INET6;
+					sai.sin6_port = 0;
+					sai.sin6_scope_id = 0;
+					int mask = 64;
+
+					v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
+					_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+
+					if(!errev.hasErr()) {
+
+						memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+						   sizeof(struct in6_addr));
+
+						if(!have_index) have_index = _net::get_index_if6(ifr,errev);
+
+						if(have_index) {
+							_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+						}
+					}
+				}
+			} // end 'addr'
+
+			// ------------------ inet6.remove_addr ---------------------------------------------
+
+			Handle<Value> js_inet6rm = js_inet6->Get(String::New("remove_addr"));
+
+			if(!errev.hasErr() && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
+
+				struct sockaddr_in6 sai;
+				struct _net::in6_ifreq ifr6;
 				memset(&sai, 0, sizeof(struct sockaddr));
 				sai.sin6_family = AF_INET6;
 				sai.sin6_port = 0;
 				sai.sin6_scope_id = 0;
 				int mask = 64;
 
-				v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
-				_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+				if(js_inet6rm->IsString()) {
 
-				if(!errev.hasErr()) {
+					v8::String::Utf8Value v8ip6hostaddr(js_inet6rm->ToString());
 
-					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-					   sizeof(struct in6_addr));
+					if(!errev.hasErr()) {
+						_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+						memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+								sizeof(struct in6_addr));
 
-					if(!have_index) have_index = _net::get_index_if6(ifr,errev);
+						if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
-					if(have_index) {
-						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+						if(have_index) {
+							_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+						}
 					}
-				}
-			}
-		} // end 'addr'
+				} else { // it's an Array
+					if(!errev.hasErr()) {
 
-		// ------------------ inet6.remove_addr ---------------------------------------------
+						Handle<Object> arrayAddr = js_inet6rm->ToObject();
 
-		Handle<Value> js_inet6rm = js_inet6->Get(String::New("remove_addr"));
+						uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
+						for(uint32_t n=0;n<len;n++) {
+							Handle<Value> el = arrayAddr->Get(n);
 
-		if(!errev.hasErr() && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
+							if(el->IsString()) {
+								v8::String::Utf8Value v8ip6hostaddr(el->ToString());
+								_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+								memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+										sizeof(struct in6_addr));
 
-			struct sockaddr_in6 sai;
-			struct _net::in6_ifreq ifr6;
-			memset(&sai, 0, sizeof(struct sockaddr));
-			sai.sin6_family = AF_INET6;
-			sai.sin6_port = 0;
-			sai.sin6_scope_id = 0;
-			int mask = 64;
+								if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 
-			if(js_inet6rm->IsString()) {
-
-				v8::String::Utf8Value v8ip6hostaddr(js_inet6rm->ToString());
-
-				if(!errev.hasErr()) {
-					_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
-					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-							sizeof(struct in6_addr));
-
-					if(!have_index) have_index = _net::get_index_if6(ifr, errev);
-
-					if(have_index) {
-						_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
-					}
-				}
-			} else { // it's an Array
-				if(!errev.hasErr()) {
-
-					Handle<Object> arrayAddr = js_inet6rm->ToObject();
-
-					uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-					for(uint32_t n=0;n<len;n++) {
-						Handle<Value> el = arrayAddr->Get(n);
-
-						if(el->IsString()) {
-							v8::String::Utf8Value v8ip6hostaddr(el->ToString());
-							_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
-							memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-									sizeof(struct in6_addr));
-
-							if(!have_index) have_index = _net::get_index_if6(ifr, errev);
-
-							if(have_index) {
-								_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+								if(have_index) {
+									_net::remove_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+								}
 							}
 						}
 					}
+
 				}
 
-			}
+			} // end 'addr'
 
-		} // end 'addr'
+			// ------------------ inet6.add_addr ---------------------------------------------
 
-		// ------------------ inet6.add_addr ---------------------------------------------
+			Handle<Value> js_inet6add = js_inet6->Get(String::New("add_addr"));
 
-		Handle<Value> js_inet6add = js_inet6->Get(String::New("add_addr"));
+			if(!errev.hasErr() && (js_inet6add->IsArray() || js_inet6add->IsString())) {
 
-		if(!errev.hasErr() && (js_inet6add->IsArray() || js_inet6add->IsString())) {
-
-			struct sockaddr_in6 sai;
-			struct _net::in6_ifreq ifr6;
-			memset(&sai, 0, sizeof(struct sockaddr));
-			sai.sin6_family = AF_INET6;
-			sai.sin6_port = 0;
-			sai.sin6_scope_id = 0;
-			int mask = 64;
-
-			if(js_inet6add->IsString()) {
-
-				v8::String::Utf8Value v8ip6hostaddr(js_inet6add->ToString());
-				if(!errev.hasErr()) {
-					_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
-					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-							sizeof(struct in6_addr));
-
-					if(!have_index) have_index = _net::get_index_if6(ifr,errev);
-
-					if(have_index) {
-						_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
-					}
-				}
-			} else { // it's an Array
-				if(!errev.hasErr()) {
-
-					Handle<Object> arrayAddr = js_inet6add->ToObject();
-
-					uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-					for(uint32_t n=0;n<len;n++) {
-						Handle<Value> el = arrayAddr->Get(n);
-
-						if(el->IsString()) {
-							v8::String::Utf8Value v8ip6hostaddr(el->ToString());
-							_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
-
-							memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-									sizeof(struct in6_addr));
-
-							if(!have_index) have_index = _net::get_index_if6(ifr, errev);
-
-							if(have_index) {
-								_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
-							}
-						}
-
-					}
-				}
-
-			}
-
-		} // end 'addr'
-		// ------------------ inet6.mask ---------------------------------------------
-
-		// NOTE: setting any mask for ipv6 does not work. IPv6 is not really supposed to have masks
-		// on the unicast IP. Still figuring this out for multicast...
-		// http://serverfault.com/questions/182881/why-add-an-ipv6-address-as-64
-
-		Handle<Value> js_inet6mask = js_inet6->Get(String::New("mask"));
-
-		if(js_inet6mask->IsString() && js_inet6mask->ToString()->Length() > 4) {
-
-//			struct ifreq ifr;
-			struct sockaddr_in6 sai;
-			struct _net::in6_ifreq ifr6;
-
-//			sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
-//			if (sockfd == -1) {
-//				ERROR_OUT("Could not create socket for IP addr assignment.\n");
-//				// TODO assign error info to object
-//				error = true;
-//			}
-
-			if(!errev.hasErr()) {
-				/* get interface name */
-				strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
-
+				struct sockaddr_in6 sai;
+				struct _net::in6_ifreq ifr6;
 				memset(&sai, 0, sizeof(struct sockaddr));
 				sai.sin6_family = AF_INET6;
 				sai.sin6_port = 0;
+				sai.sin6_scope_id = 0;
+				int mask = 64;
 
-				v8::String::Utf8Value v8ip6hostmask(js_inet6mask->ToString());
+				if(js_inet6add->IsString()) {
 
-				int ret = 0;
+					v8::String::Utf8Value v8ip6hostaddr(js_inet6add->ToString());
+					if(!errev.hasErr()) {
+						_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+						memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+								sizeof(struct in6_addr));
 
-				if((ret = inet_pton(AF_INET6, v8ip6hostmask.operator *(), (void *)&sai.sin6_addr)) <= 0) {
-					if(ret == 0) {
-						errev.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
-					} else {
-						errev.setError(errno,"Error on inet_pton.");
+						if(!have_index) have_index = _net::get_index_if6(ifr,errev);
+
+						if(have_index) {
+							_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+						}
 					}
-				}
+				} else { // it's an Array
+					if(!errev.hasErr()) {
 
-				if(!errev.hasErr()) {
-					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
-					   sizeof(struct in6_addr));
+						Handle<Object> arrayAddr = js_inet6add->ToObject();
 
-					if(!have_index) {
-						if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
-							errev.setError(errno);
-							perror("SIOGIFINDEX");
-						} else
-							have_index = true;
-					}
+						uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
+						for(uint32_t n=0;n<len;n++) {
+							Handle<Value> el = arrayAddr->Get(n);
 
-					if(have_index) {
-						ifr6.ifr6_ifindex = ifr.ifr_ifindex;
-						ifr6.ifr6_prefixlen = 64;
-						if (ioctl(sockfd, SIOCSIFNETMASK, &ifr6) < 0) {
-							errev.setError(errno);
-							perror("SIOCSIFNETMASK");
+							if(el->IsString()) {
+								v8::String::Utf8Value v8ip6hostaddr(el->ToString());
+								_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
+
+								memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+										sizeof(struct in6_addr));
+
+								if(!have_index) have_index = _net::get_index_if6(ifr, errev);
+
+								if(have_index) {
+									_net::add_inet6addr(v8ip6hostaddr.operator *(),ifr,mask,errev);
+								}
+							}
+
 						}
 					}
 
 				}
 
-			}
-		}
+			} // end 'addr'
+			// ------------------ inet6.mask ---------------------------------------------
 
-	} // end assign IPv6 address
+			// NOTE: setting any mask for ipv6 does not work. IPv6 is not really supposed to have masks
+			// on the unicast IP. Still figuring this out for multicast...
+			// http://serverfault.com/questions/182881/why-add-an-ipv6-address-as-64
+
+			Handle<Value> js_inet6mask = js_inet6->Get(String::New("mask"));
+
+			if(js_inet6mask->IsString() && js_inet6mask->ToString()->Length() > 4) {
+
+	//			struct ifreq ifr;
+				struct sockaddr_in6 sai;
+				struct _net::in6_ifreq ifr6;
+
+	//			sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
+	//			if (sockfd == -1) {
+	//				ERROR_OUT("Could not create socket for IP addr assignment.\n");
+	//				// TODO assign error info to object
+	//				error = true;
+	//			}
+
+				if(!errev.hasErr()) {
+					/* get interface name */
+					strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
+
+					memset(&sai, 0, sizeof(struct sockaddr));
+					sai.sin6_family = AF_INET6;
+					sai.sin6_port = 0;
+
+					v8::String::Utf8Value v8ip6hostmask(js_inet6mask->ToString());
+
+					int ret = 0;
+
+					if((ret = inet_pton(AF_INET6, v8ip6hostmask.operator *(), (void *)&sai.sin6_addr)) <= 0) {
+						if(ret == 0) {
+							errev.setError(_net::OTHER_ERROR,"inet_pton: Bad address passed in?");
+						} else {
+							errev.setError(errno,"Error on inet_pton.");
+						}
+					}
+
+					if(!errev.hasErr()) {
+						memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
+						   sizeof(struct in6_addr));
+
+						if(!have_index) {
+							if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
+								errev.setError(errno);
+								perror("SIOGIFINDEX");
+							} else
+								have_index = true;
+						}
+
+						if(have_index) {
+							ifr6.ifr6_ifindex = ifr.ifr_ifindex;
+							ifr6.ifr6_prefixlen = 64;
+							if (ioctl(sockfd, SIOCSIFNETMASK, &ifr6) < 0) {
+								errev.setError(errno);
+								perror("SIOCSIFNETMASK");
+							}
+						}
+
+					}
+
+				}
+			}
+
+		} // end assign IPv6 address
+
+	} // if has no error
 
 	if(errev.hasErr()) {
 		v8err = _net::err_ev_to_JS(errev, "assignAddress: ");

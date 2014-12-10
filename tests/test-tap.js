@@ -18,7 +18,7 @@ if(tun0.create()) {
 		if(tun0.open()) {
 			console.log("Opened successfully.");
 			netkit.assignAddress({
-				ifname:tun0.ifname,         // required
+//				ifname:tun0.ifname,         // required
 				mtu: 1501,                  // test MTU - set it bigger than default
 				// if you get a "Cannot assign requested address" - bear in mind that the first octet
 				// of the MAC needs to be even! See more here:

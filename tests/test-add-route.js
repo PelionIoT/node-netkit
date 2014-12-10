@@ -23,7 +23,7 @@ netkit.setIfFlags("tap0",netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING,function
 //					  via_if: "tap0",       // via the interface 'tun_test'
 					  via_network: "bbbb::100", 
 //						  metric: 2400,
-					  flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'  
+					  //flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'  
 					}
 				]
 			},function(err){

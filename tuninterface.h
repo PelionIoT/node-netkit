@@ -62,6 +62,7 @@ protected:
 	int read_chunk_size;
 
 	v8::Persistent<Function> onDataCB;
+	bool isTun;  // true if a TUN, false if a TAP
 
 	struct readReq {
 		uv_work_t work;
@@ -136,12 +137,22 @@ public:
     static Persistent<Function> constructor;
     static Persistent<ObjectTemplate> prototype;
 
-    TunInterface(char *repoUrl = NULL) :
+    // solid reference to TUN / TAP creation is: http://backreference.org/2010/03/26/tuntap-interface-tutorial/
+
+    TunInterface(short flags = -1) :
     	_err_str(NULL), _if_fd(0), _if_flags(IFF_TUN | IFF_NO_PI), _if_error(0),
-    	read_chunk_size(TUN_IF_READ_DEFAULT_CHUNK_SIZE), onDataCB()
+    	read_chunk_size(TUN_IF_READ_DEFAULT_CHUNK_SIZE), onDataCB(), isTun(true)
     	{
+    		if(flags != -1) _if_flags = flags; // optional flags override
     		memset(_if_name,0,MAX_IF_NAME_LEN+1);
     	}
+
+    // named cstor...
+    static TunInterface *createTapInterface() {
+    	TunInterface *ret = new TunInterface(IFF_TAP | IFF_NO_PI); // use IFF_TAP instead
+    	ret->isTun = false;
+    	return ret;
+    }
 
     ~TunInterface() {
     	if(_err_str) free(_err_str);

@@ -16,7 +16,8 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/if.h>
+#include <linux/if.h>    // ifr structs etc.
+#include <net/if_arp.h>  // Ethernet definitions
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
@@ -32,6 +33,7 @@
 
 #ifdef __GLIBC__
 #include <net/route.h>
+
 #else
 #include <netinet6/ipv6_route.h>	/* glibc does not have this */
 #endif
@@ -109,6 +111,13 @@ void jsToIfName(char *dest, char *src, int len) {
 int generic_ipv6_socket = -1;
 int generic_ipv4_socket = -1;
 int generic_dgram_socket = -1;
+int generic_afpacket_socket = -1;
+
+
+// TODO netlink socket
+//int get_NET_socket(_net::err_ev &err) {
+//
+//}
 
 int get_generic_ipv6_sock(_net::err_ev &_err) {
 	if(generic_ipv6_socket < 0) {
@@ -127,25 +136,35 @@ int get_generic_ipv4_sock(_net::err_ev &_err) {
 		if (generic_ipv4_socket < 0) {
 			_err.setError(errno);
 			ERROR_OUT("Could not create generic IPv4 socket.\n");
-		} else
-			_err = 0;
+		}
 	}
 	return generic_ipv4_socket;
 }
 
-int get_generic_dgram_sock(_net::err_ev &_err) {
+int get_generic_inet_sock(_net::err_ev &_err) {
 	if(generic_dgram_socket < 0) {
-		generic_dgram_socket = socket(AF_PACKET, SOCK_DGRAM, 0);  // open a generic socket (anything with a Layer 2 protocol)
+		generic_dgram_socket = socket(AF_INET, SOCK_DGRAM, 0);  // open a generic AF_INET
 		if (generic_dgram_socket < 0) {
 			_err.setError(errno);
-			ERROR_OUT("Could not create generic AF_PACKET socket.\n");
+			ERROR_OUT("Could not create generic AF_INET socket.\n");
 		}
 	}
 	return generic_dgram_socket;
 }
 
+int get_generic_packet_sock(_net::err_ev &_err) {
+	if(generic_afpacket_socket < 0) {
+		generic_afpacket_socket = socket(AF_PACKET, SOCK_DGRAM, 0);  // open a generic socket (anything with a Layer 2 protocol - ethernet and friends)
+		if (generic_afpacket_socket < 0) {
+			_err.setError(errno);
+			ERROR_OUT("Could not create generic AF_PACKET socket.\n");
+		}
+	}
+	return generic_afpacket_socket;
+}
+
 bool get_index_if_generic(	struct ifreq &ifr, _net::err_ev &_err) {
-	int sockfd = get_generic_dgram_sock(_err);
+	int sockfd = get_generic_packet_sock(_err);
 	if (ioctl(sockfd, SIOGIFINDEX, &ifr) < 0) {
 //		ERROR_OUT("IP addr assignment problem.");
 //		perror("SIOGIFINDEX");
@@ -173,6 +192,43 @@ bool get_index_if6(	struct ifreq &ifr, _net::err_ev &_err) {
 		_err.setError(errno);
 	}
 	return !_err.hasErr();
+}
+
+bool set_if_flags(int fd,struct ifreq &ifr, short flags, _net::err_ev &err) {
+	ifr.ifr_flags = flags;
+	if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+		//		    	perror("SIOCSIFFLAGS");
+		err.setError(errno);
+		return false;
+	} else {
+		return true;
+	}
+}
+
+bool get_if_flags(int fd,struct ifreq &ifr, short &flags, _net::err_ev &err) {
+	if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
+		//		    	perror("SIOCSIFFLAGS");
+		err.setError(errno);
+		return false;
+	}
+	flags = ifr.ifr_flags;
+	return true;
+}
+
+bool unset_if_flags(int fd,struct ifreq &ifr, short flags, _net::err_ev &err) {
+	if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
+		//		    	perror("SIOCSIFFLAGS");
+		err.setError(errno);
+		return false;
+	}
+	ifr.ifr_flags = ifr.ifr_flags & ~flags;
+	if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+		//		    	perror("SIOCSIFFLAGS");
+		err.setError(errno);
+		return false;
+	} else {
+		return true;
+	}
 }
 
 // quickly takes a NULL terminated string like: "fe80::1/64" and turns it into "fe80::1/0" and mask = 64
@@ -427,8 +483,25 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 
 } // end private namespace
 
+static
+void toBytesMACAddr(char *mac, uint8_t *bytes, _net::err_ev &err) {
+	int values[6];
+	int i;
 
+	if( 6 == sscanf( mac, "%x:%x:%x:%x:%x:%x",
+		&values[0], &values[1], &values[2],
+		&values[3], &values[4], &values[5] ) )
+	{
+		/* convert to uint8_t */
+		for( i = 0; i < 6; ++i )
+			bytes[i] = (uint8_t) values[i];
+	}
 
+	else
+	{
+		err.setError(_net::OTHER_ERROR,"Invalid MAC address.");
+	}
+}
 
 /**
  * Assign an IP address.
@@ -484,6 +557,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	Handle<Value> v8err;
 
 	struct ifreq ifr;
+	memset(&ifr,0,sizeof(ifreq));
 
 	// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
 	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
@@ -498,14 +572,61 @@ Handle<Value> AssignAddress(const Arguments& args) {
 	if(js_mtu->IsUint32()) {
 		int sockfd = _net::get_generic_ipv6_sock(errev);
 		if(!have_index) have_index = _net::get_index_if6(ifr, errev);
-	    ifr.ifr_mtu = (int) js_mtu->Uint32Value();
-	    if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
-	    	errev.setError(errno);
-			ERROR_OUT("Could not set MTU.\n");
-			// TODO assign error info to object
-	    }
+		if(!errev.hasErr()) {
+			ifr.ifr_mtu = (int) js_mtu->Uint32Value();
+			if (ioctl(sockfd, SIOCSIFMTU, &ifr) < 0) {
+				errev.setError(errno);
+				ERROR_OUT("Could not set MTU.\n");
+				// TODO assign error info to object
+			}
+		}
 	}
 	have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
+
+
+	// ******************** MAC address *********************
+
+	Handle<Value> js_mac = params->Get(String::New("mac"));
+	if(js_mac->IsString()) {
+		uint8_t mac[6];
+		memset(mac,0,6);
+		v8::String::Utf8Value v8mac(js_mac->ToString());
+		toBytesMACAddr(v8mac.operator *(), mac, errev);
+
+		if(!errev.hasErr()) {
+			int sockfd = _net::get_generic_inet_sock(errev);
+			short flags = 0;
+			bool was_up = false;
+//			if(!errev.hasErr()) {
+				memset(&ifr,0,sizeof(ifreq));
+				strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
+//				if(!have_index) have_index = _net::get_index_if6(ifr, errev);
+
+				get_if_flags(sockfd,ifr, flags, errev);
+				if(!errev.hasErr() && (flags & IFF_UP)) {
+					set_if_flags(sockfd, ifr, flags & ~IFF_UP, errev);
+					was_up = true;
+				}
+				if(!errev.hasErr()) {
+					ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+					memcpy(&ifr.ifr_hwaddr.sa_data,mac,sizeof(mac));
+					// set MAC address
+					if (ioctl(sockfd, SIOCSIFHWADDR, &ifr) < 0) {
+						errev.setError(errno);
+						ERROR_OUT("Could not set MAC addr: %x:%x:%x:%x:%x:%x\n", mac[0], mac[1],mac[2],mac[3],mac[4],mac[5]);
+					} else {
+						DBG_OUT("Set MAC address\n");
+					}
+					if(was_up)
+						set_if_flags(sockfd, ifr, flags | IFF_UP, errev);
+				}
+//			}
+		}
+	}
+	have_index = false; // reset this - for some reason the MTU call messes up the ifr struct
+	memset(&ifr,0,sizeof(ifreq));
+	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
+
 
 	// ****************** IPv6 address **********************
 	Handle<Value> js_inet6val = params->Get(String::New("inet6"));
@@ -544,6 +665,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 				_net::quickParseIPv6Mask(v8ip6hostaddr.operator *(), mask);
 
 				if(!errev.hasErr()) {
+
 					memcpy((char *) &ifr6.ifr6_addr, (char *) &sai.sin6_addr,
 					   sizeof(struct in6_addr));
 
@@ -961,7 +1083,7 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
 		Handle<Value> v8err;
-		int fd = _net::get_generic_dgram_sock(err);
+		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
 			ifr.ifr_flags |=  flags;
@@ -1015,7 +1137,7 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 		short int flags = args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
-		int fd = _net::get_generic_dgram_sock(err);
+		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
 			ifr.ifr_flags &= !flags;
@@ -1066,6 +1188,7 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 	exports->Set(String::NewSymbol("assignRoute"), FunctionTemplate::New(AssignRoute)->GetFunction());
 	exports->Set(String::NewSymbol("setIfFlags"), FunctionTemplate::New(SetIfFlags)->GetFunction());
 	exports->Set(String::NewSymbol("unsetIfFlags"), FunctionTemplate::New(UnsetIfFlags)->GetFunction());
+
 
 //	exports->Set(String::NewSymbol("_TunInterface_cstor"), TunInterface::constructor);
 

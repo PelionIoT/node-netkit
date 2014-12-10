@@ -202,6 +202,9 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 module.exports = {
 	newTunInterfaceRaw: nativelib.newTunInterface,
+	newTapInterfaceRaw: function() {
+		return nativelib.newTunInterface({tap:true});
+	},	
 	assignAddress: nativelib.assignAddress,
 	assignRoute: nativelib.assignRoute,
 	setIfFlags: nativelib.setIfFlags,

@@ -159,7 +159,11 @@ Handle<Value> TunInterface::New(const Arguments& args) {
 			}
 			Local<Value> ifname = args[0]->ToObject()->Get(String::New("ifname"));
 
-			obj = new TunInterface();
+			Local<Value> doTap = args[0]->ToObject()->Get(String::New("tap"));
+			if(!doTap->IsUndefined() && !doTap->IsNull()) {
+				obj = TunInterface::createTapInterface();
+			} else
+				obj = new TunInterface();
 
 			if(!ifname->IsUndefined()) {
 				v8::String::Utf8Value v8str(ifname);
@@ -188,7 +192,7 @@ Handle<Value> TunInterface::NewInstance(const Arguments& args) {
 	if(args.Length() > 0) {
 		Handle<Value> argv[n];
 		for(int x=0;x<n;x++)
-			argv[n] = args[n];
+			argv[x] = args[x];
 		instance = TunInterface::constructor->NewInstance(n, argv);
 	} else {
 		instance = TunInterface::constructor->NewInstance();

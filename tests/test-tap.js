@@ -7,9 +7,9 @@ var netkit = require('../index.js');
 
 var util = require('util');
 
-var tun0 = netkit.newTunInterfaceRaw();
+var tun0 = netkit.newTapInterfaceRaw();
 
-tun0.ifname = "tun_test";
+tun0.ifname = "tap_test";
 
 if(tun0.create()) {
 	console.log("Interface created: " + tun0.ifname);
@@ -20,7 +20,10 @@ if(tun0.create()) {
 			netkit.assignAddress({
 				ifname:tun0.ifname,         // required
 				mtu: 1501,                  // test MTU - set it bigger than default
-//				mac: "ab:cd:Ef:01:23:45",   // can't do this on TUN devices, but can on TAP devices...
+				// if you get a "Cannot assign requested address" - bear in mind that the first octet
+				// of the MAC needs to be even! See more here:
+				// https://blog.sleeplessbeastie.eu/2013/01/11/how-to-change-the-mac-address-of-an-ethernet-interface/
+				mac: "02:ab:bc:de:f0:12",   // can't do this on TUN devices, but can on TAP devices...
 				inet6: {
 					addr: "fe80::1",        // assign a single IP
 //					mask: "0:0:0:FC00:0:0:0:0"
@@ -39,7 +42,7 @@ if(tun0.create()) {
 					[  // ipv6 routes: dest
 						{ 
 						  dest: "2003::/16",        // ip -6 route add 2003::/16 dev tun_test
-						  via_if: "tun_test",       // via the interface 'tun_test'
+						  via_if: tun0.ifname,       // via the interface 'tun_test'
 //						  via_network: "2001::/16", 
 						  metric: 2400,
 						  flags: netkit.FLAGS.RT_MODIFIED | netkit.FLAGS.RT_DYNAMIC  // netkit.FLAGS.RT_GATEWAY | 

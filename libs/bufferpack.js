@@ -270,9 +270,41 @@ function BufferPack() {
     return a;
   };
 
+  // we added this allow you to use a normal object to add values.
+  m.metaObject = function(fmt,values) {
+    var re = new RegExp(this._sPattern, 'g');
+    var meta = {};
+    meta.keylist = [];
+    meta.__format = fmt;
+    while (m = re.exec(fmt)) {
+      if(m[4]) {
+        meta.keylist.push(m[4]); // Push key on to array
+        meta[m[4]] = null;   // record key
+      }
+    }
+
+    meta.toValArray = function() {
+      var ret = [];
+      for(var n=0;n<this.keylist.length;n++) {
+        if(this[this.keylist[n]]) {
+          ret.push(this[this.keylist[n]]);          
+        }
+      }
+      return ret;
+    }
+
+    return meta;
+  };
+
   // Pack the supplied values into a new octet array, according to the fmt string
   m.pack = function (fmt, values) {
-    return this.packTo(fmt, new Buffer(this.calcLength(fmt, values)), 0, values);
+    if(arguments.length > 1)
+      return this.packTo(fmt, new Buffer(this.calcLength(fmt, values)), 0, values);
+    else
+      if(typeof fmt === 'object') {
+        var vals = fmt.toValArray();
+        return this.packTo(fmt.__format, new Buffer(this.calcLength(fmt.__format, vals)), 0, vals);
+      }
   };
 
   // Determine the number of bytes represented by the format string

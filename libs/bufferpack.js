@@ -270,10 +270,13 @@ function BufferPack() {
     return a;
   };
 
+  var self = this;
+
   // we added this allow you to use a normal object to add values.
   m.metaObject = function(fmt,values) {
     var re = new RegExp(this._sPattern, 'g');
     var meta = {};
+    var m;
     meta.keylist = [];
     meta.__format = fmt;
     while (m = re.exec(fmt)) {
@@ -291,6 +294,10 @@ function BufferPack() {
         }
       }
       return ret;
+    }
+
+    meta.pack = function() {
+      return self.pack(this);
     }
 
     return meta;

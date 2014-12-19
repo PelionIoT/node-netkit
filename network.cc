@@ -3,7 +3,6 @@
  *
  * Author: ed
  */
-
 #include "tuninterface.h"
 
 #include <v8.h>
@@ -17,10 +16,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/if.h>    // ifr structs etc.
+
 #include <net/if_arp.h>  // Ethernet definitions
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/sockios.h>
+#include <linux/rtnetlink.h>  // RT_NETLINK class procedures for netlink. See: http://inai.de/documents/Netlink_Protocol.pdf
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #if __GLIBC__ >=2 && __GLIBC_MINOR >= 1
@@ -39,6 +40,7 @@
 #endif
 
 #include "network-common.h"
+#include "netlinksocket.h"
 
 using namespace node;
 using namespace v8;
@@ -51,28 +53,23 @@ using namespace v8;
 //
 //}
 
+extern Handle<Value> IfNameToIndex(const Arguments &args);
+extern Handle<Value> IfIndexToName(const Arguments &args);
+
+
 
 Handle<Value> NewTunInterface(const Arguments& args) {
 	HandleScope scope;
 
-//	if(args.Length() < 2) {
-//		return ThrowException(Exception::TypeError(String::New("Not enough arguments.")));
-//	}
-
 	return scope.Close(TunInterface::NewInstance(args));
 
-//	Local<Value> instance;
-//	Persistent<Value> instance;
-//	static bool instanceExists = false;
+}
 
+Handle<Value> NewNetlinkSocket(const Arguments& args) {
+	HandleScope scope;
 
-//	if(!instanceExists) {
-//		instanceExists = true;
-//	Handle<Value> newClonedPack = ClonedPackage::NewInstance(args);
-//	instance = Local<Value>::New(newClonedPack);
-//	}
+	return scope.Close(NetlinkSocket::NewInstance(args));
 
-//	return scope.Close(instance);
 }
 
 // this is not a standard module thing, called internally
@@ -114,9 +111,14 @@ int generic_dgram_socket = -1;
 int generic_afpacket_socket = -1;
 
 
-// TODO netlink socket
-//int get_NET_socket(_net::err_ev &err) {
-//
+// creates a new netlink NETLINK_ROUTE socket
+//int create_netlink_route_socket(_net::err_ev &_err) {
+//	int ret = socket(AF_NETLINK, SOCK_RAW | SOCK_CLOEXEC, NETLINK_ROUTE);
+//	if (ret < 0) {
+//		_err.setError(errno);
+//		ERROR_OUT("Could not create NETLINK_ROUTE socket\n");
+//	}
+//	return ret;
 //}
 
 int get_generic_ipv6_sock(_net::err_ev &_err) {
@@ -230,6 +232,22 @@ bool unset_if_flags(int fd,struct ifreq &ifr, short flags, _net::err_ev &err) {
 		return true;
 	}
 }
+
+//bool add_neighbor_ipv6(int fd, char *addrstr, int flags) {
+//	struct nlmsghdr	hdr;
+//	struct ndmsg msg;
+//	memset(&hdr,0,sizeof(nlmsghdr));
+//	memset(&msg,0,sizeof(ndmsg));
+//
+//	hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct ndmsg));
+//	hdr.nlmsg_flags = NLM_F_REQUEST|flags;
+//	hdr.nlmsg_type = cmd;
+//
+//	msg.ndm_family = AF_INET6; // AF_INET or AF_INET6
+//	msg.ndm_state = NUD_PERMANENT;
+//
+//
+//}
 
 // quickly takes a NULL terminated string like: "fe80::1/64" and turns it into "fe80::1/0" and mask = 64
 // if the IP contains no mask, then the mask = 64
@@ -391,8 +409,6 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
     	return false;
     }
 
-
-//		v8::String::Utf8Value v8ip6hostaddr(js_inet6addr->ToString());
 	if(hostnet) {
 	    struct sockaddr_in6 sa6_via;
 	    viart = strdup(hostnet);
@@ -482,6 +498,169 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 // TODO - shutdown sockets...
 
 } // end private namespace
+
+
+
+//BEGIN TEST
+#define TAIL_DATA(strct,p) ((char *)(&(p)) + sizeof(strct))
+
+struct packTestDat {
+	uint8_t first;
+	char second;
+	uint32_t third;
+	uint8_t other[5];
+	// TAIL_DATA follows
+}
+#ifdef __GNUC__
+__attribute__ ((aligned (16)));  // ensure we are using 16-bit alignment on the structure
+#else
+;
+#endif
+
+static
+char *toBytesString(uint8_t *d,int n) {
+	const int s = n*3+4;
+	char *ret = (char *) malloc(s);
+	uint8_t *look = d;
+	int q = 0;
+	ret[0] = '[';
+	while(q < n) {
+		snprintf(ret+1+(q*3), s-3-(q*3),"%2x ",*(look + q));
+		q++;
+	}
+	ret[q*3] = ']'; q++;
+	ret[q*3] = '\0';
+	return ret;
+}
+
+
+/**
+ * Returns an address from a string
+ * @param {String} addr
+ * @param {number} family  Only supported right now: netkit.AFINET6
+ * @return {Object|Error} The object is of the format:<br>
+ * </pre>
+ * obj {
+ *   bytes,  // a Buffer
+ *   family  // a String stating the family
+ * }
+ */
+Handle<Value> ToAddress(const Arguments& args) {
+	HandleScope scope;
+
+	Local<Object> ret;
+
+	_net::err_ev err;
+
+	if(args.Length() > 1 && args[0]->IsString() && args[1]->IsInt32()) {
+		ret = Object::New();
+		v8::String::Utf8Value addr(args[0]->ToString());
+
+		int32_t family = args[1]->ToInt32()->Int32Value();
+		if(family == AF_INET6) {
+			int mask = -1;
+			char *addrstr = addr.operator *();
+			if(_net::quickParseIPv6Mask(addrstr,mask)) {
+				ret->Set(String::New("mask"), Int32::New(mask));
+			}
+
+			struct sockaddr_in6 sai;
+			memset(&sai, 0, sizeof(struct sockaddr));
+
+			int r = 0;
+			if((r = inet_pton(AF_INET6, addrstr, (void *)&sai.sin6_addr)) <= 0) {
+				if(r == 0) {
+					ERR_EV_PRINTF_SETERROR(err,"inet_pton (AF_INET): Bad address passed in? \"%s\"",addrstr);
+//					err.setError(_net::OTHER_ERROR,"inet_pton (AF_INET6): Bad address passed in?");
+				} else {
+					err.setError(errno,"Error on inet_pton.");
+				}
+			} else {
+				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in6_addr));
+				char *area = node::Buffer::Data(buf);
+				memcpy(area,&sai.sin6_addr,sizeof(struct in6_addr));
+				ret->Set(String::New("bytes"), buf);
+				ret->Set(String::New("len"), Int32::New(sizeof(struct in6_addr)));
+			}
+		} else
+		if(family == AF_INET) {
+			int mask = -1;
+			char *addrstr = addr.operator *();
+			if(_net::quickParseIPv6Mask(addrstr,mask)) {
+				ret->Set(String::New("mask"), Int32::New(mask));
+			}
+
+			struct sockaddr_in sai;
+			memset(&sai, 0, sizeof(struct sockaddr));
+
+			int r = 0;
+			if((r = inet_pton(AF_INET, addrstr, (void *)&sai.sin_addr)) <= 0) {
+				if(r == 0) {
+					ERR_EV_PRINTF_SETERROR(err,"inet_pton (AF_INET): Bad address passed in? \"%s\"",addrstr);
+//					err.setError(_net::OTHER_ERROR,);
+				} else {
+					err.setError(errno,"Error on inet_pton.");
+				}
+			} else {
+				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in_addr));
+				char *area = node::Buffer::Data(buf);
+				memcpy(area,&sai.sin_addr,sizeof(struct in_addr));
+				ret->Set(String::New("bytes"), buf);
+				ret->Set(String::New("len"), Int32::New(sizeof(struct in_addr)));
+			}
+		}
+	} else {
+		err.setError(_net::OTHER_ERROR,"Invalid parameters.");
+	}
+
+	if(err.hasErr())
+		return scope.Close(_net::err_ev_to_JS(err,"toAddress: "));
+	else
+		return scope.Close(ret);
+}
+
+
+
+Handle<Value> PackTest(const Arguments& args) {
+	HandleScope scope;
+
+	DBG_OUT("PackTest\n");
+
+	if(args.Length() > 0 && args[0]->IsObject()) {
+			char *backing = node::Buffer::Data(args[0]->ToObject());
+			packTestDat *d = (packTestDat *) backing;
+			DBG_OUT("first: 0x%02x", d->first);
+			DBG_OUT("second: %d", d->second);
+			DBG_OUT("third: 0x%04x or %d", d->third, d->third); // to check endianess
+			char *s = toBytesString(d->other,5);
+			DBG_OUT("other: %s", s);
+			free(s);
+			DBG_OUT("something: %s", TAIL_DATA(packTestDat,*d));
+	}
+
+//	__u32		nlmsg_len;	/* Length of message including header */
+//		__u16		nlmsg_type;	/* Message content */
+//		__u16		nlmsg_flags;	/* Additional flags */
+//		__u32		nlmsg_seq;	/* Sequence number */
+//		__u32		nlmsg_pid;
+	if(args.Length() > 1 && args[1]->IsObject()) {
+			char *backing = node::Buffer::Data(args[1]->ToObject());
+			nlmsghdr *d = (nlmsghdr *) backing;
+			DBG_OUT("a nlmsghdr:");
+			DBG_OUT("_len: 0x%08x", d->nlmsg_len);
+			DBG_OUT("_type: 0x%04x", d->nlmsg_type);
+			DBG_OUT("_flags: 0x%04x", d->nlmsg_flags);
+			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
+			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
+	}
+
+	return scope.Close(Undefined());
+}
+/// END TEST
+
+
+
+
 
 static
 void toBytesMACAddr(char *mac, uint8_t *bytes, _net::err_ev &err) {
@@ -1190,12 +1369,18 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 
 //	TunInterface::Init();
 	exports->Set(String::NewSymbol("InitNativeTun"), FunctionTemplate::New(TunInterface::Init)->GetFunction());
+	exports->Set(String::NewSymbol("InitNetlinkSocket"), FunctionTemplate::New(NetlinkSocket::Init)->GetFunction());
 	exports->Set(String::NewSymbol("newTunInterface"), FunctionTemplate::New(NewTunInterface)->GetFunction());
+	exports->Set(String::NewSymbol("newNetlinkSocket"), FunctionTemplate::New(NewNetlinkSocket)->GetFunction());
 	exports->Set(String::NewSymbol("assignAddress"), FunctionTemplate::New(AssignAddress)->GetFunction());
 	exports->Set(String::NewSymbol("assignRoute"), FunctionTemplate::New(AssignRoute)->GetFunction());
 	exports->Set(String::NewSymbol("setIfFlags"), FunctionTemplate::New(SetIfFlags)->GetFunction());
 	exports->Set(String::NewSymbol("unsetIfFlags"), FunctionTemplate::New(UnsetIfFlags)->GetFunction());
+	exports->Set(String::NewSymbol("ifNameToIndex"), FunctionTemplate::New(IfNameToIndex)->GetFunction());
+	exports->Set(String::NewSymbol("ifIndexToName"), FunctionTemplate::New(IfIndexToName)->GetFunction());
+	exports->Set(String::NewSymbol("toAddress"), FunctionTemplate::New(ToAddress)->GetFunction());
 
+	exports->Set(String::NewSymbol("packTest"), FunctionTemplate::New(PackTest)->GetFunction());
 
 //	exports->Set(String::NewSymbol("_TunInterface_cstor"), TunInterface::constructor);
 

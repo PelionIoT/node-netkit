@@ -127,7 +127,7 @@ function BufferPack() {
   };
 
   // Class data
-  m._sPattern = '(\\d+)?([AxcbBhHsSfdiIlL])(\\(([a-zA-Z0-9]+)\\))?';
+  m._sPattern = '(\\d+)?([AxcbBhHsSfdiIlL])(\\(([a-zA-Z0-9_]+)\\))?';
   m._lenLut = {'A': 1, 'x': 1, 'c': 1, 'b': 1, 'B': 1, 'h': 2, 'H': 2, 's': 1,
                'S': 1, 'f': 4, 'd': 8, 'i': 4, 'I': 4, 'l': 4, 'L': 4};
   m._elLut = {'A': {en: m._EnArray, de: m._DeArray},
@@ -273,23 +273,27 @@ function BufferPack() {
   var self = this;
 
   // we added this allow you to use a normal object to add values.
-  m.metaObject = function(fmt,values) {
+  m.metaObject = function(fmt,initzero) {
     var re = new RegExp(this._sPattern, 'g');
     var meta = {};
     var m;
     meta.keylist = [];
     meta.__format = fmt;
     while (m = re.exec(fmt)) {
-      if(m[4]) {
+      if(m[4] != undefined) {
         meta.keylist.push(m[4]); // Push key on to array
-        meta[m[4]] = null;   // record key
+        if(initzero)
+          meta[m[4]] = 0;      // make zero if desired
+        else
+          meta[m[4]] = null;   // record key
       }
     }
 
     meta.toValArray = function() {
       var ret = [];
       for(var n=0;n<this.keylist.length;n++) {
-        if(this[this.keylist[n]]) {
+        if(this[this.keylist[n]] != undefined) {
+//          if(this[this.keylist[n]] === null) this[this.keylist[n]] = 0;
           ret.push(this[this.keylist[n]]);          
         }
       }
@@ -310,6 +314,7 @@ function BufferPack() {
     else
       if(typeof fmt === 'object') {
         var vals = fmt.toValArray();
+        console.log("vals: " + vals);
         return this.packTo(fmt.__format, new Buffer(this.calcLength(fmt.__format, vals)), 0, vals);
       }
   };

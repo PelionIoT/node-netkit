@@ -33,8 +33,9 @@ var err = function() {
 	console.log(colors.redFG('err: ') + colors.redFG.apply(undefined,arguments));
 }
 
-
-
+var asHexBuffer = function(b) {
+	return b.toString('hex');
+}
 
 
 // Extension object technique. Let's us build part of the native prototype in JS. 
@@ -100,7 +101,15 @@ var extendthis = {
 };
 nativelib.InitNativeTun(extendthis);
 
+var extendthis2 = {
 
+};
+
+nativelib.InitNetlinkSocket(extendthis2);
+
+//
+// Wraps the TunInterface with a stream interface ala. node.js semantics.
+//
 function TunInterfaceStream(tunif,opt) {
 	Stream.Duplex.call(this, opt);
 	this._max = 1000000;
@@ -158,49 +167,10 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 
 
+var netkit = {
+	packTest: nativelib.packTest, // a test
 
-
-// function TunInterface (opts) {
-//   if (!(this instanceof Decoder)) {
-//     return new TunInterface(opts);
-//   }
-//   Transform.call(this, opts);
-//   var ret;
-
-//   // ret = binding.mpg123_new(opts ? opts.decoder : null);
-//   // if (Buffer.isBuffer(ret)) {
-//   //   this.mh = ret;
-//   // } else {
-//   //   throw new Error('mpg123_new() failed: ' + ret);
-//   // }
-
-//   // ret = binding.mpg123_open_feed(this.mh);
-//   // if (MPG123_OK != ret) {
-//   //   throw new Error('mpg123_open_feed() failed: ' + ret);
-//   // }
-//   dbg('created new TunInterface instance');
-// }
-// util.inherits(TunInterface, Transform);
-
-
-
-
-
-
-
-
-// console.dir(nativelib);
-// console.log("*********************");
-
-// var tun = nativelib.newTunInterface();
-
-// console.dir(tun)
-// console.log("*********************");
-// tun.extra();
-
-//console.dir(nativelib._TunInterface_cstor.prototype);
-
-module.exports = {
+	newNetlinkSocket: nativelib.newNetlinkSocket,
 	newTunInterfaceRaw: nativelib.newTunInterface,
 	newTapInterfaceRaw: function() {
 		return nativelib.newTunInterface({tap:true});
@@ -209,6 +179,9 @@ module.exports = {
 	assignRoute: nativelib.assignRoute,
 	setIfFlags: nativelib.setIfFlags,
 	unsetIfFlags: nativelib.unsetIfFlags,
+	ifNameToIndex: nativelib.ifNameToIndex,
+	ifIndexToName: nativelib.ifIndexToName,
+	toAddress: nativelib.toAddress,
 
 	assignDbgCB: function(func) {
 		dbg = func;
@@ -217,8 +190,14 @@ module.exports = {
 		err = func;
 	},
 
+	// address families: bits/socket.h
+	AF_INET6: 10,
+	AF_INET: 2,
+
 	FLAGS: {
-		
+
+
+
 		// Interface FLAGS
 		// See: if.h
 
@@ -276,3 +255,116 @@ module.exports = {
         RT_LOCAL:      0x80000000
 	}
 };
+
+var rt = netkit.rt = require('./rtnetlink.js');
+
+
+var netutil = netkit.util = require('./netutils.js');
+
+
+
+netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
+	var ifndex = netkit.ifNameToIndex(ifname);
+	if(util.isError(ifndex)) {
+		err("* Error: " + util.inspect(ans));
+		cb(ifindex); // call w/ error
+		return;
+	}
+	var bufs = [];
+
+	var len = 0; // updated at end
+	var nl_hdr = netkit.rt.buildHdr();
+	nl_hdr._cmd = rt.RTM_NEWNEIGH;
+	nl_hdr._flags = rt.NLM_F_REQUEST|rt.NLM_F_CREATE|rt.NLM_F_EXCL;
+	var nd_msg = netkit.rt.buildNdmsg(netkit.AF_INET6,ifndex,rt.NUD_PERMANENT,rt.NLM_F_REQUEST);
+	//var rt_msg = netkit.rt.buildRtmsg();
+	
+	bufs.push(nl_hdr.pack());
+	bufs.push(nd_msg.pack());
+
+	if(inet6dest) {
+		if(typeof inet6dest === 'string') {
+			var ans = netkit.toAddress(inet6dest,netkit.AF_INET6);
+			if(util.isError(ans)) {
+				cb(ans);
+				return;
+			}
+			var destbuf = ans;
+		} else
+			var destbuf = inet6dest;
+		var rt_attr = netkit.rt.buildRtattrBuf(netkit.rt.NDA_DST,destbuf.bytes);
+		console.dir(destbuf);
+		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
+		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		bufs.push(rt_attr);
+	} else {
+		cb(new Error("bad parameters."));
+		return;
+	}
+
+	if(lladdr) {
+		if(typeof lladdr === 'string') {
+			var macbuf = netutil.bufferifyMacString(lladdr);
+			if(!macbuf) {
+				cb(new Error("bad lladdr"));
+				return;
+			}
+		}
+		else if(Buffer.isBuffer(macbuf))
+			var macbuf = lladdr;
+		else {
+			cb(new Error("bad parameters."));
+			return;			
+		}
+		var rt_attr = netkit.rt.buildRtattrBuf(netkit.rt.NDA_LLADDR,macbuf);
+		bufs.push(rt_attr);
+	}
+
+	var all = Buffer.concat(bufs); // the entire message....
+
+	dbg("Sending---> " + asHexBuffer(all));
+
+	if(sock) {
+		cb("Not implemented");
+	} else {
+		var sock = netkit.newNetlinkSocket();
+		sock.create(null,function(err) {
+			if(err) {
+				console.log("socket.create() Error: " + util.inspect(err));
+				cb(err);
+				return;
+			} else {
+				console.log("Created netlink socket.");
+			}
+	            // that was exciting. Now let's close it.
+
+	            var msgreq = sock.createMsgReq();
+
+
+	            msgreq.addMsg(all);
+
+	            sock.sendMsg(msgreq, function(err,bytes) {
+	            	if(err) {
+	            		console.error("** Error: " + util.inspect(err));
+	            		cb(err);
+	            	} else {
+	            		console.log("in cb: " + util.inspect(arguments));
+	            		cb();
+	            	}
+	            });
+
+
+	        });
+
+	        // that was exciting. Now let's close it.
+//	        sock.close();
+	    }
+
+//    cb(ifndex); // callback with error
+
+}
+
+
+
+module.exports = netkit;
+

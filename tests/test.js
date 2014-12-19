@@ -11,8 +11,33 @@ var tun0 = netkit.newTunInterfaceRaw();
 
 tun0.ifname = "tun_test";
 
+// run a little test on toAddress
+var ans = netkit.toAddress('aaaa::/64',netkit.AF_INET6);
+if(util.isError(ans)) {
+	console.log("* Error: " + util.inspect(ans));
+} else
+	console.log("Ans: " + util.inspect(ans));
+
+var ans = netkit.toAddress('192.168.0.1/24',netkit.AF_INET);
+if(util.isError(ans)) {
+	console.log("* Error: " + util.inspect(ans));
+} else
+	console.log("Ans: " + util.inspect(ans));
+
 if(tun0.create()) {
 	console.log("Interface created: " + tun0.ifname);
+	var num = netkit.ifNameToIndex(tun0.ifname);
+	if(typeof num == 'number') {
+		console.log("  is interface number: " + num);
+		var name = netkit.ifIndexToName(num);
+		if(typeof name == 'string') {
+			console.log("  which is still interface: " + name);
+		} else {
+			console.log("  ** Error on ifIndexToName: " + util.inspect(name));
+		}
+	} else {
+		console.log("  ** Error indexing interface: " + util.inspect(num));
+	}
 	console.log("    fd: " + tun0.fd);
 	setTimeout(function(){
 		if(tun0.open()) {
@@ -29,7 +54,7 @@ if(tun0.create()) {
 				}
 			},function(err){
 				if(err) {
-					console.log("Error: " + util.inspect(err));
+					console.log("** Error: " + util.inspect(err));
 				} else {
 					console.log("assignAddress called successfully.");
 				}

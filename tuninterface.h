@@ -106,7 +106,7 @@ public:
 	static void ExtendFrom(const Arguments& args);
     static void Shutdown();
 
-    static Persistent<Function> constructor_template;
+//    static Persistent<Function> constructor_template;
     static Handle<Value> New(const Arguments& args);
     static Handle<Value> NewInstance(const Arguments& args);
 
@@ -135,7 +135,7 @@ public:
 
 
     static Persistent<Function> constructor;
-    static Persistent<ObjectTemplate> prototype;
+//    static Persistent<ObjectTemplate> prototype;
 
     // solid reference to TUN / TAP creation is: http://backreference.org/2010/03/26/tuntap-interface-tutorial/
 

@@ -36,6 +36,8 @@ extern char *strdup (const char *__s)
 
 #include "network-common.h"
 
+
+
 namespace _net {
 
 	const int max_error_buf = 255;

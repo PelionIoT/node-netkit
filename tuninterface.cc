@@ -161,6 +161,7 @@ Handle<Value> TunInterface::New(const Arguments& args) {
 
 			Local<Value> doTap = args[0]->ToObject()->Get(String::New("tap"));
 			if(!doTap->IsUndefined() && !doTap->IsNull()) {
+//				DBG_OUT("TAP TAP TAP");
 				obj = TunInterface::createTapInterface();
 			} else
 				obj = new TunInterface();

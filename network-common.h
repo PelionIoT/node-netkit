@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "netkit_err.h"
+
 /**
  * LICENSE_IMPORT_BEGIN 9/7/14
  *
@@ -106,13 +108,20 @@ Copyright (c) 2010, Ben Noordhuis <info@bnoordhuis.nl>
     return v8::ThrowException(v8::String::New(message))
 # define UNI_THROW_EXCEPTION(type, message)                                   \
     v8::ThrowException(v8::String::New(message))
+
+
+
+# define UNI_BUFFER_NEW_WRAP(mem,size,freecb,hint)                            \
+    node::Buffer::New(mem,size,freecb,hint)
+# define UNI_BUFFER_FROM_CPOINTER(p) p->handle_
+
 #endif  // NODE_MAJOR_VERSION > 0 || NODE_MINOR_VERSION > 10
 
 // LICENSE_IMPORT_END
 
 namespace _net {
     /** NOTE: you should always pass in a string with this when using setError() */
-	const int OTHER_ERROR = 0x1FFF;
+	const int OTHER_ERROR = NETKIT_OTHER_ERROR;
 	char *get_error_str(int _errno);
 	void free_error_str(char *b);
 	v8::Local<v8::Value> errno_to_JS(int _errno, const char *prefix);
@@ -132,6 +141,10 @@ namespace _net {
 			o.errstr = NULL; o._errno = 0;
 			return *this;
 		}
+		inline void clear() {
+			if(errstr) ::free(errstr); errstr = NULL;
+			_errno = 0;
+		}
 		~err_ev() {
 			if(errstr) ::free(errstr);
 		}
@@ -140,12 +153,19 @@ namespace _net {
 	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix);
 }
 
+#define ERR_EV_PRINTF_SETERROR( errev , s , ...) {\
+	char b[255];\
+		snprintf(b,255,s,##__VA_ARGS__);\
+	errev.setError(_net::OTHER_ERROR,b);\
+}
 
 // confused? here: https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html
-#define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s, ##__VA_ARGS__ );
+#define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s "\n", ##__VA_ARGS__ );
 //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) { char *__S=_net::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s, __S, ##__VA_ARGS__ ); _net::free_error_str(__S); }
+#define ERROR_PERROR(s,E,...) { char *__S=_net::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _net::free_error_str(__S); }
 
-#define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s, ##__VA_ARGS__ );
+#define WARN_OUT(s,...) fprintf(stderr, "**WARN** " s "\n", ##__VA_ARGS__ );
+
+#define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s "\n", ##__VA_ARGS__ );
 
 #endif /* NETWORK_COMMON_H_ */

@@ -168,11 +168,12 @@ module.exports = {
 			console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
 		} else {
 			var len = 0;
-			if(data && data.length)
+			if(data && Buffer.isBuffer(data))
      			len = data.length + 4; // the rtattr header is 4 bytes
      		else
-     			len = 4;
-     		var rtabuf = bufferpack.pack(rtattr_fmt,[typ,len]);
+     			len = 4;        
+     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
+     		var rtabuf = bufferpack.pack(rtattr_fmt,[len,typ]);
      		if(data)
      			return Buffer.concat([rtabuf,data]);
      		else

@@ -83,7 +83,7 @@ namespace _errcmn {
 #define ERROR_OUT(s,...) {} //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
 #define ERROR_PERROR(s,E,...) {}
 #define DBG_OUT(s,...) {}
-//#define IF_DBG( x ) {}
+#define IF_DBG( x ) {}
 
 
 #endif // NO_ERROR_CMN_OUTPUT

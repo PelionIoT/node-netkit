@@ -648,6 +648,7 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EUNATCH);
 				char *errstr = get_error_str(_errno);
 				if(prefix) {
 					temp = (char *) malloc(strlen(prefix)+strlen(errstr));
+						memset(temp,0,len);
 					strcpy(temp, prefix);
 					strcat(temp, errstr);
 				} else {

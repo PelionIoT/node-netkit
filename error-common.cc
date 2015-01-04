@@ -377,99 +377,75 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EISDIR);
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EINVAL);
 #endif
 
-
-
 //#define	ENFILE		23	/* File table overflow */
 #ifdef ENFILE
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ENFILE);
 #endif
-
-
 
 //#define	EMFILE		24	/* Too many open files */
 #ifdef EMFILE
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EMFILE);
 #endif
 
-
 //#define	ENOTTY		25	/* Not a typewriter */
 #ifdef ENOTTY
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ENOTTY);
 #endif
-
-
 
 //#define	ETXTBSY		26	/* Text file busy */
 #ifdef ETXTBSY
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ETXTBSY);
 #endif
 
-
-
 //#define	EFBIG		27	/* File too large */
 #ifdef EFBIG
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EFBIG);
 #endif
-
 
 //#define	ENOSPC		28	/* No space left on device */
 #ifdef ENOSPC
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ENOSPC);
 #endif
 
-
 //#define	ESPIPE		29	/* Illegal seek */
 #ifdef ESPIPE
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ESPIPE);
 #endif
-
 
 //#define	EROFS		30	/* Read-only file system */
 #ifdef EROFS
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EROFS);
 #endif
 
-
-
 //#define	EMLINK		31	/* Too many links */
 #ifdef EMLINK
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EMLINK);
 #endif
-
-
-
 
 //#define	EPIPE		32	/* Broken pipe */
 #ifdef EPIPE
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EPIPE);
 #endif
 
-
 //#define	EDOM		33	/* Math argument out of domain of func */
 #ifdef EDOM
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EDOM);
 #endif
-
 
 //#define	ERANGE		34	/* Math result not representable */
 #ifdef ERANGE
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ERANGE);
 #endif
 
-
-
 //#define	EDEADLK		35	/* Resource deadlock would occur */
 #ifdef EDEADLK
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EDEADLK);
 #endif
 
-
-
 //#define	ENAMETOOLONG	36	/* File name too long */
 #ifdef ENAMETOOLONG
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ENAMETOOLONG);
 #endif
-
 
 //#define	ENOLCK		37	/* No record locks available */
 #ifdef ENOLCK
@@ -529,96 +505,391 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EL3RST);
 _ERRCMN_DEFINE_CONSTANT_WREV(target, ELNRNG);
 #endif
 
-
 //#define	EUNATCH		49	/* Protocol driver not attached */
 #ifdef EUNATCH
 _ERRCMN_DEFINE_CONSTANT_WREV(target, EUNATCH);
 #endif
 
-
-
-
 //#define	ENOCSI		50	/* No CSI structure available */
+#ifdef ENOCSI
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOCSI);
+#endif
+
 //#define	EL2HLT		51	/* Level 2 halted */
+#ifdef EL2HLT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EL2HLT);
+#endif
+
 //#define	EBADE		52	/* Invalid exchange */
+#ifdef EBADE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADE);
+#endif
+
 //#define	EBADR		53	/* Invalid request descriptor */
+#ifdef EBADR
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADR);
+#endif
+
 //#define	EXFULL		54	/* Exchange full */
+#ifdef EXFULL
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EXFULL);
+#endif
+
 //#define	ENOANO		55	/* No anode */
+#ifdef ENOANO
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOANO);
+#endif
+
 //#define	EBADRQC		56	/* Invalid request code */
+#ifdef EBADRQC
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADRQC);
+#endif
+
 //#define	EBADSLT		57	/* Invalid slot */
+#ifdef EBADSLT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADSLT);
+#endif
+
 //
+
 //#define	EDEADLOCK	EDEADLK
+#ifdef EDEADLOCK
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EDEADLOCK);
+#endif
+
 //
+
 //#define	EBFONT		59	/* Bad font file format */
+#ifdef EBFONT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBFONT);
+#endif
+
 //#define	ENOSTR		60	/* Device not a stream */
+#ifdef ENOSTR
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOSTR);
+#endif
+
 //#define	ENODATA		61	/* No data available */
+#ifdef ENODATA
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENODATA);
+#endif
+
 //#define	ETIME		62	/* Timer expired */
+#ifdef ETIME
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ETIME);
+#endif
+
 //#define	ENOSR		63	/* Out of streams resources */
+#ifdef ENOSR
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOSR);
+#endif
+
 //#define	ENONET		64	/* Machine is not on the network */
+#ifdef ENONET
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENONET);
+#endif
+
 //#define	ENOPKG		65	/* Package not installed */
+#ifdef ENOPKG
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOPKG);
+#endif
+
 //#define	EREMOTE		66	/* Object is remote */
+#ifdef EREMOTE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EREMOTE);
+#endif
+
 //#define	ENOLINK		67	/* Link has been severed */
+#ifdef ENOLINK
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOLINK);
+#endif
+
 //#define	EADV		68	/* Advertise error */
+#ifdef EADV
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EADV);
+#endif
+
 //#define	ESRMNT		69	/* Srmount error */
+#ifdef ESRMNT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ESRMNT);
+#endif
+
 //#define	ECOMM		70	/* Communication error on send */
+#ifdef ECOMM
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ECOMM);
+#endif
+
 //#define	EPROTO		71	/* Protocol error */
+#ifdef EPROTO
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EPROTO);
+#endif
+
 //#define	EMULTIHOP	72	/* Multihop attempted */
+#ifdef EMULTIHOP
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EMULTIHOP);
+#endif
+
 //#define	EDOTDOT		73	/* RFS specific error */
+#ifdef EDOTDOT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EDOTDOT);
+#endif
+
 //#define	EBADMSG		74	/* Not a data message */
+#ifdef EBADMSG
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADMSG);
+#endif
+
 //#define	EOVERFLOW	75	/* Value too large for defined data type */
+#ifdef EOVERFLOW
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EOVERFLOW);
+#endif
+
 //#define	ENOTUNIQ	76	/* Name not unique on network */
+#ifdef ENOTUNIQ
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOTUNIQ);
+#endif
+
 //#define	EBADFD		77	/* File descriptor in bad state */
+#ifdef EBADFD
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EBADFD);
+#endif
+
 //#define	EREMCHG		78	/* Remote address changed */
+#ifdef EREMCHG
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EREMCHG);
+#endif
+
 //#define	ELIBACC		79	/* Can not access a needed shared library */
+#ifdef ELIBACC
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ELIBACC);
+#endif
+
 //#define	ELIBBAD		80	/* Accessing a corrupted shared library */
+#ifdef ELIBBAD
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ELIBBAD);
+#endif
+
 //#define	ELIBSCN		81	/* .lib section in a.out corrupted */
+#ifdef ELIBSCN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ELIBSCN);
+#endif
+
 //#define	ELIBMAX		82	/* Attempting to link in too many shared libraries */
+#ifdef ELIBMAX
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ELIBMAX);
+#endif
+
 //#define	ELIBEXEC	83	/* Cannot exec a shared library directly */
+#ifdef ELIBEXEC
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ELIBEXEC);
+#endif
+
 //#define	EILSEQ		84	/* Illegal byte sequence */
+#ifdef EILSEQ
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EILSEQ);
+#endif
+
 //#define	ERESTART	85	/* Interrupted system call should be restarted */
+#ifdef ERESTART
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ERESTART);
+#endif
+
 //#define	ESTRPIPE	86	/* Streams pipe error */
+#ifdef ESTRPIPE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ESTRPIPE);
+#endif
+
 //#define	EUSERS		87	/* Too many users */
+#ifdef EUSERS
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EUSERS);
+#endif
+
 //#define	ENOTSOCK	88	/* Socket operation on non-socket */
+#ifdef ENOTSOCK
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOTSOCK);
+#endif
+
 //#define	EDESTADDRREQ	89	/* Destination address required */
+#ifdef EDESTADDRREQ
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EDESTADDRREQ);
+#endif
+
 //#define	EMSGSIZE	90	/* Message too long */
+#ifdef EMSGSIZE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EMSGSIZE);
+#endif
+
 //#define	EPROTOTYPE	91	/* Protocol wrong type for socket */
+#ifdef EPROTOTYPE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EPROTOTYPE);
+#endif
+
 //#define	ENOPROTOOPT	92	/* Protocol not available */
+#ifdef ENOPROTOOPT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOPROTOOPT);
+#endif
+
 //#define	EPROTONOSUPPORT	93	/* Protocol not supported */
+#ifdef EPROTONOSUPPORT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EPROTONOSUPPORT);
+#endif
+
 //#define	ESOCKTNOSUPPORT	94	/* Socket type not supported */
+#ifdef ESOCKTNOSUPPORT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ESOCKTNOSUPPORT);
+#endif
+
 //#define	EOPNOTSUPP	95	/* Operation not supported on transport endpoint */
+#ifdef EOPNOTSUPP
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EOPNOTSUPP);
+#endif
+
 //#define	EPFNOSUPPORT	96	/* Protocol family not supported */
+#ifdef EPFNOSUPPORT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EPFNOSUPPORT);
+#endif
+
 //#define	EAFNOSUPPORT	97	/* Address family not supported by protocol */
+#ifdef EAFNOSUPPORT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EAFNOSUPPORT);
+#endif
+
 //#define	EADDRINUSE	98	/* Address already in use */
+#ifdef EADDRINUSE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EADDRINUSE);
+#endif
+
 //#define	EADDRNOTAVAIL	99	/* Cannot assign requested address */
+#ifdef EADDRNOTAVAIL
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EADDRNOTAVAIL);
+#endif
+
 //#define	ENETDOWN	100	/* Network is down */
+#ifdef ENETDOWN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENETDOWN);
+#endif
+
 //#define	ENETUNREACH	101	/* Network is unreachable */
+#ifdef ENETUNREACH
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENETUNREACH);
+#endif
+
 //#define	ENETRESET	102	/* Network dropped connection because of reset */
+#ifdef ENETRESET
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENETRESET);
+#endif
+
 //#define	ECONNABORTED	103	/* Software caused connection abort */
+#ifdef ECONNABORTED
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ECONNABORTED);
+#endif
+
 //#define	ECONNRESET	104	/* Connection reset by peer */
+#ifdef ECONNRESET
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ECONNRESET);
+#endif
+
+
 
 
 
 //#define	EISCONN		106	/* Transport endpoint is already connected */
-//#define	ENOTCONN	107	/* Transport endpoint is not connected */
-//#define	ESHUTDOWN	108	/* Cannot send after transport endpoint shutdown */
-//#define	ETOOMANYREFS	109	/* Too many references: cannot splice */
-//#define	ETIMEDOUT	110	/* Connection timed out */
-//#define	ECONNREFUSED	111	/* Connection refused */
-//#define	EHOSTDOWN	112	/* Host is down */
-//#define	EHOSTUNREACH	113	/* No route to host */
-//#define	EALREADY	114	/* Operation already in progress */
-//#define	EINPROGRESS	115	/* Operation now in progress */
-//#define	ESTALE		116	/* Stale NFS file handle */
-//#define	EUCLEAN		117	/* Structure needs cleaning */
-//#define	ENOTNAM		118	/* Not a XENIX named type file */
-//#define	ENAVAIL		119	/* No XENIX semaphores available */
-//#define	EISNAM		120	/* Is a named type file */
-//#define	EREMOTEIO	121	/* Remote I/O error */
-//#define	EDQUOT		122	/* Quota exceeded */
-//
-//#define	ENOMEDIUM	123	/* No medium found */
-//#define	EMEDIUMTYPE	124	/* Wrong medium type */
+#ifdef EISCONN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EISCONN);
+#endif
 
+//#define	ENOTCONN	107	/* Transport endpoint is not connected */
+#ifdef ENOTCONN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOTCONN);
+#endif
+
+//#define	ESHUTDOWN	108	/* Cannot send after transport endpoint shutdown */
+#ifdef ESHUTDOWN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ESHUTDOWN);
+#endif
+
+//#define	ETOOMANYREFS	109	/* Too many references: cannot splice */
+#ifdef ETOOMANYREFS
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ETOOMANYREFS);
+#endif
+
+//#define	ETIMEDOUT	110	/* Connection timed out */
+#ifdef ETIMEDOUT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ETIMEDOUT);
+#endif
+
+//#define	ECONNREFUSED	111	/* Connection refused */
+#ifdef ECONNREFUSED
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ECONNREFUSED);
+#endif
+
+//#define	EHOSTDOWN	112	/* Host is down */
+#ifdef EHOSTDOWN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EHOSTDOWN);
+#endif
+
+//#define	EHOSTUNREACH	113	/* No route to host */
+#ifdef EHOSTUNREACH
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EHOSTUNREACH);
+#endif
+
+//#define	EALREADY	114	/* Operation already in progress */
+#ifdef EALREADY
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EALREADY);
+#endif
+
+//#define	EINPROGRESS	115	/* Operation now in progress */
+#ifdef EINPROGRESS
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EINPROGRESS);
+#endif
+
+//#define	ESTALE		116	/* Stale NFS file handle */
+#ifdef ESTALE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ESTALE);
+#endif
+
+//#define	EUCLEAN		117	/* Structure needs cleaning */
+#ifdef EUCLEAN
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EUCLEAN);
+#endif
+
+//#define	ENOTNAM		118	/* Not a XENIX named type file */
+#ifdef ENOTNAM
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOTNAM);
+#endif
+
+//#define	ENAVAIL		119	/* No XENIX semaphores available */
+#ifdef ENAVAIL
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENAVAIL);
+#endif
+
+//#define	EISNAM		120	/* Is a named type file */
+#ifdef EISNAM
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EISNAM);
+#endif
+
+//#define	EREMOTEIO	121	/* Remote I/O error */
+#ifdef EREMOTEIO
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EREMOTEIO);
+#endif
+
+//#define	EDQUOT		122	/* Quota exceeded */
+#ifdef EDQUOT
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EDQUOT);
+#endif
+
+//
+
+
+//#define	ENOMEDIUM	123	/* No medium found */
+#ifdef ENOMEDIUM
+_ERRCMN_DEFINE_CONSTANT_WREV(target, ENOMEDIUM);
+#endif
+
+//#define	EMEDIUMTYPE	124	/* Wrong medium type */
+#ifdef EMEDIUMTYPE
+_ERRCMN_DEFINE_CONSTANT_WREV(target, EMEDIUMTYPE);
+#endif
 
 //--------------------------------------------------------
 
@@ -628,39 +899,42 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EUNATCH);
 
 	const int max_error_buf = 255;
 
-	char *get_error_str(int _errno) {
-		char *ret = (char *) malloc(max_error_buf);
-		int r = strerror_r(_errno,ret,max_error_buf);
-		if ( r != 0 ) DBG_OUT("strerror_r bad return: %d\n",r);
-		return ret;
-	}
-
-	void free_error_str(char *b) {
-		free(b);
-	}
-
-	v8::Local<v8::Object> errno_to_JS(int _errno, char *prefix) {
-		v8::Local<v8::Object> retobj = v8::Object::New();
-
-		if(_errno) {
-			char *temp = NULL;
-			if(_errno < _ERRCMD_CUSTOM_ERROR_CUTOFF) {
-				char *errstr = get_error_str(_errno);
-				if(prefix) {
-					temp = (char *) malloc(strlen(prefix)+strlen(errstr));
-						memset(temp,0,len);
-					strcpy(temp, prefix);
-					strcat(temp, errstr);
-				} else {
-					temp = errstr;
-				}
-				retobj->Set(v8::String::New("message"), v8::String::New(temp));
-				free_error_str(errstr);
-			}
-			retobj->Set(v8::String::New("errno"), v8::Integer::New(_errno));
+		char *get_error_str(int _errno) {
+			char *ret = (char *) malloc(max_error_buf);
+			int r = strerror_r(_errno,ret,max_error_buf);
+			if ( r != 0 ) DBG_OUT("strerror_r bad return: %d\n",r);
+			return ret;
 		}
-		return retobj;
-	}
+
+		void free_error_str(char *b) {
+			free(b);
+		}
+
+		v8::Local<v8::Object> errno_to_JS(int _errno, char *prefix) {
+			v8::Local<v8::Object> retobj = v8::Object::New();
+
+			if(_errno) {
+				char *temp = NULL;
+				if(_errno < _ERRCMD_CUSTOM_ERROR_CUTOFF) {
+					char *errstr = get_error_str(_errno);
+					if(errstr) {
+					if(prefix) {
+						int len = strlen(prefix)+strlen(errstr)+2;
+						temp = (char *) malloc(len);
+						memset(temp,0,len);
+						strcpy(temp, prefix);
+						strcat(temp, errstr);
+					} else {
+						temp = errstr;
+					}
+					}
+					retobj->Set(v8::String::New("message"), v8::String::New(temp));
+					if(errstr) free_error_str(errstr);
+				}
+				retobj->Set(v8::String::New("errno"), v8::Integer::New(_errno));
+			}
+			return retobj;
+		}
 
 }
 

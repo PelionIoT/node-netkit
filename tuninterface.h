@@ -54,10 +54,9 @@ protected:
 //	static void post_master(uv_work_t *req, int status);
 
 	char _if_name[MAX_IF_NAME_LEN+1];
-	char *_err_str;
+	_net::err_ev err;
 	int _if_fd;
 	int _if_flags;
-	int _if_error;
 
 	int read_chunk_size;
 
@@ -120,8 +119,8 @@ public:
     static void SetIfFlags(Local<String> property, Local<Value> val, const AccessorInfo &info);
     static Handle<Value> GetLastError(Local<String> property, const AccessorInfo &info);
     static void SetLastError(Local<String> property, Local<Value> val, const AccessorInfo &info);
-    static Handle<Value> GetLastErrorStr(Local<String> property, const AccessorInfo &info);
-    static void SetLastErrorStr(Local<String> property, Local<Value> val, const AccessorInfo &info);
+//    static Handle<Value> GetLastErrorStr(Local<String> property, const AccessorInfo &info);
+//    static void SetLastErrorStr(Local<String> property, Local<Value> val, const AccessorInfo &info);
     static Handle<Value> GetReadChunkSize(Local<String> property, const AccessorInfo &info);
     static void SetReadChunkSize(Local<String> property, Local<Value> val, const AccessorInfo &info);
 
@@ -140,7 +139,7 @@ public:
     // solid reference to TUN / TAP creation is: http://backreference.org/2010/03/26/tuntap-interface-tutorial/
 
     TunInterface(short flags = -1) :
-    	_err_str(NULL), _if_fd(0), _if_flags(IFF_TUN | IFF_NO_PI), _if_error(0),
+    	err(), _if_fd(0), _if_flags(IFF_TUN | IFF_NO_PI),
     	read_chunk_size(TUN_IF_READ_DEFAULT_CHUNK_SIZE), onDataCB(), isTun(true)
     	{
     		if(flags != -1) _if_flags = flags; // optional flags override
@@ -155,7 +154,6 @@ public:
     }
 
     ~TunInterface() {
-    	if(_err_str) free(_err_str);
     }
 
 	void setIfName(char *p, int len) {
@@ -169,20 +167,10 @@ public:
 		}
 	}
 
-	void setErrStr(char *zSprefix, char *zStr) {
-		if(_err_str) free(_err_str);
-		_err_str = NULL;
-		if(zStr) {
-			if(zSprefix) {
-				int total = strlen(zStr) + strlen(zSprefix) + 1;
-				_err_str = (char *) malloc(total);
-				strcpy(_err_str, zSprefix);
-				strcat(_err_str, zStr);
-			} else
-				_err_str = strdup(zStr);
-		}
-	}
 
+	void setErrno(int _errno, const char *m=NULL) {
+		err.setError(_errno, m);
+	}
 
 
 //    static uint32_t genNewWorkId();

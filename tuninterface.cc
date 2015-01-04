@@ -32,8 +32,7 @@ int TunInterface::tun_create() {
    /* open the clone device */
    if( (_if_fd = open(clonedev, O_RDWR)) < 0 ) {
 	   _if_fd = 0;
-   	   _if_error = errno;
-   	   setErrStr("open(): ", strerror(errno));
+   	   setErrno(errno, "open(): ");
 	   return 0;
    }
 
@@ -52,8 +51,8 @@ int TunInterface::tun_create() {
    /* try to create the device */
    if( (_err = ioctl(_if_fd, TUNSETIFF, (void *) &ifr)) < 0 ) {
 	   _if_fd = 0;
-   	   _if_error = errno;
-   	   setErrStr("ioctl(): ", strerror(errno));
+   	   setErrno(errno);
+		ERROR_PERROR( "ioctl() TUNSETIFF: \n",errno);
    	   close(_if_fd);
    	   return 0;
    }
@@ -123,7 +122,7 @@ void TunInterface::ExtendFrom(const Arguments& args) {
 	tpl->InstanceTemplate()->SetAccessor(String::New("fd"), GetIfFD, SetIfFD);
 	tpl->InstanceTemplate()->SetAccessor(String::New("flags"), GetIfFlags, SetIfFlags);
 	tpl->InstanceTemplate()->SetAccessor(String::New("lastError"), GetLastError, SetLastError);
-	tpl->InstanceTemplate()->SetAccessor(String::New("lastErrorStr"), GetLastErrorStr, SetLastErrorStr);
+//	tpl->InstanceTemplate()->SetAccessor(String::New("lastErrorStr"), GetLastErrorStr, SetLastErrorStr);
 
 	tpl->InstanceTemplate()->SetAccessor(String::New("_readChunkSize"), GetReadChunkSize, SetReadChunkSize);
 	tpl->InstanceTemplate()->Set(String::NewSymbol("_open"), FunctionTemplate::New(Open)->GetFunction());
@@ -263,19 +262,9 @@ void TunInterface::SetLastError(Local<String> property, Local<Value> val, const 
 Handle<Value> TunInterface::GetLastError(Local<String> property, const AccessorInfo &info) {
 	HandleScope scope;
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	return scope.Close(Integer::New(obj->_if_error));
-}
-
-void TunInterface::SetLastErrorStr(Local<String> property, Local<Value> val, const AccessorInfo &info) {
-	// does nothing - read only
-}
-
-Handle<Value> TunInterface::GetLastErrorStr(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
-	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	if(obj->_err_str)
-		return scope.Close(String::New(obj->_err_str, strlen(obj->_err_str)));
-	else
+	if(obj->err.hasErr()) {
+		return scope.Close(_net::err_ev_to_JS(obj->err, "TunInterface: "));
+	} else
 		return scope.Close(Undefined());
 }
 
@@ -484,13 +473,11 @@ Handle<Value> TunInterface::Close(const Arguments& args) {
 
 	if(obj->_if_fd > 0) {
 		if(close(obj->_if_fd) < 0) {
-			obj->_if_error = errno;  // an error occurred, so record error info
-			obj->setErrStr("ioctl(): ", strerror(errno));
 			return scope.Close(Boolean::New(false));
 		} else
 			return scope.Close(Boolean::New(true));
 	} else {
-		obj->setErrStr("not open!","");
+		obj->err.setError(_net::OTHER_ERROR, "not open!");
 		return scope.Close(Boolean::New(false));
 	}
 }
@@ -504,10 +491,10 @@ Handle<Value> TunInterface::Create(const Arguments& args) {
 	HandleScope scope;
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
 
-	obj->_if_error = 0;
+	obj->err.clear();
 	obj->tun_create();
 
-	if(!obj->_if_error)
+	if(!obj->err.hasErr())
 		return scope.Close(Boolean::New(true));
 	else {
 		return scope.Close(Boolean::New(false));

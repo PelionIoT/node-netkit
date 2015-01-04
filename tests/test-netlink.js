@@ -7,15 +7,15 @@ var sock = netkit.newNetlinkSocket();
 
 console.dir(sock);
 
-sock.create(null,function(err) {
-	if(err) {
-		console.log("Error: " + util.inspect(err));
-	} else {
-		console.log("Created netlink socket.");
-	}
-	// that was exciting. Now let's close it.
-	sock.close();
-});
+// sock.create(null,function(err) {
+// 	if(err) {
+// 		console.log("Error: " + util.inspect(err));
+// 	} else {
+// 		console.log("Created netlink socket.");
+// 	}
+// 	// that was exciting. Now let's close it.
+// 	sock.close();
+// });
 
 
 // ok - now try a bit more...
@@ -24,14 +24,17 @@ sock.create(null,function(err) {
 		console.log("Error: " + util.inspect(err));
 	} else {
 		console.log("Created netlink socket.");
-
-
-
-
 	}
 	// that was exciting. Now let's close it.
 	sock.close();
 });
+
+var experiment = netkit.wrapMemBufferTest();
+
+console.log(experiment);
+console.dir(experiment);
+console.log(util.inspect(experiment));
+experiment = null;
 
 var tun0 = netkit.newTunInterfaceRaw();
 
@@ -54,8 +57,11 @@ if(tun0.create()) {
 			console.log("** Error: " + util.inspect(err));
 		} else {
 			console.log("assignAddress called successfully.");
-  			netkit.setIfFlags(tun0.ifname,netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING); // turn the interface up
-			netkit.addIPv6Neighbor(tun0.ifname,'bbbb::100','02:2a:8c:54:3f:cf:00:00',function(err) {
+ 			netkit.initIfFlags(tun0.ifname,netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING); // turn the interface up
+ 			setTimeout(function(){
+
+
+			netkit.addIPv6Neighbor(tun0.ifname,'bbbb::100','02:2a:8c:54:3f:cf',function(err) {
 				if(err)
 					console.error("** Error: " + util.inspect(err));
 				else {
@@ -65,6 +71,11 @@ if(tun0.create()) {
 					},30000);
 				}
 			});
+
+
+
+
+ 			},3000);
 		}
 	});
 
@@ -81,5 +92,9 @@ if(tun0.create()) {
 	// }
 
 
+	} else {
+		console.error("Failed to create interface: " + tun0.ifname);
+		if(tun0.lastError) {
+			console.error("Error was: " + util.inspect(tun0.lastError));
+		}
 	}
-

@@ -41,6 +41,7 @@
 
 #include "network-common.h"
 #include "netlinksocket.h"
+#include "error-common.h"
 
 using namespace node;
 using namespace v8;
@@ -57,6 +58,108 @@ extern Handle<Value> IfNameToIndex(const Arguments &args);
 extern Handle<Value> IfIndexToName(const Arguments &args);
 
 
+// BEGIN TESTS
+
+#define TAIL_DATA(strct,p) ((char *)(&(p)) + sizeof(strct))
+
+struct packTestDat {
+	uint8_t first;
+	char second;
+	uint32_t third;
+	uint8_t other[5];
+	// TAIL_DATA follows
+}
+#ifdef __GNUC__
+__attribute__ ((aligned (16)));  // ensure we are using 16-bit alignment on the structure
+#else
+;
+#endif
+
+static
+char *toBytesString(uint8_t *d,int n) {
+	const int s = n*3+4;
+	char *ret = (char *) malloc(s);
+	uint8_t *look = d;
+	int q = 0;
+	ret[0] = '[';
+	while(q < n) {
+		snprintf(ret+1+(q*3), s-3-(q*3),"%2x ",*(look + q));
+		q++;
+	}
+	ret[q*3] = ']'; q++;
+	ret[q*3] = '\0';
+	return ret;
+}
+
+Handle<Value> PackTest(const Arguments& args) {
+	HandleScope scope;
+
+	DBG_OUT("PackTest\n");
+
+	if(args.Length() > 0 && args[0]->IsObject()) {
+			char *backing = node::Buffer::Data(args[0]->ToObject());
+			packTestDat *d = (packTestDat *) backing;
+			DBG_OUT("first: 0x%02x", d->first);
+			DBG_OUT("second: %d", d->second);
+			DBG_OUT("third: 0x%04x or %d", d->third, d->third); // to check endianess
+			char *s = toBytesString(d->other,5);
+			DBG_OUT("other: %s", s);
+			free(s);
+			DBG_OUT("something: %s", TAIL_DATA(packTestDat,*d));
+	}
+
+//	__u32		nlmsg_len;	/* Length of message including header */
+//		__u16		nlmsg_type;	/* Message content */
+//		__u16		nlmsg_flags;	/* Additional flags */
+//		__u32		nlmsg_seq;	/* Sequence number */
+//		__u32		nlmsg_pid;
+	if(args.Length() > 1 && args[1]->IsObject()) {
+			char *backing = node::Buffer::Data(args[1]->ToObject());
+			nlmsghdr *d = (nlmsghdr *) backing;
+			DBG_OUT("a nlmsghdr:");
+			DBG_OUT("_len: 0x%08x", d->nlmsg_len);
+			DBG_OUT("_type: 0x%04x", d->nlmsg_type);
+			DBG_OUT("_flags: 0x%04x", d->nlmsg_flags);
+			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
+			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
+	}
+
+	return scope.Close(Undefined());
+}
+
+void free_test_cb(char *m,void *hint) {
+	DBG_OUT("FREEING MEMORY.");
+	free(m);
+}
+
+//void weak_cb(Persistent<Value> object, void* parameter) {
+//	object.Dispose();
+//}
+
+Handle<Value> WrapMemBufferTest(const Arguments& args) {
+	HandleScope scope;
+	char *mem = (char *) ::malloc(100);
+	memset(mem,'A',100);
+	node::Buffer *buf = node::Buffer::New(mem,100,free_test_cb,0);
+//	node::Buffer *buf = UNI_BUFFER_NEW_WRAP(mem,100,free_test_cb,NULL);
+//	buf->handle_.MakeWeak(NULL, weak_cb);
+	return scope.Close(buf->handle_);
+}
+
+/// END TESTS
+
+
+Handle<Value> ErrorFromErrno(const Arguments& args) {
+	HandleScope scope;
+
+	if(args.Length() > 0 && args[0]->Int32Value()) {
+		Local<Value> err = _net::errno_to_JS(args[0]->Int32Value(),"netkit: ");
+		return scope.Close(err);
+	} else {
+		return scope.Close(Undefined());
+	}
+
+}
 
 Handle<Value> NewTunInterface(const Arguments& args) {
 	HandleScope scope;
@@ -501,37 +604,6 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
 
 
 
-//BEGIN TEST
-#define TAIL_DATA(strct,p) ((char *)(&(p)) + sizeof(strct))
-
-struct packTestDat {
-	uint8_t first;
-	char second;
-	uint32_t third;
-	uint8_t other[5];
-	// TAIL_DATA follows
-}
-#ifdef __GNUC__
-__attribute__ ((aligned (16)));  // ensure we are using 16-bit alignment on the structure
-#else
-;
-#endif
-
-static
-char *toBytesString(uint8_t *d,int n) {
-	const int s = n*3+4;
-	char *ret = (char *) malloc(s);
-	uint8_t *look = d;
-	int q = 0;
-	ret[0] = '[';
-	while(q < n) {
-		snprintf(ret+1+(q*3), s-3-(q*3),"%2x ",*(look + q));
-		q++;
-	}
-	ret[q*3] = ']'; q++;
-	ret[q*3] = '\0';
-	return ret;
-}
 
 
 /**
@@ -618,46 +690,6 @@ Handle<Value> ToAddress(const Arguments& args) {
 	else
 		return scope.Close(ret);
 }
-
-
-
-Handle<Value> PackTest(const Arguments& args) {
-	HandleScope scope;
-
-	DBG_OUT("PackTest\n");
-
-	if(args.Length() > 0 && args[0]->IsObject()) {
-			char *backing = node::Buffer::Data(args[0]->ToObject());
-			packTestDat *d = (packTestDat *) backing;
-			DBG_OUT("first: 0x%02x", d->first);
-			DBG_OUT("second: %d", d->second);
-			DBG_OUT("third: 0x%04x or %d", d->third, d->third); // to check endianess
-			char *s = toBytesString(d->other,5);
-			DBG_OUT("other: %s", s);
-			free(s);
-			DBG_OUT("something: %s", TAIL_DATA(packTestDat,*d));
-	}
-
-//	__u32		nlmsg_len;	/* Length of message including header */
-//		__u16		nlmsg_type;	/* Message content */
-//		__u16		nlmsg_flags;	/* Additional flags */
-//		__u32		nlmsg_seq;	/* Sequence number */
-//		__u32		nlmsg_pid;
-	if(args.Length() > 1 && args[1]->IsObject()) {
-			char *backing = node::Buffer::Data(args[1]->ToObject());
-			nlmsghdr *d = (nlmsghdr *) backing;
-			DBG_OUT("a nlmsghdr:");
-			DBG_OUT("_len: 0x%08x", d->nlmsg_len);
-			DBG_OUT("_type: 0x%04x", d->nlmsg_type);
-			DBG_OUT("_flags: 0x%04x", d->nlmsg_flags);
-			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
-			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
-	}
-
-	return scope.Close(Undefined());
-}
-/// END TEST
-
 
 
 
@@ -1244,6 +1276,59 @@ Handle<Value> AssignRoute(const Arguments& args) {
 }
 
 
+/**
+ * ifUp = function(string,flags,callback) {}
+ * @param callback {Function} is of the form: cb(err) {}
+ * @param ifname {string} Interface name as a string
+ */
+Handle<Value> InitIfFlags(const Arguments& args) {
+	HandleScope scope;
+	struct ifreq ifr;
+
+	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
+		v8::String::Utf8Value v8ifname(args[0]->ToString());
+
+		int len = v8ifname.length() + 1;
+		if(v8ifname.length() > IFNAMSIZ) {
+			len = IFNAMSIZ;
+		}
+
+		short int flags = args[1]->Int32Value();
+
+		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
+		_net::err_ev err;
+		Handle<Value> v8err;
+		int fd = _net::get_generic_packet_sock(err);
+
+		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
+			ifr.ifr_flags = flags;
+		    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+//		    	perror("SIOCSIFFLAGS");
+		    	err.setError(errno);
+		    }
+		}
+
+		if(err.hasErr()) {
+			v8err = _net::err_ev_to_JS(err, "initIfFlags: ");
+		}
+
+    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    		const unsigned outargc = 1;
+    		Local<Value> outargv[outargc];
+    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		if(!v8err.IsEmpty()) {
+    			outargv[0] = v8err->ToObject();
+    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    		} else {
+    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+    		}
+    	}
+
+		return scope.Close(Undefined());
+	} else {
+		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is setIfFlags(string,flags,[callback])")));
+	}
+}
 
 
 
@@ -1357,10 +1442,6 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 
 
 
-
-
-
-
 void InitAll(Handle<Object> exports, Handle<Object> module) {
 //	NodeTransactionWrapper::Init();
 //	NodeClientWrapper::Init();
@@ -1374,13 +1455,20 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 	exports->Set(String::NewSymbol("newNetlinkSocket"), FunctionTemplate::New(NewNetlinkSocket)->GetFunction());
 	exports->Set(String::NewSymbol("assignAddress"), FunctionTemplate::New(AssignAddress)->GetFunction());
 	exports->Set(String::NewSymbol("assignRoute"), FunctionTemplate::New(AssignRoute)->GetFunction());
+	exports->Set(String::NewSymbol("initIfFlags"), FunctionTemplate::New(InitIfFlags)->GetFunction());
 	exports->Set(String::NewSymbol("setIfFlags"), FunctionTemplate::New(SetIfFlags)->GetFunction());
 	exports->Set(String::NewSymbol("unsetIfFlags"), FunctionTemplate::New(UnsetIfFlags)->GetFunction());
 	exports->Set(String::NewSymbol("ifNameToIndex"), FunctionTemplate::New(IfNameToIndex)->GetFunction());
 	exports->Set(String::NewSymbol("ifIndexToName"), FunctionTemplate::New(IfIndexToName)->GetFunction());
 	exports->Set(String::NewSymbol("toAddress"), FunctionTemplate::New(ToAddress)->GetFunction());
+	exports->Set(String::NewSymbol("errorFromErrno"), FunctionTemplate::New(ErrorFromErrno)->GetFunction());
 
+	exports->Set(String::NewSymbol("wrapMemBufferTest"), FunctionTemplate::New(WrapMemBufferTest)->GetFunction());
 	exports->Set(String::NewSymbol("packTest"), FunctionTemplate::New(PackTest)->GetFunction());
+
+	Handle<Object> errconsts = Object::New();
+	_errcmn::DefineConstants(errconsts);
+	exports->Set(String::NewSymbol("ERR"), errconsts);
 
 //	exports->Set(String::NewSymbol("_TunInterface_cstor"), TunInterface::constructor);
 

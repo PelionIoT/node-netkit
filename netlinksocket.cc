@@ -162,6 +162,7 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 	Handle<Value> v8err;
 
 	NetlinkSocket* obj = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+	uint32_t subscription = 0;
 
 	int type_flags = SOCK_RAW | SOCK_CLOEXEC;
 	int netlink_class = NETLINK_ROUTE;
@@ -173,19 +174,51 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 		}
 		Local<Value> js_netclass = o->Get(String::New("class"));
 		if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
-			netlink_class = (int) js_flags->Int32Value();
+			netlink_class = (int) js_netclass->Int32Value();
 		}
+		Local<Value> js_subs = o->Get(String::New("subscriptions"));  // not supported yet
+		if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
+			subscription = (uint32_t) js_subs->IntegerValue();
+		}
+
 	}
+
+
+
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
 	if (obj->fd < 0) {
 		obj->err.setError(errno);
-		ERROR_OUT("Could not create NETLINK_ROUTE socket\n");
+		ERROR_OUT("Could not create AF_NETLINK socket\n");
+	} else {
+		// memset(&addr_local, 0, sizeof(addr_local)); // done in cstor
+		obj->addr_local.nl_family = AF_NETLINK;
+		obj->addr_local.nl_groups = subscription;
+
+		if (bind(obj->fd, (struct sockaddr*)&obj->addr_local, sizeof(obj->addr_local)) < 0) {
+			obj->err.setError(errno);
+			ERROR_OUT("Could not bind() AF_NETLINK socket\n");
+		} else {
+			unsigned int addr_len = sizeof(addr_local);
+			if (getsockname(obj->fd, (struct sockaddr*)&obj->addr_local, &addr_len) < 0) {
+				obj->err.setError(errno);
+				ERROR_OUT("getsockname() on AF_NETLINK socket");
+			}
+			if(!obj->err.hasErr() && addr_len != sizeof(obj->addr_local)) {
+				obj->err.setError(EINVAL);
+				ERROR_OUT("getsockname(): mismatch on size.");
+			}
+			if(!obj->err.hasErr() && obj->addr_local.nl_family != AF_NETLINK) {
+				obj->err.setError(EINVAL);
+				ERROR_OUT("getsockname(): mismatch on family.");
+			}
+		}
+
 	}
 
 	if(obj->err.hasErr()) {
-		v8err = _net::err_ev_to_JS(obj->err, "assignAddress: ");
+		v8err = _net::err_ev_to_JS(obj->err, "socket()/bind(): ");
 	}
 
 	if(args.Length() > 1 && args[1]->IsFunction()) {
@@ -200,10 +233,29 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 		}
 	}
 
+
+//	if (setsockopt(rth->fd,SOL_SOCKET,SO_SNDBUF,&sndbuf,sizeof(sndbuf)) < 0) {
+//		perror("SO_SNDBUF");
+//		return -1;
+//	}
+//
+//	if (setsockopt(rth->fd,SOL_SOCKET,SO_RCVBUF,&rcvbuf,sizeof(rcvbuf)) < 0) {
+//		perror("SO_RCVBUF");
+//		return -1;
+//	}
+//
+//	addr_len = sizeof(rth->local);
+//	if (getsockname(rth->fd, (struct sockaddr*)&rth->local, &addr_len) < 0) {
+//		perror("Cannot getsockname");
+//		return -1;
+//	}
+
+
 	return scope.Close(Undefined());
 }
 
 void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
+	DBG_OUT("FREEING MEMORY.");
 	free(m);
 }
 
@@ -226,7 +278,9 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 				if(S->onReplyCB.IsEmpty())
 					AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
 				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = S->self->seq;  // update sequence number
+				// other fields are handled in node.js...
 				if(!first_seq) first_seq = S->self->seq;
+				last_seq = S->self->seq;
 				S->self->seq++;
 				iov_array[x].iov_base = buf;
 				iov_array[x].iov_len = iter.el().len;
@@ -238,7 +292,6 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			x++;
 		}
 		S->send_queue.releaseIter(iter);
-		last_seq = S->self->seq-1;
 		if(x > 0) {
 //			iov.iov_base = (void *) iov_array;
 //			iov.iov_len = x;
@@ -249,7 +302,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			memset(&msg,0,sizeof(msghdr));
 			memset(&nladdr, 0, sizeof(nladdr));
 			nladdr.nl_family = AF_NETLINK;
-			nladdr.nl_pid = getpid();
+			nladdr.nl_pid = 0;
 			nladdr.nl_groups = 0;
 
 			msg.msg_name = &nladdr;
@@ -297,28 +350,30 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 						// ignore stuff which does not belong to us, or is not something in reply
 						// to what we sent
 						// ok, we have at least a header... let's parse it.
-						if (nladdr.nl_pid != getpid() ||  nlhdr->nlmsg_seq < first_seq ||
+
+						if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < first_seq ||
 								nlhdr->nlmsg_seq > last_seq ) {
 							DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
 						} else {
+							S->replies++; // mark this request as having replies, so we can do the correct
+							              // action in the callback which will run in the v8 thread.
 							if(nlhdr->nlmsg_type == NLMSG_ERROR) {
 								struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
 
 								if (ret < sizeof(struct nlmsgerr)) {
 									S->err.setError(_net::OTHER_ERROR,"Truncated ERROR from NETLINK.");
 								} else {
-									if (!nlerr->error) {
+//									if (!nlerr->error) {
 										reqWrapper *replyBuf = S->reply_queue.addEmpty();
-										replyBuf->Malloc(nlhdr->nlmsg_len);
+										replyBuf->iserr = true;
+										replyBuf->malloc(nlhdr->nlmsg_len);
 										memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
+										DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
 										DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",S->reply_queue.remaining());
-									} else {
-										DBG_OUT("Got reply w/ error.");
-									}
 								}
 							} else {
 								reqWrapper *replyBuf = S->reply_queue.addEmpty();
-								replyBuf->Malloc(nlhdr->nlmsg_len);
+								replyBuf->malloc(nlhdr->nlmsg_len);
 								memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
 								DBG_OUT("Got reply. Queuing... (%d)",S->reply_queue.remaining());
 							}
@@ -336,6 +391,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 }
 
 void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
+	HandleScope scope;
+
 	sendMsgReq *job = (sendMsgReq *) req->data;
 
 	const unsigned argc = 2;
@@ -346,16 +403,49 @@ void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 	job->self->Unref();
 
 	Handle<Boolean> fals = Boolean::New(false);
+	Handle<Boolean> tru = Boolean::New(true);
+
 	// TODO: go through all of the FIFO, empty and DetachBuffer all items
 
+
 	if(!job->err.hasErr()) {
-//		Buffer* rawbuffer = ObjectWrap<Buffer>(job->buffer);www
-		if(!job->onSendCB.IsEmpty()) {
-			argv[0] = fals->ToBoolean();
-			argv[1] = Integer::New(job->len);
-			job->onSendCB->Call(Context::GetCurrent()->Global(),2,argv);
+		// ok - no error on job creation - now let's see if there was an error in using netlink...
+		bool nlError = false;
+		reqWrapper req;
+
+		Handle<Object> retbufs = Object::New();
+		int n = 0;
+		while(job->replies && job->reply_queue.remove(req)) {
+			if(req.iserr) nlError = true;
+			if(req.hasBuffer()) {
+				retbufs->Set(n,req.ExportBuffer());
+			}
+			n++; job->replies--;
 		}
-	} else { // failure
+		retbufs->Set(String::New("length"),Integer::New(n));
+
+		if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
+			// if we don't have a reply callback,
+			if(!nlError) {
+				argv[0] = fals->ToBoolean();
+				argv[1] = Integer::New(job->len);
+				job->onSendCB->Call(Context::GetCurrent()->Global(),2,argv);
+			} else {
+				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
+				job->onSendCB->Call(Context::GetCurrent()->Global(),1,argv);
+			}
+		} else if (!job->onReplyCB.IsEmpty()) {
+			if(!nlError) {
+				argv[0] = tru->ToBoolean();
+				argv[1] = retbufs->ToObject();
+				job->onReplyCB->Call(Context::GetCurrent()->Global(),2,argv);
+			} else {
+				argv[0] = tru->ToBoolean();
+				argv[1] = retbufs->ToObject();
+				job->onReplyCB->Call(Context::GetCurrent()->Global(),2,argv);
+			}
+		}
+	} else { // failure on job creation. we did not get to the point of sending a packet.
 		if(!job->onSendCB.IsEmpty()) {
 			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();
 			job->onSendCB->Call(Context::GetCurrent()->Global(),1,argv);
@@ -400,9 +490,13 @@ Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Bu
 
 
 /**
- * Send a message via the socket. The
+ * Send a message via the socket. If a reply callback is provided, it and only it will be called
+ * if a reply is recieved n(error or no error). If no reply is recived or no reply callback is provided
+ * then the sendcb, if provided will be called.
+ * @method sendMsg
  * @param obj {Object} the object must be a sendMsgReq created from the socket.
- * @param cb  {Function} the callback, of the form: cb(err,bytes)
+ * @param sendcb  {Function} the callback, of the form: cb(err,bytes)
+ * @param replycb {Function} the reply callback. cb(err,bufs)
  *
  */
 Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
@@ -422,6 +516,9 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			req->reqRef();  // nor the request object
 			if(args.Length() > 0 && args[1]->IsFunction())
 				req->onSendCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+
+			if(args.Length() > 1 && args[2]->IsFunction())
+				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[2]));
 
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, NetlinkSocket::post_sendmsg);
 		} else {

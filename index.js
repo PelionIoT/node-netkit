@@ -10,6 +10,7 @@ var build_opts = {
 	debug: 1 
 };
 var colors = require('./colors.js');
+var bufferpack = require('./libs/bufferpack.js');
 
 var nativelib = null;
 try {
@@ -167,9 +168,20 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 
 
-var netkit = {
-	packTest: nativelib.packTest, // a test
 
+var nk = {
+	packTest: nativelib.packTest, // a test
+	wrapMemBufferTest: nativelib.wrapMemBufferTest,
+
+
+
+	ERR: nativelib.ERR,
+	errorFromErrno: function(errno) {
+		var ret = nativelib.errorFromErrno(errno); // returns a Error()
+		// do a reverse lookup to add 'code' in also - which is like the standard node.js errors
+		ret.code = this.ERR[ret.errno];  
+		return ret;
+	},
 	newNetlinkSocket: nativelib.newNetlinkSocket,
 	newTunInterfaceRaw: nativelib.newTunInterface,
 	newTapInterfaceRaw: function() {
@@ -177,6 +189,7 @@ var netkit = {
 	},	
 	assignAddress: nativelib.assignAddress,
 	assignRoute: nativelib.assignRoute,
+	initIfFlags: nativelib.initIfFlags,
 	setIfFlags: nativelib.setIfFlags,
 	unsetIfFlags: nativelib.unsetIfFlags,
 	ifNameToIndex: nativelib.ifNameToIndex,
@@ -195,9 +208,6 @@ var netkit = {
 	AF_INET: 2,
 
 	FLAGS: {
-
-
-
 		// Interface FLAGS
 		// See: if.h
 
@@ -252,19 +262,101 @@ var netkit = {
         RT_CACHE:      0x01000000,     /* cache entry                  */
         RT_FLOW:       0x02000000,     /* flow significant route       */
         RT_POLICY:     0x04000000,     /* policy route                 */
-        RT_LOCAL:      0x80000000
-	}
+        RT_LOCAL:      0x80000000,
+    }
 };
 
-var rt = netkit.rt = require('./rtnetlink.js');
+// for documentation see: /usr/include/linux/netlink.h
+// 	__u32		nlmsg_len;	Length of message including header
+//	__u16		nlmsg_type;	Message content
+//	__u16		nlmsg_flags; Additional flags
+//	__u32		nlmsg_seq;	 Sequence number 
+//	__u32		nlmsg_pid;	Sending process port ID
+var nlmsghdr_fmt = "<I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
+var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
+
+/**
+ * Netlink related constants and functions
+ * @type {Object}
+ */
+nk.nl = {
 
 
-var netutil = netkit.util = require('./netutils.js');
+    // netlink message flags
+	// See: linux/netlink.h
+	
+	NLM_F_REQUEST:		1,	/* It is request message. 	*/
+	NLM_F_MULTI:		2,	/* Multipart message, terminated by NLMSG_DONE */
+	NLM_F_ACK:   		4,	/* Reply with ack, with zero or error code */
+	NLM_F_ECHO:  		8,	/* Echo this request 		*/
+    NLM_F_DUMP_INTR:	16, /* Dump was inconsistent due to sequence change */
+
+    NLM_F_ROOT:     	0x100,	/* specify tree	root	*/
+    NLM_F_MATCH:    	0x200,	/* return all matching	*/
+    NLM_F_ATOMIC:   	0x400,	/* atomic GET		*/
+    NLM_F_DUMP:     	(this.NLM_F_ROOT|this.NLM_F_MATCH),
+
+    /* Modifiers to NEW request */
+    NLM_F_REPLACE:	0x100,	/* Override existing		*/
+    NLM_F_EXCL:	    0x200,	/* Do not touch, if it exists	*/
+    NLM_F_CREATE:	0x400,	/* Create, if it does not exist	*/
+    NLM_F_APPEND:	0x800,	/* Add to end of list		*/
 
 
 
-netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
-	var ifndex = netkit.ifNameToIndex(ifname);
+    NETLINK_ADD_MEMBERSHIP:     1,
+    NETLINK_DROP_MEMBERSHIP:    2,
+    NETLINK_PKTINFO:            3,
+    NETLINK_BROADCAST_ERROR:    4,
+    NETLINK_NO_ENOBUFS:         5,
+    NETLINK_RX_RING:            6,
+    NETLINK_TX_RING:            7,
+
+    NL_MMAP_STATUS_UNUSED:      0,
+    NL_MMAP_STATUS_RESERVED:    1,
+    NL_MMAP_STATUS_VALID:       2,
+    NL_MMAP_STATUS_COPY:        3,
+    NL_MMAP_STATUS_SKIP:        4,
+
+    NETLINK_UNCONNECTED: 0,
+    NETLINK_CONNECTED: 1,
+
+
+	// Build a netlink header... returns a packbuffer 'meta' object
+	// ._len, ._seq, ._pid are automatically filled in later.
+	buildHdr: function() {
+		var o = bufferpack.metaObject(nlmsghdr_fmt);
+		  	o._len = 0;                  // auto - handled by native binding
+			o._type = 0;                 // should be the netlink command
+			o._flags = this.NLM_F_REQUEST;    // native will add NLM_F_ACK if needed
+			o._seq = 0;                  // auto - handled by native binding
+			o._pid = 0;                  // auto. keep at zero... this is not the process.pid - its a port ID
+		return o;
+	},
+
+	parseErrorHdr: function(b) {
+		return bufferpack.unpack(error_nlmsghdr_fmt,b,0);
+	}
+}
+var nl = nk.nl;
+
+/**
+ * NETLINK_ROUTE related constants and functions
+ * @type {[type]}
+ */
+var rt = nk.rt = require('./rtnetlink.js');
+
+
+/**
+ * General utility functions
+ * @type {[type]}
+ */
+var netutil = nk.util = require('./netutils.js');
+
+
+
+nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
+	var ifndex = nk.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
 		err("* Error: " + util.inspect(ans));
 		cb(ifindex); // call w/ error
@@ -272,19 +364,25 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	}
 	var bufs = [];
 
+//<I(_len)H(_type)H(_flags)I(_seq)I(_pid)
 	var len = 0; // updated at end
-	var nl_hdr = netkit.rt.buildHdr();
-	nl_hdr._cmd = rt.RTM_NEWNEIGH;
-	nl_hdr._flags = rt.NLM_F_REQUEST|rt.NLM_F_CREATE|rt.NLM_F_EXCL;
-	var nd_msg = netkit.rt.buildNdmsg(netkit.AF_INET6,ifndex,rt.NUD_PERMANENT,rt.NLM_F_REQUEST);
-	//var rt_msg = netkit.rt.buildRtmsg();
+	var nl_hdr = nk.nl.buildHdr();
+	nl_hdr._type = rt.RTM_NEWNEIGH; // the command
+	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK;
+	var nd_msg = rt.buildNdmsg(nk.AF_INET6,ifndex,rt.NUD_PERMANENT,nl.NLM_F_REQUEST);
+	nd_msg._family = nk.AF_INET6;
+	nd_msg._ifindex = ifndex;
+	nd_msg._state = rt.NUD_PERMANENT;
+	nd_msg._flags = 0;
+	//var rt_msg = nk.rt.buildRtmsg();
 	
-	bufs.push(nl_hdr.pack());
+//	bufs.push(nl_hdr.pack());
+	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
 	bufs.push(nd_msg.pack());
 
 	if(inet6dest) {
 		if(typeof inet6dest === 'string') {
-			var ans = netkit.toAddress(inet6dest,netkit.AF_INET6);
+			var ans = nk.toAddress(inet6dest,nk.AF_INET6);
 			if(util.isError(ans)) {
 				cb(ans);
 				return;
@@ -292,7 +390,7 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 			var destbuf = ans;
 		} else
 			var destbuf = inet6dest;
-		var rt_attr = netkit.rt.buildRtattrBuf(netkit.rt.NDA_DST,destbuf.bytes);
+		var rt_attr = nk.rt.buildRtattrBuf(nk.rt.NDA_DST,destbuf.bytes);
 		console.dir(destbuf);
 		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 		dbg("rt_attr---> " + asHexBuffer(rt_attr));
@@ -304,7 +402,7 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 
 	if(lladdr) {
 		if(typeof lladdr === 'string') {
-			var macbuf = netutil.bufferifyMacString(lladdr);
+			var macbuf = netutil.bufferifyMacString(lladdr,6); // we want 6 bytes no matter what
 			if(!macbuf) {
 				cb(new Error("bad lladdr"));
 				return;
@@ -316,18 +414,24 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 			cb(new Error("bad parameters."));
 			return;			
 		}
-		var rt_attr = netkit.rt.buildRtattrBuf(netkit.rt.NDA_LLADDR,macbuf);
+		var rt_attr = nk.rt.buildRtattrBuf(nk.rt.NDA_LLADDR,macbuf);
+		dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
-
-	var all = Buffer.concat(bufs); // the entire message....
+	var len = 0;
+	for (var n=0;n<bufs.length;n++)
+		len += bufs[n].length;
+	console.log("nl_hdr._length = " + nl_hdr._length);
+	nl_hdr._len = nl_hdr._length + len;
+	bufs.unshift(nl_hdr.pack());
+	var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
 	dbg("Sending---> " + asHexBuffer(all));
 
 	if(sock) {
 		cb("Not implemented");
 	} else {
-		var sock = netkit.newNetlinkSocket();
+		var sock = nk.newNetlinkSocket();
 		sock.create(null,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
@@ -340,7 +444,6 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 
 	            var msgreq = sock.createMsgReq();
 
-
 	            msgreq.addMsg(all);
 
 	            sock.sendMsg(msgreq, function(err,bytes) {
@@ -350,6 +453,19 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	            	} else {
 	            		console.log("in cb: " + util.inspect(arguments));
 	            		cb();
+	            	}
+	            }, function(err,bufs) {
+	            	console.log("in reply cb...");
+	            	if(err) {
+	            		console.log("** Error in reply: ");
+	            		for(var n=0;n<bufs.length;n++) {
+	            			console.log('here');
+	            			console.dir(bufs[n]);
+	            			console.log('buf len = ' + bufs[n].length);
+	            			var errobj = nk.nl.parseErrorHdr(bufs[n]);
+	            			console.dir(nk.errorFromErrno(errobj._error));
+	            			console.log(util.inspect(errobj));
+	            		}
 	            	}
 	            });
 
@@ -366,5 +482,5 @@ netkit.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 
 
 
-module.exports = netkit;
+module.exports = nk;
 

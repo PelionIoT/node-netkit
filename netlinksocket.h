@@ -78,48 +78,65 @@ protected:
 		char *rawMemory;
 		bool ownMemory; // true if we should free our own memory.
 		int len;
-		reqWrapper() : buffer(), rawMemory(NULL), ownMemory(false), len(0) {
+		bool iserr;
+		reqWrapper() : buffer(), rawMemory(NULL), ownMemory(false), len(0), iserr(false) {
 		};
 		reqWrapper( const reqWrapper &o ) = delete;     // we only use this in the tw_FIFO below
 		inline reqWrapper& operator=(reqWrapper &&o) {  // and we don't want multiple copies of
 			this->buffer = o.buffer;                    // of these wrappers around
 			o.buffer.Clear();
+			if(this->rawMemory && this->ownMemory) free(this->rawMemory);
 			this->rawMemory = o.rawMemory; o.rawMemory = NULL;
 			this->ownMemory = o.ownMemory; o.ownMemory = false;
+			this->iserr = o.iserr; o.iserr = false;
+			this->len = o.len; o.len = 0;
 			return *this;
 		}
 		void AttachBuffer(Local<Object> b) { // must be called in v8 thread
 			buffer = Persistent<Object>::New(b); // keep the Buffer persistent until the write is done...
-			if(rawMemory && ownMemory) free(rawMemory); rawMemory = NULL;
+			if(rawMemory && ownMemory) free(rawMemory); rawMemory = NULL; ownMemory = false;
 			rawMemory = node::Buffer::Data(b);
 			len = node::Buffer::Length(b);
-			ownMemory = false;
 		}
 		void DetachBuffer() {
 			if(!buffer.IsEmpty()) buffer.Dispose();
 			rawMemory = NULL; ownMemory = false; len = 0;
 		}
-		Local<Object> exportBuffer() {
-			HandleScope scope;
-			Local<Object> retbuffer;
-			if(rawMemory) {
-				node::Buffer *buf = UNI_BUFFER_NEW_WRAP(rawMemory,len,free_req_callback_buffer,NULL);
-				retbuffer = UNI_BUFFER_FROM_CPOINTER(buf)->ToObject();
-				// once exported, this reqWrapper is empty:
-				rawMemory = NULL; ownMemory = false; len = 0;
-				buffer.Dispose(); buffer.Clear();
-			}
-			return scope.Close(retbuffer);
+		bool hasBuffer() {
+			return (rawMemory != NULL);
 		}
-		void Malloc(int len) {
+		Handle<Object> ExportBuffer() {
+			HandleScope scope;
+			if(rawMemory && ownMemory) {
+// OK - this method currently does not work, because node::Buffer::New(rawMemory,len,free_req_callback_buffer,0) does
+// not seem to actually call it's 'free_callback'
+//				node::Buffer *buf = UNI_BUFFER_NEW_WRAP(rawMemory,len,free_req_callback_buffer,NULL);
+//				// once exported, this reqWrapper is empty:
+//				rawMemory = NULL; ownMemory = false; len = 0;
+//				buffer.Dispose(); buffer.Clear(); // in case - some how another Buffer was allocated.
+//				return scope.Close(UNI_BUFFER_FROM_CPOINTER(buf));
+// -----------------------------------------------------
+				// so we will just copy it for now...
+				DBG_OUT("len=%d",len);
+				Handle<Object> buf = UNI_BUFFER_NEW(len);
+				char *backing = node::Buffer::Data(buf);
+				memcpy(backing,rawMemory,len);
+				::free(rawMemory); rawMemory=NULL; ownMemory=false;
+				return scope.Close(buf);
+			} else {
+				return scope.Close(Object::New());
+			}
+		}
+		void malloc(int c) {
 			buffer.Dispose(); buffer.Clear();
-			if(rawMemory && ownMemory) free(rawMemory);
-			rawMemory = (char *) malloc(len);
+			if(rawMemory && ownMemory) ::free(rawMemory);
+			rawMemory = (char *) ::malloc(c);
 			ownMemory = true;
+			this->len = c;
 		}
 		reqWrapper &operator=(const reqWrapper &o) = delete;
 		~reqWrapper() {
-			if(rawMemory && ownMemory) free(rawMemory);
+			if(rawMemory && ownMemory) ::free(rawMemory);
 			buffer.Dispose();
 //			buffer.Clear(); // remove any Persistent references
 		}
@@ -128,6 +145,9 @@ protected:
 	int fd;       // socket FD
 
 	uint32_t seq; // sequence ID used when creating a netlink message header, incremented
+
+	struct sockaddr_nl	addr_local;
+	struct sockaddr_nl	addr_peer;
 
 	_net::err_ev err;
 
@@ -141,7 +161,7 @@ protected:
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> send_queue;
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> reply_queue;  // replies come back
 		                                                            // but their callbacks can only be called in the v8 thread
-
+		int replies; // if non-zero there was a reply (perhaps more than one)
 		void *recvBuffer; // used to hold recv stuff before going back to v8 thread.
 		uv_work_t work;
 		_net::err_ev err; // the errno that happened sendmsg if an error occurred.
@@ -153,7 +173,7 @@ protected:
 		NetlinkSocket *self;
 		// need Buffer
 		sendMsgReq(NetlinkSocket *s) : node::ObjectWrap(),
-				send_queue(), reply_queue(), recvBuffer(NULL), err(),
+				send_queue(), reply_queue(), replies(0), recvBuffer(NULL), err(),
 				onSendCB(), onReplyCB(), buffer(), _backing(NULL), len(0), self(s) {
 			work.data = this;
 		}
@@ -181,6 +201,10 @@ protected:
 
 public:
 	NetlinkSocket() : node::ObjectWrap(), fd(0), seq(0), err(), onDataCB() {
+		seq = time(NULL); // yes. I did the same thing as iproute2 guys. See: iproute2/lib/libnetlink.c:~80
+		                  // my guess is this number just needs to be unique.
+		memset(&addr_local,0,sizeof(sockaddr_nl));
+		memset(&addr_peer,0,sizeof(sockaddr_nl));
 	}
 
 	static Handle<Value> Init(const Arguments& args);

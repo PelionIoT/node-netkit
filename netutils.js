@@ -18,6 +18,8 @@ module.exports = {
 				console.log(" --> " + m[n+1]);
 				if(m[n+1])
 					ret.writeUInt8(parseInt(m[n+1],16),n);
+				else
+					ret.writeUInt8(0,n);
 			}
 			return ret;
 		} else {

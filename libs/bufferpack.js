@@ -289,6 +289,7 @@ function BufferPack() {
       }
     }
 
+
     meta.toValArray = function() {
       var ret = [];
       for(var n=0;n<this.keylist.length;n++) {
@@ -299,6 +300,7 @@ function BufferPack() {
       }
       return ret;
     }
+    meta._length = this.calcLength(fmt, meta.toValArray());
 
     meta.pack = function() {
       return self.pack(this);

@@ -1,8 +1,6 @@
 
 var bufferpack = require('./libs/bufferpack.js');
 
-// for documentation see: /usr/include/linux/netlink.h
-var nlmsghdr_fmt = "<I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 
 // for documentation see: /usr/include/linux/neighbor.h
 var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)";
@@ -16,14 +14,6 @@ var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
 
 module.exports = {
-		// netlink message flags
-		// See: linux/netlink.h
-		
-		NLM_F_REQUEST:		1,	/* It is request message. 	*/
-		NLM_F_MULTI:		2,	/* Multipart message, terminated by NLMSG_DONE */
-		NLM_F_ACK:   		4,	/* Reply with ack, with zero or error code */
-		NLM_F_ECHO:  		8,	/* Echo this request 		*/
-	    NLM_F_DUMP_INTR:	16, /* Dump was inconsistent due to sequence change */
 
 
 	    // see: linux/neighbor.h
@@ -127,27 +117,18 @@ module.exports = {
 
 
 
-// Build a netlink header... returns a packbuffer 'meta' object
-// ._len, ._seq, ._pid are automatically filled in later.
-	buildHdr: function() {
-		var o = bufferpack.metaObject(nlmsghdr_fmt);
-		o._len = 0;                  // auto
-		o._type = 0;                 // should be the netlink command
-		o._flags = this.NLM_F_REQUEST;    // native will add NLM_F_ACK if needed
-		o._seq = 0;                  // auto
-		o._pid = 0;                  // auto
-		return o;
-	},
 
-	buildNdmsg: function(fam,ifindex,state,flags,typ) {
+
+	buildNdmsg: function(params) {
+		// fam,ifindex,state,flags,typ
 		var o = bufferpack.metaObject(ndmsg_fmt);
-		fam==undefined ? o._family = 0 : o._family = fam;                  // auto
+		o._family = 0;
 		o._pad1 = 0; 
 		o._pad2 = 0;
-		ifindex==undefined ? o._ifindex = 0 : o._ifindex = ifindex;
-		state==undefined ? o._state = 0 : o._state = state;
-		flags==undefined ? o._flags = 0 : o._flags = flags;
-		typ==undefined ? o._type = 0 : o._type = typ;
+		o._ifindex = 0;
+		o._state = 0;
+		o._flags = 0;
+		o._type = 0;
 		return o;
 	},
 
@@ -167,17 +148,24 @@ module.exports = {
 		if(typeof typ !== 'number' || (data && !Buffer.isBuffer(data))) {
 			console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
 		} else {
-			var len = 0;
-			if(data && Buffer.isBuffer(data))
-     			len = data.length + 4; // the rtattr header is 4 bytes
-     		else
-     			len = 4;        
-     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
-     		var rtabuf = bufferpack.pack(rtattr_fmt,[len,typ]);
-     		if(data)
-     			return Buffer.concat([rtabuf,data]);
-     		else
-     			return rtabuf;
+			var len = 4; // look at linux/rtnetlink.h
+	        var bufs = [];
+	        if(data && Buffer.isBuffer(data)) {
+     			len += data.length; // the rtattr header is 4 bytes
+     			bufs.push(data);
+	        }
+	        var rtabuf = bufferpack.pack(rtattr_fmt,[len,typ]);
+	        bufs.unshift(rtabuf);
+//     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
+	        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+	        console.log("pad: " + pad);
+	        if(pad) {
+	        	var padbuf = new Buffer(pad);
+	        	padbuf.fill(0);
+	        	bufs.push(padbuf);  // make the rtattr must have length which is multiple of 4. (again see linux/rtnetlink.h)
+
+	        }
+     		return Buffer.concat(bufs);
      	}
 	}
 

@@ -42,13 +42,13 @@ namespace _net {
 
 	const int max_error_buf = 255;
 
-
 	char *get_error_str(int _errno) {
 		char *ret = (char *) malloc(max_error_buf);
-		memset(ret,0,max_error_buf);
-		strerror_r(_errno,ret,max_error_buf);
+		int r = strerror_r(_errno,ret,max_error_buf);
+		if ( r != 0 ) DBG_OUT("strerror_r bad return: %d\n",r);
 		return ret;
 	}
+
 
 	void free_error_str(char *b) {
 		free(b);
@@ -65,28 +65,30 @@ namespace _net {
 	}
 
 	v8::Local<v8::Value> errno_to_JS(int _errno, const char *prefix) {
-	//	HandleScope scope;
-//		v8::Local<v8::Object> retobj = v8::Object::New();
-		v8::Local<v8::Value> retobj = v8::Local<v8::Primitive>::New(v8::Undefined());
+		v8::Local<v8::Object> retobj = v8::Object::New();
 
 		if(_errno) {
 			char *temp = NULL;
-			char *errstr = get_error_str(_errno);
-			if(prefix) {
-				temp = (char *) malloc(strlen(prefix)+strlen(errstr)+1);
-				strcpy(temp, prefix);
-				strcat(temp, errstr);
-				retobj = v8::Exception::Error(v8::String::New(temp));
-			} else {
-				temp = errstr;
-				retobj = v8::Exception::Error(v8::String::New(temp));
+			if(_errno < _ERRCMD_CUSTOM_ERROR_CUTOFF) {
+				char *errstr = get_error_str(_errno);
+				if(errstr) {
+					if(prefix) {
+						int len = strlen(prefix)+strlen(errstr)+2;
+						temp = (char *) malloc(len);
+						memset(temp,0,len);
+						strcpy(temp, prefix);
+						strcat(temp, errstr);
+					} else {
+						temp = errstr;
+					}
+					retobj->Set(v8::String::New("message"), v8::String::New(temp));
+					free_error_str(errstr);
+				}
 			}
-			retobj->ToObject()->Set(v8::String::New("errno"), v8::Integer::New(_errno));
-			free_error_str(errstr);
+			retobj->Set(v8::String::New("errno"), v8::Integer::New(_errno));
 		}
 		return retobj;
 	}
-
 
 	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix) {
 		v8::HandleScope scope;
@@ -96,7 +98,9 @@ namespace _net {
 		if(e.hasErr()) {
 			char *temp = NULL;
 			if(prefix && e.errstr) {
-				temp = (char *) malloc(strlen(prefix)+strlen(e.errstr)+1);
+				int len = strlen(prefix)+strlen(e.errstr)+2;
+				temp = (char *) malloc(len);
+				memset(temp,0,len);
 				strcpy(temp, prefix);
 				strcat(temp, e.errstr);
 //				retobj->Set(v8::String::New("message"), v8::String::New(temp));
@@ -108,6 +112,8 @@ namespace _net {
 		}
 		return scope.Close(retobj);
 	}
+
+
 
 }
 

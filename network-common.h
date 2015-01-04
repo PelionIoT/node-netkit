@@ -168,4 +168,6 @@ namespace _net {
 
 #define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s "\n", ##__VA_ARGS__ );
 
+#define _ERRCMD_CUSTOM_ERROR_CUTOFF 4000   // arbitrary - needs to be higher than any normal errno number
+
 #endif /* NETWORK_COMMON_H_ */

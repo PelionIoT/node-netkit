@@ -918,19 +918,18 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EMEDIUMTYPE);
 				if(_errno < _ERRCMD_CUSTOM_ERROR_CUTOFF) {
 					char *errstr = get_error_str(_errno);
 					if(errstr) {
-					if(prefix) {
-						int len = strlen(prefix)+strlen(errstr)+2;
-						temp = (char *) malloc(len);
-						memset(temp,0,len);
-						strcpy(temp, prefix);
-						strcat(temp, errstr);
-					} else {
-						temp = errstr;
+						if(prefix) {
+							int len = strlen(prefix)+strlen(errstr)+2;
+							temp = (char *) malloc(len);
+							memset(temp,0,len);
+							strcpy(temp, prefix);
+							strcat(temp, errstr);
+						} else {
+							temp = errstr;
+						}
+						retobj->Set(v8::String::New("message"), v8::String::New(temp));
+						free_error_str(errstr);
 					}
-					retobj->Set(v8::String::New("message"), v8::String::New(temp));
-					free_error_str(errstr);
-					}
-
 				}
 				retobj->Set(v8::String::New("errno"), v8::Integer::New(_errno));
 			}

@@ -927,9 +927,10 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EMEDIUMTYPE);
 					} else {
 						temp = errstr;
 					}
-					}
 					retobj->Set(v8::String::New("message"), v8::String::New(temp));
-					if(errstr) free_error_str(errstr);
+					free_error_str(errstr);
+					}
+
 				}
 				retobj->Set(v8::String::New("errno"), v8::Integer::New(_errno));
 			}

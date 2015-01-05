@@ -1,6 +1,8 @@
 node-netkit
 ===========
 
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/WigWagCo/node-netkit?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 node module for network interface &amp; routing manipulation
 
 **work in progress:**

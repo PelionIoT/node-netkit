@@ -1,0 +1,23 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+prereqs
+.prereqs
+expanded-prereqs
+#README.md#
+#README.md#
+libTW.so.1
+libTW.so.1.0.1
+libTW.so.1.0.1
+libTW.so.1
+test_rbtree

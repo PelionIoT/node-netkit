@@ -264,7 +264,6 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 	NetlinkSocket::sendMsgReq *S = (NetlinkSocket::sendMsgReq *) req->data;
 	if(S->self->fd != 0) {
 
-//		struct iovec iov;
 		int alloc_size = sizeof(struct iovec) * S->send_queue.remaining();
 		struct iovec *iov_array = (struct iovec *) malloc(alloc_size);
 		memset(iov_array,0,alloc_size);
@@ -292,9 +291,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			x++;
 		}
 		S->send_queue.releaseIter(iter);
+
 		if(x > 0) {
-//			iov.iov_base = (void *) iov_array;
-//			iov.iov_len = x;
 
 			struct msghdr msg;         // used by sendmsg / recvmsg
 			struct sockaddr_nl nladdr; // NETLINK address
@@ -533,6 +531,12 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 }
 
 Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
+	// HandleScope scope;
+	// NetlinkSocket* sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+	
+
+
+	// return scope.Close
 }
 
 Handle<Value> NetlinkSocket::OnError(const Arguments& args) {
@@ -549,3 +553,81 @@ Handle<Value> NetlinkSocket::Close(const Arguments& args) {
 
 	return scope.Close(Undefined());
 }
+
+// ------------------------------------------------------------------------------
+//
+//	requestWrapper definitiions
+//
+// ------------------------------------------------------------------------------
+	NetlinkSocket::reqWrapper::reqWrapper() 
+		: buffer()
+		, rawMemory(NULL)
+		, ownMemory(false)
+		, len(0)
+		, iserr(false) 
+	{ }
+
+	NetlinkSocket::reqWrapper::~reqWrapper() {
+		if(rawMemory && ownMemory) ::free(rawMemory);
+		buffer.Dispose();
+//			buffer.Clear(); // remove any Persistent references
+	}
+
+
+NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) {  
+	this->buffer = o.buffer;                    
+	o.buffer.Clear();
+	if(this->rawMemory && this->ownMemory) free(this->rawMemory);
+	this->rawMemory = o.rawMemory; o.rawMemory = NULL;
+	this->ownMemory = o.ownMemory; o.ownMemory = false;
+	this->iserr = o.iserr; o.iserr = false;
+	this->len = o.len; o.len = 0;
+	return *this;
+}
+
+void NetlinkSocket::reqWrapper::AttachBuffer(Local<Object> b) { 
+	// must be called in v8 thread
+	// keep the Buffer persistent until the write is done...
+	buffer = Persistent<Object>::New(b); 
+	if(rawMemory && ownMemory) free(rawMemory); rawMemory = NULL; ownMemory = false;
+	rawMemory = node::Buffer::Data(b);
+	len = node::Buffer::Length(b);
+}
+
+Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
+	HandleScope scope;
+	if(rawMemory && ownMemory) {
+		// OK - this method currently does not work, because node::Buffer::New(rawMemory,len,free_req_callback_buffer,0) does
+		// not seem to actually call it's 'free_callback'
+		//				node::Buffer *buf = UNI_BUFFER_NEW_WRAP(rawMemory,len,free_req_callback_buffer,NULL);
+		//				// once exported, this reqWrapper is empty:
+		//				rawMemory = NULL; ownMemory = false; len = 0;
+		//				buffer.Dispose(); buffer.Clear(); // in case - some how another Buffer was allocated.
+		//				return scope.Close(UNI_BUFFER_FROM_CPOINTER(buf));
+		// -----------------------------------------------------
+		// so we will just copy it for now...
+		DBG_OUT("len=%d",len);
+		Handle<Object> buf = UNI_BUFFER_NEW(len);
+		char *backing = node::Buffer::Data(buf);
+		memcpy(backing,rawMemory,len);
+		::free(rawMemory); rawMemory=NULL; ownMemory=false;
+		return scope.Close(buf);
+	} else {
+		return scope.Close(Object::New());
+	}
+}
+
+void NetlinkSocket::reqWrapper::malloc(int c) {
+	buffer.Dispose(); buffer.Clear();
+	if(rawMemory && ownMemory) ::free(rawMemory);
+	rawMemory = (char *) ::malloc(c);
+	ownMemory = true;
+	this->len = c;
+}
+
+void NetlinkSocket::reqWrapper::DetachBuffer() {
+	if(!buffer.IsEmpty()) buffer.Dispose();
+	rawMemory = NULL; ownMemory = false; len = 0;
+}
+
+

@@ -454,8 +454,22 @@ void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 }
 
 void NetlinkSocket::do_onrecv(uv_work_t *req) {
+	HandleScope scope;
+
+	sockMsgReq *job = (sockMsgReq *) req->data;
+
+
+	// Signal data available for on_recv to send to the the user
+    uv_async_send(&(job->async));
 }
 
+void NetlinkSocket::on_recv(uv_async_t *handle, int status) {
+	// HandleScope scope;
+
+	// sockMsgReq *job = (sockMsgReq *) req->data;
+
+
+}
 
 Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sockMsgReq
 	HandleScope scope;
@@ -547,7 +561,7 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 
 	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
 
-	if(args.Length() > 0 && args[0]->IsObject()) {
+	if(args.Length() > 1 && args[0]->IsObject()) {
 		Local <Object> v8req = args[0]->ToObject();
 		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
 			NetlinkSocket::sockMsgReq *req =  ObjectWrap::Unwrap<NetlinkSocket::sockMsgReq>(v8req);
@@ -557,11 +571,16 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 			if(args.Length() > 0 && args[1]->IsFunction())
 				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
 
+			// Setup the async notifiction events to get data from the worker thread 
+		    uv_async_init(uv_default_loop(), &(req->async), NetlinkSocket::on_recv);
+
 			// start the thread to monitor this socket for reads
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_onrecv, NULL);
 		} else {
-			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
+			return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}
+	} else {
+		return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. sockMsgReq Object and callback required.")));
 	}	
 	return scope.Close(Undefined());
 }

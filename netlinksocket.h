@@ -108,6 +108,7 @@ protected:
 			int replies; // if non-zero there was a reply (perhaps more than one)
 			void *recvBuffer; // used to hold recv stuff before going back to v8 thread.
 			uv_work_t work;
+			uv_async_t async;
 			_net::err_ev err; // the errno that happened sendmsg if an error occurred.
 			v8::Persistent<Function> onSendCB;
 			v8::Persistent<Function> onReplyCB;       // not using yet: This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
@@ -133,6 +134,7 @@ protected:
 	static void do_sendmsg(uv_work_t *req);
 	static void post_sendmsg(uv_work_t *req, int status);
 	static void do_onrecv(uv_work_t *req);
+	static void on_recv(uv_async_t *handle, int status);
 };
 
 #endif /* NODE_NETLINKSOCKET_H_ */

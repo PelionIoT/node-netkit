@@ -11,7 +11,7 @@
 
 #include <sys/uio.h>
 
-Persistent<Function> NetlinkSocket::cstor_sendMsgReq;
+Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
 Persistent<Function> NetlinkSocket::cstor_socket;
 
 void byte_dump(char *buf, int size) {
@@ -73,13 +73,13 @@ void NetlinkSocket::ExtendFrom(const Arguments& args) {
 	NetlinkSocket::cstor_socket = Persistent<Function>::New(tpl->GetFunction());
 
 	tpl = FunctionTemplate::New(New);
-	tpl->SetClassName(String::NewSymbol("sendMsgReq"));
+	tpl->SetClassName(String::NewSymbol("sockMsgReq"));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
 	tpl->InstanceTemplate()->Set(String::NewSymbol("addMsg"), FunctionTemplate::New(AddMsgToReq)->GetFunction());
 
-	NetlinkSocket::cstor_sendMsgReq = Persistent<Function>::New(tpl->GetFunction());
+	NetlinkSocket::cstor_sockMsgReq = Persistent<Function>::New(tpl->GetFunction());
 }
 
 Handle<Value> NetlinkSocket::Init(const Arguments& args) {
@@ -261,7 +261,7 @@ void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 
 
 void NetlinkSocket::do_sendmsg(uv_work_t *req) {
-	NetlinkSocket::sendMsgReq *S = (NetlinkSocket::sendMsgReq *) req->data;
+	NetlinkSocket::sockMsgReq *S = (NetlinkSocket::sockMsgReq *) req->data;
 	if(S->self->fd != 0) {
 
 		int alloc_size = sizeof(struct iovec) * S->send_queue.remaining();
@@ -391,7 +391,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 	HandleScope scope;
 
-	sendMsgReq *job = (sendMsgReq *) req->data;
+	sockMsgReq *job = (sockMsgReq *) req->data;
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
@@ -453,25 +453,28 @@ void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 	job->reqUnref(); // we are done with the request object, let the GC handle it
 }
 
+void NetlinkSocket::do_onrecv(uv_work_t *req) {
+}
 
-Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sendMsgReq
+
+Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sockMsgReq
 	HandleScope scope;
 	NetlinkSocket* sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
 
-	Handle<Object> v8req = NetlinkSocket::cstor_sendMsgReq->NewInstance();
+	Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
 
-	NetlinkSocket::sendMsgReq *req = new NetlinkSocket::sendMsgReq(sock,v8req);
-	// ignore warning, this is fine. It's wrapped in the cstor of sendMsgReq
+	NetlinkSocket::sockMsgReq *req = new NetlinkSocket::sockMsgReq(sock,v8req);
+	// ignore warning, this is fine. It's wrapped in the cstor of sockMsgReq
 
 	return scope.Close(v8req);
 }
 
-Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Buffer -> for adding a req_generic to the sendMsgReq
+Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Buffer -> for adding a req_generic to the sockMsgReq
 	HandleScope scope;
 
 	if(args.Length() > 0 && args[0]->IsObject()) {
 
-		NetlinkSocket::sendMsgReq *obj = ObjectWrap::Unwrap<NetlinkSocket::sendMsgReq>(args.This());
+		NetlinkSocket::sockMsgReq *obj = ObjectWrap::Unwrap<NetlinkSocket::sockMsgReq>(args.This());
 
 		if(!Buffer::HasInstance(args[0])) {
 			return ThrowException(Exception::TypeError(String::New("send() -> passed in Buffer has no backing!")));
@@ -492,7 +495,7 @@ Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Bu
  * if a reply is recieved n(error or no error). If no reply is recived or no reply callback is provided
  * then the sendcb, if provided will be called.
  * @method sendMsg
- * @param obj {Object} the object must be a sendMsgReq created from the socket.
+ * @param obj {Object} the object must be a sockMsgReq created from the socket.
  * @param sendcb  {Function} the callback, of the form: cb(err,bytes)
  * @param replycb {Function} the reply callback. cb(err,bufs)
  *
@@ -507,8 +510,8 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 
 	if(args.Length() > 0 && args[0]->IsObject()) {
 		Local <Object> v8req = args[0]->ToObject();
-		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sendMsgReq)) {
-			NetlinkSocket::sendMsgReq *req =  ObjectWrap::Unwrap<NetlinkSocket::sendMsgReq>(v8req);
+		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
+			NetlinkSocket::sockMsgReq *req =  ObjectWrap::Unwrap<NetlinkSocket::sockMsgReq>(v8req);
 
 			sock->Ref();    // don't let the socket get garbage collected yet
 			req->reqRef();  // nor the request object
@@ -520,7 +523,7 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, NetlinkSocket::post_sendmsg);
 		} else {
-			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sendMsgReq.")));
+			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}
 
 	} else {
@@ -530,13 +533,37 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 	return scope.Close(Undefined());
 }
 
+/**
+ * Listen for a message via the given socket. Reply callback will be called
+ * if a reply is recieved(error or no error). Message listening will terminate 
+ * when the calling scope is destroyed.
+ * @method onRecv
+ * @param obj {Object} the object must be a sockMsgReq created from the socket.
+ * @param replycb {Function} the reply callback. cb(err,bufs)
+ *
+ */
 Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
-	// HandleScope scope;
-	// NetlinkSocket* sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
-	
+	HandleScope scope;
 
+	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
 
-	// return scope.Close
+	if(args.Length() > 0 && args[0]->IsObject()) {
+		Local <Object> v8req = args[0]->ToObject();
+		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
+			NetlinkSocket::sockMsgReq *req =  ObjectWrap::Unwrap<NetlinkSocket::sockMsgReq>(v8req);
+
+			sock->Ref();
+			req->reqRef();
+			if(args.Length() > 0 && args[1]->IsFunction())
+				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+
+			// start the thread to monitor this socket for reads
+			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_onrecv, NULL);
+		} else {
+			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
+		}
+	}	
+	return scope.Close(Undefined());
 }
 
 Handle<Value> NetlinkSocket::OnError(const Arguments& args) {
@@ -559,19 +586,19 @@ Handle<Value> NetlinkSocket::Close(const Arguments& args) {
 //	requestWrapper definitiions
 //
 // ------------------------------------------------------------------------------
-	NetlinkSocket::reqWrapper::reqWrapper() 
-		: buffer()
-		, rawMemory(NULL)
-		, ownMemory(false)
-		, len(0)
-		, iserr(false) 
-	{ }
+NetlinkSocket::reqWrapper::reqWrapper() 
+	: buffer()
+	, rawMemory(NULL)
+	, ownMemory(false)
+	, len(0)
+	, iserr(false) 
+{ }
 
-	NetlinkSocket::reqWrapper::~reqWrapper() {
-		if(rawMemory && ownMemory) ::free(rawMemory);
-		buffer.Dispose();
+NetlinkSocket::reqWrapper::~reqWrapper() {
+	if(rawMemory && ownMemory) ::free(rawMemory);
+	buffer.Dispose();
 //			buffer.Clear(); // remove any Persistent references
-	}
+}
 
 
 NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) {  

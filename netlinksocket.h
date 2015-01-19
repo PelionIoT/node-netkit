@@ -13,7 +13,7 @@
 class NetlinkSocket : public node::ObjectWrap {
 public:
     static Persistent<Function> cstor_socket;
-    static Persistent<Function> cstor_sendMsgReq;
+    static Persistent<Function> cstor_sockMsgReq;
 
 public:
 	NetlinkSocket() 
@@ -47,76 +47,74 @@ public:
 
     static Handle<Value> Close(const Arguments& args);
 
-	// create + add messages to sendMsgReq from JS
-    static Handle<Value> CreateMsgReq(const Arguments& args);  // creates a sendMsgReq
-    static Handle<Value> AddMsgToReq(const Arguments& args);   // adds a Buffer -> for adding a req_generic to the sendMsgReq
+	// create + add messages to sockMsgReq from JS
+    static Handle<Value> CreateMsgReq(const Arguments& args);  // creates a sockMsgReq
+    static Handle<Value> AddMsgToReq(const Arguments& args);   // adds a Buffer -> for adding a req_generic to the sockMsgReq
 
 protected:
 	class reqWrapper {
-	public:
-		reqWrapper();
-		~reqWrapper();
+		public:
+			reqWrapper();
+			~reqWrapper();
 
-		inline reqWrapper& operator=(reqWrapper &&o);
-		void AttachBuffer(Local<Object> b);
-		void DetachBuffer();
-		bool hasBuffer() { return (rawMemory != NULL);	}
-		Handle<Object> ExportBuffer();
-		void malloc(int c);
+			inline reqWrapper& operator=(reqWrapper &&o);
+			void AttachBuffer(Local<Object> b);
+			void DetachBuffer();
+			bool hasBuffer() { return (rawMemory != NULL);	}
+			Handle<Object> ExportBuffer();
+			void malloc(int c);
 
-	public:
-		static void free_req_callback_buffer(char *m,void *hint); // this is the node::Buffer free callback. See node/node_buffer.h
-		v8::Persistent<Object> buffer; // Buffer object passed in. we make this Persistent until the req is fulfilled
-		char *rawMemory;
-		bool ownMemory; // true if we should free our own memory.
-		int len;
-		bool iserr;
+		public:
+			static void free_req_callback_buffer(char *m,void *hint); // this is the node::Buffer free callback. See node/node_buffer.h
+			v8::Persistent<Object> buffer; // Buffer object passed in. we make this Persistent until the req is fulfilled
+			char *rawMemory;
+			bool ownMemory; // true if we should free our own memory.
+			int len;
+			bool iserr;
 
-	private:
-		// we only use this in the tw_FIFO below
-		// and we don't want multiple copies of 
-		// of these wrappers around
-		reqWrapper( const reqWrapper &o );     
-		reqWrapper &operator=(const reqWrapper &o);
+		private:
+			// we only use this in the tw_FIFO below
+			// and we don't want multiple copies of 
+			// of these wrappers around
+			reqWrapper( const reqWrapper &o );     
+			reqWrapper &operator=(const reqWrapper &o);
 	};
 
 protected:
-	class sendMsgReq : public node::ObjectWrap {
+	class sockMsgReq : public node::ObjectWrap {
 		// Follows the same pattern as TunInterface's write, except that we support
 		// scatter / gather style sendmsg semantics, so we need to have a list of reqWrappers
-	public:
-		typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> SendQueue_t;
-		typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> ReplyQueue_t;  // replies come back
-		typedef v8::Handle<v8::Object> v8obj;
+		public:
+			typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> SendQueue_t;
+			typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> ReplyQueue_t;  // replies come back
+			typedef v8::Handle<v8::Object> v8obj;
 
-	public:
-		SendQueue_t send_queue;
-		SendQueue_t reply_queue;  // replies come back    // but their callbacks can only be called in the v8 thread
-		static Persistent<Function> cstor;
-		int replies; // if non-zero there was a reply (perhaps more than one)
-		void *recvBuffer; // used to hold recv stuff before going back to v8 thread.
-		uv_work_t work;
-		_net::err_ev err; // the errno that happened sendmsg if an error occurred.
-		v8::Persistent<Function> onSendCB;
-		v8::Persistent<Function> onReplyCB;       // not using yet: This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
-		v8::Persistent<Object> buffer; // Buffer object passed in
-		char *_backing; // backing of the passed in Buffer
-		int len;
-		NetlinkSocket *self;
+		public:
+			// need Buffer
+			sockMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), self(s) 
+				{ work.data = this; }
+			sockMsgReq(NetlinkSocket *s, v8obj handle) : sockMsgReq(s) { this->Wrap(handle); }
+			void reqRef() {	this->Ref(); }
+			void reqUnref() { this->Unref(); }
+			~sockMsgReq() {	if(recvBuffer) free(recvBuffer); }
 
-		// need Buffer
-		sendMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), self(s) 
-		{
-			work.data = this;
-		}
+		private:
+			sockMsgReq();
 
-		sendMsgReq(NetlinkSocket *s, v8obj handle) : sendMsgReq(s) { this->Wrap(handle); }
-		void reqRef() {	this->Ref(); }
-		void reqUnref() { this->Unref(); }
-		~sendMsgReq() {	if(recvBuffer) free(recvBuffer); }
-
-	private:
-		sendMsgReq() = delete;
+		public:
+			SendQueue_t send_queue;
+			ReplyQueue_t reply_queue;  // replies come back    // but their callbacks can only be called in the v8 thread
+			static Persistent<Function> cstor;
+			int replies; // if non-zero there was a reply (perhaps more than one)
+			void *recvBuffer; // used to hold recv stuff before going back to v8 thread.
+			uv_work_t work;
+			_net::err_ev err; // the errno that happened sendmsg if an error occurred.
+			v8::Persistent<Function> onSendCB;
+			v8::Persistent<Function> onReplyCB;       // not using yet: This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
+			v8::Persistent<Object> buffer; // Buffer object passed in
+			char *_backing; // backing of the passed in Buffer
+			int len;
+			NetlinkSocket *self;
 	};
 
 protected:
@@ -134,6 +132,7 @@ protected:
 
 	static void do_sendmsg(uv_work_t *req);
 	static void post_sendmsg(uv_work_t *req, int status);
+	static void do_onrecv(uv_work_t *req);
 };
 
 #endif /* NODE_NETLINKSOCKET_H_ */

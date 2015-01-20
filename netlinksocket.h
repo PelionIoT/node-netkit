@@ -128,13 +128,13 @@ protected:
 	struct sockaddr_nl	addr_peer;
 
 	_net::err_ev err;
-
 	v8::Persistent<Function> onDataCB;
 
+	static int do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block);
 	static void do_sendmsg(uv_work_t *req);
 	static void post_sendmsg(uv_work_t *req, int status);
 	static void do_onrecv(uv_work_t *req);
-	static void on_recv(uv_async_t *handle, int status);
+	static void on_recv(uv_poll_t* handle, int status, int events);
 };
 
 #endif /* NODE_NETLINKSOCKET_H_ */

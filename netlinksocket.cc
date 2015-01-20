@@ -311,73 +311,14 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 
 			int ret = sendmsg(S->self->fd, &msg, 0);
 
-			if(!S->recvBuffer) {
-				S->recvBuffer = malloc(NODE_RTNETLINK_RECV_BUFFER);
-				memset(S->recvBuffer,0,NODE_RTNETLINK_RECV_BUFFER);
-				iov_array[0].iov_base = S->recvBuffer;
-				iov_array[0].iov_len = NODE_RTNETLINK_RECV_BUFFER;
-			}
-
 			if (ret < 0) {
 				ERROR_OUT("Error on sendmsg()\n");
 				S->err.setError(errno);
 			} else {
 				// receive loop
-				while(1) {
-//					memset(iov_array,0,sizeof(struct iovec));
-
-					msg.msg_name = &nladdr;
-					msg.msg_namelen = sizeof(nladdr);
-					msg.msg_iov = iov_array;
-					msg.msg_iovlen = 1;
-
-					ret = recvmsg(S->self->fd, &msg, 0);
-
-					if(ret < 0) {
-						if (errno == EINTR || errno == EAGAIN)
-							continue;
-						ERROR_OUT("Error on recvmsg()\n");
-						S->err.setError(errno);
-						break;
-					} else if (ret < sizeof(struct nlmsghdr)){
-						ERROR_OUT("Truncated recvmsg()\n");
-						S->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
-						break;
-					} else {
-						struct nlmsghdr *nlhdr = (struct nlmsghdr *) S->recvBuffer;
-						// ignore stuff which does not belong to us, or is not something in reply
-						// to what we sent
-						// ok, we have at least a header... let's parse it.
-
-						if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < first_seq ||
-								nlhdr->nlmsg_seq > last_seq ) {
-							DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
-						} else {
-							S->replies++; // mark this request as having replies, so we can do the correct
-							              // action in the callback which will run in the v8 thread.
-							if(nlhdr->nlmsg_type == NLMSG_ERROR) {
-								struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
-
-								if (ret < sizeof(struct nlmsgerr)) {
-									S->err.setError(_net::OTHER_ERROR,"Truncated ERROR from NETLINK.");
-								} else {
-//									if (!nlerr->error) {
-										reqWrapper *replyBuf = S->reply_queue.addEmpty();
-										replyBuf->iserr = true;
-										replyBuf->malloc(nlhdr->nlmsg_len);
-										memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
-										DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
-										DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",S->reply_queue.remaining());
-								}
-							} else {
-								reqWrapper *replyBuf = S->reply_queue.addEmpty();
-								replyBuf->malloc(nlhdr->nlmsg_len);
-								memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
-								DBG_OUT("Got reply. Queuing... (%d)",S->reply_queue.remaining());
-							}
-						}
-						break;
-					}
+				int receiving = 1;
+				while(receiving) {					
+					receiving = do_recvmsg(S,true); //blocking read on S 
 				}
 			}
 		} else {
@@ -453,22 +394,115 @@ void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 	job->reqUnref(); // we are done with the request object, let the GC handle it
 }
 
-void NetlinkSocket::do_onrecv(uv_work_t *req) {
-	HandleScope scope;
+int NetlinkSocket::do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block) {
 
-	sockMsgReq *job = (sockMsgReq *) req->data;
+	struct msghdr msg;         // used by sendmsg / recvmsg
+	struct sockaddr_nl nladdr; // NETLINK address
 
+	memset(&msg,0,sizeof(msghdr));
+	memset(&nladdr, 0, sizeof(nladdr));
+	nladdr.nl_family = AF_NETLINK;
+	nladdr.nl_pid = 0;
+	nladdr.nl_groups = 0;
 
-	// Signal data available for on_recv to send to the the user
-    uv_async_send(&(job->async));
+	struct iovec *iov_array = (struct iovec *) malloc(1); // does msghdr free iovec?
+	memset(iov_array,0,1);
+
+	if(!S->recvBuffer) {
+		S->recvBuffer = malloc(NODE_RTNETLINK_RECV_BUFFER);
+		memset(S->recvBuffer,0,NODE_RTNETLINK_RECV_BUFFER);
+		iov_array[0].iov_base = S->recvBuffer;
+		iov_array[0].iov_len = NODE_RTNETLINK_RECV_BUFFER;
+	}
+
+	msg.msg_name = &nladdr;
+	msg.msg_namelen = sizeof(nladdr);
+	msg.msg_iov = iov_array;
+	msg.msg_iovlen = 1;
+
+	int first_seq = 0, last_seq;
+	if(!first_seq) first_seq = S->self->seq;
+	last_seq = S->self->seq;
+
+	int flags = fcntl(S->self->fd, F_GETFL);
+	if(block)
+		flags &= ~O_NONBLOCK;
+	else
+		flags |= O_NONBLOCK;
+	fcntl(S->self->fd, F_SETFL, flags);
+
+	int ret = recvmsg(S->self->fd, &msg, 0);
+
+	if(ret < 0) {
+		if (errno == EINTR || errno == EAGAIN)
+			return true;
+		ERROR_OUT("Error on recvmsg()\n");
+		S->err.setError(errno);
+		return false;
+	} else if (ret < sizeof(struct nlmsghdr)){
+		ERROR_OUT("Truncated recvmsg()\n");
+		S->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
+		return false;
+	} else {
+		struct nlmsghdr *nlhdr = (struct nlmsghdr *) S->recvBuffer;
+		// ignore stuff which does not belong to us, or is not something in reply
+		// to what we sent
+		// ok, we have at least a header... let's parse it.
+
+		if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < first_seq ||
+				nlhdr->nlmsg_seq > last_seq ) {
+			DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
+		} else {
+			S->replies++; // mark this request as having replies, so we can do the correct
+			              // action in the callback which will run in the v8 thread.
+			if(nlhdr->nlmsg_type == NLMSG_ERROR) {
+				struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
+
+				if (ret < sizeof(struct nlmsgerr)) {
+					S->err.setError(_net::OTHER_ERROR,"Truncated ERROR from NETLINK.");
+				} else {
+//									if (!nlerr->error) {
+						reqWrapper *replyBuf = S->reply_queue.addEmpty();
+						replyBuf->iserr = true;
+						replyBuf->malloc(nlhdr->nlmsg_len);
+						memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
+						DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
+						DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",S->reply_queue.remaining());
+				}
+			} else {
+				reqWrapper *replyBuf = S->reply_queue.addEmpty();
+				replyBuf->malloc(nlhdr->nlmsg_len);
+				memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
+				DBG_OUT("Got reply. Queuing... (%d)",S->reply_queue.remaining());
+			}
+		}
+		return false;
+	}
 }
 
-void NetlinkSocket::on_recv(uv_async_t *handle, int status) {
+void NetlinkSocket::do_onrecv(uv_work_t *req) {
 	// HandleScope scope;
 
 	// sockMsgReq *job = (sockMsgReq *) req->data;
+	// uv_poll_t handle;
+	// uv_os_sock_t sock = job->self->fd;
+	// int event = uv_poll_event::UV_READABLE;
+
+	// uv_poll_init_socket(uv_default_loop(), &handle, sock);
+	// while(1)
+	// {
 
 
+	// 	// Signal data available for on_recv to send to the the user
+	// 	job->async.data = (sockMsgReq *) job;
+	//     uv_async_send(&(job->async));
+	// }
+}
+
+void NetlinkSocket::on_recv(uv_poll_t* handle, int status, int events) {
+	 // HandleScope scope;
+
+	 // sockMsgReq *job = (sockMsgReq *) handle->data;
 }
 
 Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sockMsgReq
@@ -571,11 +605,11 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 			if(args.Length() > 0 && args[1]->IsFunction())
 				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
 
-			// Setup the async notifiction events to get data from the worker thread 
-		    uv_async_init(uv_default_loop(), &(req->async), NetlinkSocket::on_recv);
 
-			// start the thread to monitor this socket for reads
-			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_onrecv, NULL);
+
+////////////
+
+
 		} else {
 			return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}

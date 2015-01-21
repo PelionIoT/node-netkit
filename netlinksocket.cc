@@ -270,7 +270,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 		int x = 0;
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc>::iter iter;
 		S->send_queue.startIter(iter);
-		int first_seq = 0, last_seq;
+		S->first_seq = S->self->seq;
 		while(!iter.atEnd()) {
 			void *buf =  iter.el().rawMemory;
 			if(buf) {
@@ -278,8 +278,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 					AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
 				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = S->self->seq;  // update sequence number
 				// other fields are handled in node.js...
-				if(!first_seq) first_seq = S->self->seq;
-				last_seq = S->self->seq;
+				S->last_seq = S->self->seq;
 				S->self->seq++;
 				iov_array[x].iov_base = buf;
 				iov_array[x].iov_len = iter.el().len;
@@ -307,7 +306,6 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			msg.msg_namelen = sizeof(nladdr);
 			msg.msg_iov = iov_array;
 			msg.msg_iovlen = 1; // array length
-
 
 			int ret = sendmsg(S->self->fd, &msg, 0);
 
@@ -420,21 +418,24 @@ int NetlinkSocket::do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block) {
 	msg.msg_iov = iov_array;
 	msg.msg_iovlen = 1;
 
-	int first_seq = 0, last_seq;
-	if(!first_seq) first_seq = S->self->seq;
-	last_seq = S->self->seq;
+    int flags;
+    if(-1 == (flags = fcntl(S->self->fd, F_GETFL,0)))
+     flags = 0;
 
-	int flags = fcntl(S->self->fd, F_GETFL);
 	if(block)
 		flags &= ~O_NONBLOCK;
 	else
 		flags |= O_NONBLOCK;
-	fcntl(S->self->fd, F_SETFL, flags);
+	if(-1 == fcntl(S->self->fd, F_SETFL, flags)) {
+		ERROR_OUT("Error on fcntl()\n");
+		S->err.setError(errno);
+		return false;
+	}
 
 	int ret = recvmsg(S->self->fd, &msg, 0);
 
 	if(ret < 0) {
-		if (errno == EINTR || errno == EAGAIN)
+		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 			return true;
 		ERROR_OUT("Error on recvmsg()\n");
 		S->err.setError(errno);
@@ -449,8 +450,8 @@ int NetlinkSocket::do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block) {
 		// to what we sent
 		// ok, we have at least a header... let's parse it.
 
-		if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < first_seq ||
-				nlhdr->nlmsg_seq > last_seq ) {
+		if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < S->first_seq ||
+				nlhdr->nlmsg_seq > S->last_seq ) {
 			DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
 		} else {
 			S->replies++; // mark this request as having replies, so we can do the correct
@@ -480,29 +481,12 @@ int NetlinkSocket::do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block) {
 	}
 }
 
-void NetlinkSocket::do_onrecv(uv_work_t *req) {
-	// HandleScope scope;
+void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
+	HandleScope scope;
+	sockMsgReq *job = (sockMsgReq *) handle->data;
 
-	// sockMsgReq *job = (sockMsgReq *) req->data;
-	// uv_poll_t handle;
-	// uv_os_sock_t sock = job->self->fd;
-	// int event = uv_poll_event::UV_READABLE;
+	int receiving = do_recvmsg(job,false); //non-blocking read on S 
 
-	// uv_poll_init_socket(uv_default_loop(), &handle, sock);
-	// while(1)
-	// {
-
-
-	// 	// Signal data available for on_recv to send to the the user
-	// 	job->async.data = (sockMsgReq *) job;
-	//     uv_async_send(&(job->async));
-	// }
-}
-
-void NetlinkSocket::on_recv(uv_poll_t* handle, int status, int events) {
-	 // HandleScope scope;
-
-	 // sockMsgReq *job = (sockMsgReq *) handle->data;
 }
 
 Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sockMsgReq
@@ -605,10 +589,12 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 			if(args.Length() > 0 && args[1]->IsFunction())
 				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
 
+			uv_poll_t handle;
+			uv_os_sock_t sock = req->self->fd;
+			int events = uv_poll_event::UV_READABLE;
 
-
-////////////
-
+			uv_poll_init_socket(uv_default_loop(), &handle, sock);
+			uv_poll_start(&handle, events, NetlinkSocket::on_recvmsg);
 
 		} else {
 			return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.")));

@@ -115,6 +115,8 @@ protected:
 			v8::Persistent<Object> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;
+			int first_seq; // sequence bounds  
+			int last_seq;  // for this request
 			NetlinkSocket *self;
 	};
 
@@ -133,8 +135,7 @@ protected:
 	static int do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block);
 	static void do_sendmsg(uv_work_t *req);
 	static void post_sendmsg(uv_work_t *req, int status);
-	static void do_onrecv(uv_work_t *req);
-	static void on_recv(uv_poll_t* handle, int status, int events);
+	static void on_recvmsg(uv_poll_t* handle, int status, int events);
 };
 
 #endif /* NODE_NETLINKSOCKET_H_ */

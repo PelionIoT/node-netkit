@@ -120,6 +120,10 @@ protected:
 			NetlinkSocket *self;
 	};
 
+public:
+	typedef NetlinkSocket::sockMsgReq Request_t;  
+	typedef NetlinkTypes::SocketMode SocketMode;
+
 protected:
 
 	int fd;       // socket FD
@@ -132,7 +136,7 @@ protected:
 	_net::err_ev err;
 	v8::Persistent<Function> onDataCB;
 
-	static int do_recvmsg(NetlinkSocket::sockMsgReq *S, bool block);
+	static int do_recvmsg(Request_t *req, SocketMode mode);
 	static void do_sendmsg(uv_work_t *req);
 	static void post_sendmsg(uv_work_t *req, int status);
 	static void on_recvmsg(uv_poll_t* handle, int status, int events);

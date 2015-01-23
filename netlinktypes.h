@@ -33,16 +33,16 @@ using namespace TWlib;
 
 typedef Allocator<Alloc_Std> netkitAlloc;
 
-#define AS_GENERIC_NLM(r) ((NetLinkTypes::req_generic *)r)
-#define AS_NDMSG(r) ((struct NetLinkTypes::req_ndmsg *)r)
-#define AS_RTMSG(r) ((struct NetLinkTypes::req_rtmsg *)r)
+#define AS_GENERIC_NLM(r) ((NetlinkTypes::req_generic *)r)
+#define AS_NDMSG(r) ((struct NetlinkTypes::req_ndmsg *)r)
+#define AS_RTMSG(r) ((struct NetlinkTypes::req_rtmsg *)r)
 #define MAX_NODE_RTNETLINK_MESSAGE  (1540+sizeof(nlmsghdr))
 
 // 16k receive buffer - this is used on each recvmsg() call.
 // *only* used by uv_work() calls.
 #define NODE_RTNETLINK_RECV_BUFFER 16384
 
-namespace NetLinkTypes{
+namespace NetlinkTypes{
 
 	typedef struct {  // use generic message, we can cast to the one we need
 		struct nlmsghdr	hdr;
@@ -61,6 +61,11 @@ namespace NetLinkTypes{
 		struct rtmsg rt;
 		char  			buf[1024];
 	} req_rtmsg;
+
+	enum SocketMode{
+		SOCKET_NONBLOCKING = 0,
+		SOCKET_BLOCKING
+	};
 };
 
 #endif

@@ -8,11 +8,12 @@
 
 #include "netlinksocket.h"
 #include "error-common.h"
-
+   
 #include <sys/uio.h>
 
 Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
 Persistent<Function> NetlinkSocket::cstor_socket;
+uv_poll_t NetlinkSocket::handle;
 
 void byte_dump(char *buf, int size) {
 	int i;
@@ -51,6 +52,7 @@ void NetlinkSocket::ExtendFrom(const Arguments& args) {
 	tpl->InstanceTemplate()->Set(String::NewSymbol("createMsgReq"), FunctionTemplate::New(CreateMsgReq)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("onError"), FunctionTemplate::New(OnError)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("onRecv"), FunctionTemplate::New(OnRecv)->GetFunction());
+	tpl->InstanceTemplate()->Set(String::NewSymbol("stopRecv"), FunctionTemplate::New(StopRecv)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("sendMsg"), FunctionTemplate::New(Sendmsg)->GetFunction());
 
 
@@ -318,7 +320,7 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			if(args.Length() > 1 && args[2]->IsFunction())
 				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[2]));
 
-			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, NetlinkSocket::post_sendmsg);
+			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, NetlinkSocket::post_recvmsg);
 		} else {
 			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}
@@ -335,7 +337,6 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
  * if a reply is recieved(error or no error). Message listening will terminate 
  * when the calling scope is destroyed.
  * @method onRecv
- * @param obj {Object} the object must be a sockMsgReq created from the socket.
  * @param replycb {Function} the reply callback. cb(err,bufs)
  *
  */
@@ -344,23 +345,49 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 
 	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
 
-	if(args.Length() > 1 && args[0]->IsObject()) {
+	if(args.Length() > 0 && args[0]->IsFunction()) {
+		sock->Ref();
+		Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
+		Request_t* recvmsg_req = new Request_t(sock,v8req); // new request sequnce starts at zero
+		recvmsg_req->reqRef();
+		recvmsg_req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+
+		memset(&handle,0,sizeof(uv_poll_t));
+		handle.data = recvmsg_req;
+		uv_os_sock_t S = sock->fd;
+		int events = uv_poll_event::UV_READABLE;
+
+		uv_poll_init_socket(uv_default_loop(), &handle, S);
+		uv_poll_start(&handle, events, NetlinkSocket::on_recvmsg);
+
+	} else {
+		return ThrowException(Exception::TypeError(
+			String::New("onRecv() -> bad parameters. Callback required.")));
+	}	
+	return scope.Close(Undefined());
+}
+
+/**
+ * Listen for a message via the given socket. Reply callback will be called
+ * if a reply is recieved(error or no error). Message listening will terminate 
+ * when the calling scope is destroyed.
+ * @method onRecv
+ * @param obj {Object} the object must be a sockMsgReq created from the socket.
+ *
+ */
+Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
+	HandleScope scope;
+
+	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+
+	if(args.Length() > 0 && args[0]->IsObject()) {
 		Local <Object> v8req = args[0]->ToObject();
 		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
 			Request_t *req =  ObjectWrap::Unwrap<Request_t>(v8req);
 
-			sock->Ref();
-			req->reqRef();
-			if(args.Length() > 0 && args[1]->IsFunction())
-				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
-
-			uv_poll_t handle;
-			handle.data = req;
-			uv_os_sock_t sock = req->self->fd;
-			int events = uv_poll_event::UV_READABLE;
-
-			uv_poll_init_socket(uv_default_loop(), &handle, sock);
-			uv_poll_start(&handle, events, NetlinkSocket::on_recvmsg);
+			uv_poll_stop(&handle);
+			sock->Unref();
+			req->reqUnref();
 
 		} else {
 			return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.")));
@@ -385,6 +412,7 @@ Handle<Value> NetlinkSocket::Close(const Arguments& args) {
 
 	return scope.Close(Undefined());
 }
+
 
 void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 	DBG_OUT("FREEING MEMORY.");
@@ -489,7 +517,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
     if(-1 == (flags = fcntl(req->self->fd, F_GETFL,0)))
      flags = 0;
 
-	if(mode)
+	if(mode == NetlinkTypes::SOCKET_NONBLOCKING)
 		flags &= ~O_NONBLOCK;
 	else
 		flags |= O_NONBLOCK;
@@ -502,7 +530,9 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	int ret = recvmsg(req->self->fd, &msg, 0);
 
 	if(ret < 0) {
-		if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+		if(mode == NetlinkTypes::SOCKET_NONBLOCKING && errno == EWOULDBLOCK)
+			return false; // done receiving non-blocking socket
+		if (errno == EINTR || errno == EAGAIN )
 			return true;
 		ERROR_OUT("Error on recvmsg()\n");
 		req->err.setError(errno);
@@ -548,7 +578,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	}
 }
 
-void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
+void NetlinkSocket::post_recvmsg(uv_work_t *req, int status) {
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) req->data;
@@ -615,10 +645,19 @@ void NetlinkSocket::post_sendmsg(uv_work_t *req, int status) {
 
 void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 	HandleScope scope;
-	sockMsgReq *job = (sockMsgReq *) handle->data;
+	Request_t *recvmsg_req = (Request_t *) handle->data;
 
-	int receiving = do_recvmsg(job,NetlinkTypes::SOCKET_NONBLOCKING); //non-blocking read on S 
+	// Service the ready socket, loop on EGAGAIN as socket ready may not produce on first read
+	while(do_recvmsg(recvmsg_req,NetlinkTypes::SOCKET_NONBLOCKING)); //non-blocking read on sock
 
+	// copy data to buf for return via callback
+	uv_work_t work;
+	memset(&work, 0, sizeof(uv_work_t));
+	work.data = recvmsg_req;
+	post_recvmsg(&work, status);
+
+	// Done with request here?????
+	recvmsg_req->reqUnref();
 }
 
 

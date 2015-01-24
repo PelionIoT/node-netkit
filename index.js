@@ -481,6 +481,107 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 }
 
 
+nk.monitorNetwork = function(ifname, sock, cb) {
+	var ifndex = nk.ifNameToIndex(ifname);
+	if(util.isError(ifndex)) {
+		err("* Error: " + util.inspect(ans));
+		cb(ifindex); // call w/ error
+		return;
+	}
+	var bufs = [];
+
+//<I(_len)H(_type)H(_flags)I(_seq)I(_pid)
+	var len = 0; // updated at end
+	var nl_hdr = nk.nl.buildHdr();
+	nl_hdr._type = rt.RTM_GETLINK; // the command
+	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_ROOT|nl.NLM_F_MATCH;
+	var nd_msg = rt.buildNdmsg(nk.AF_INET6,ifndex,rt.NUD_PERMANENT,nl.NLM_F_REQUEST);
+	nd_msg._family = nk.AF_INET6;
+	nd_msg._ifindex = ifndex;
+	nd_msg._state = rt.NUD_NONE;
+	nd_msg._flags = 0;
+
+
+	var inetdest = "0000:0000:0000:0000:0000:0000:0000:0000"
+	var ans = nk.toAddress(inetdest,nk.AF_INET6);
+	if(util.isError(ans)) {
+		cb(ans);
+		return;
+	}
+	var destbuf = ans;
+	var rt_attr = nk.rt.buildRtattrBuf(nk.rt.NDA_DST,destbuf.bytes);
+	console.dir(destbuf);
+	dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
+	dbg("rt_attr---> " + asHexBuffer(rt_attr));
+	bufs.push(rt_attr);
+	
+//	bufs.push(nl_hdr.pack());
+	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
+	bufs.push(nd_msg.pack());
+
+	var len = 0;
+	for (var n=0;n<bufs.length;n++)
+		len += bufs[n].length;
+	console.log("nl_hdr._length = " + nl_hdr._length);
+	nl_hdr._len = nl_hdr._length + len;
+	bufs.unshift(nl_hdr.pack());
+	var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
+
+	dbg("Sending---> " + asHexBuffer(all));
+	console.log('all len = ' + all.length);
+
+	if(sock) {
+		cb("Not implemented");
+	} else {
+		var sock = nk.newNetlinkSocket();
+		sock.create(null,function(err) {
+			if(err) {
+				console.log("socket.create() Error: " + util.inspect(err));
+				cb(err);
+				return;
+			} else {
+				console.log("Created netlink socket.");
+			}
+	            // that was exciting. Now let's close it.
+
+	            var msgreq = sock.createMsgReq();
+
+	            msgreq.addMsg(all);
+
+	            sock.sendMsg(msgreq, function(err,bytes) {
+	            	if(err) {
+	            		console.error("** Error: " + util.inspect(err));
+	            		cb(err);
+	            	} else {
+	            		console.log("in cb: " + util.inspect(arguments));
+	            		cb(err,msgreq);
+	            	}
+	            }, function(err,bufs) {
+	            	console.log("in reply cb...");
+	            	if(err) {
+	            		console.log("** Error in reply: ");
+	            		for(var n=0;n<bufs.length;n++) {
+	            			console.log('here');
+	            			console.dir(bufs[n]);
+	            			console.log('buf len = ' + bufs[n].length);
+	            			var errobj = nk.nl.parseErrorHdr(bufs[n]);
+	            			console.dir(nk.errorFromErrno(errobj._error));
+	            			console.log(util.inspect(errobj));
+	            		}
+	            	} else {
+	            		console.log("** Success in reply: ");
+	            		cb(err,buffs);
+	            	}
+	            });
+
+
+	        });
+
+	    }
+
+}
+
+
 
 module.exports = nk;
 

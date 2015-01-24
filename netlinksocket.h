@@ -43,6 +43,7 @@ public:
 
     static Handle<Value> Sendmsg(const Arguments& args);
     static Handle<Value> OnRecv(const Arguments& args);
+    static Handle<Value> StopRecv(const Arguments& args);
     static Handle<Value> OnError(const Arguments& args);
 
     static Handle<Value> Close(const Arguments& args);
@@ -135,10 +136,12 @@ protected:
 
 	_net::err_ev err;
 	v8::Persistent<Function> onDataCB;
+	static uv_poll_t handle;  // currently only one event loop supported  until we contextualize this
+//	static Request_t *recvmsg_req; // to save read request for asynch onrecv
 
 	static int do_recvmsg(Request_t *req, SocketMode mode);
 	static void do_sendmsg(uv_work_t *req);
-	static void post_sendmsg(uv_work_t *req, int status);
+	static void post_recvmsg(uv_work_t *req, int status);
 	static void on_recvmsg(uv_poll_t* handle, int status, int events);
 };
 

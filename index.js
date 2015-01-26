@@ -206,6 +206,7 @@ var nk = {
 	// address families: bits/socket.h
 	AF_INET6: 10,
 	AF_INET: 2,
+	AF_NETLINK:	16,
 
 	FLAGS: {
 		// Interface FLAGS
@@ -281,7 +282,6 @@ var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
  */
 nk.nl = {
 
-
     // netlink message flags
 	// See: linux/netlink.h
 	
@@ -338,6 +338,22 @@ nk.nl = {
 		return bufferpack.unpack(error_nlmsghdr_fmt,b,0);
 	}
 }
+
+nk.sk = {
+	// socket.h socket types
+	SOCK_DGRAM:		1,
+	SOCK_STREAM: 	2,
+	SOCK_RAW:	 	3,
+	SOCK_RDM:	 	4,
+	SOCK_SEQPACKET:	5,
+	SOCK_DCCP:	 	6,
+	SOCK_PACKET:	10,
+
+	SOCK_CLOEXEC:	0x40000000,
+	SOCK_NONBLOCK:	0x40000000
+
+};
+
 var nl = nk.nl;
 
 /**
@@ -490,34 +506,50 @@ nk.monitorNetwork = function(ifname, sock, cb) {
 	}
 	var bufs = [];
 
-//<I(_len)H(_type)H(_flags)I(_seq)I(_pid)
+	// 	struct {
+	// 	struct nlmsghdr nlh;
+	// 	struct ifinfomsg ifm;
+	// 	/* attribute has to be NLMSG aligned */
+	// 	struct rtattr ext_req __attribute__ ((aligned(NLMSG_ALIGNTO)));
+	// 	__u32 ext_filter_mask;
+	// } req;
+
+	// memset(&req, 0, sizeof(req));
+	// req.nlh.nlmsg_len = sizeof(req);
+	// req.nlh.nlmsg_type = type;
+	// req.nlh.nlmsg_flags = NLM_F_DUMP|NLM_F_REQUEST;
+	// req.nlh.nlmsg_pid = 0;
+	// req.nlh.nlmsg_seq = rth->dump = ++rth->seq;
+	// req.ifm.ifi_family = family;
+
+	// req.ext_req.rta_type = IFLA_EXT_MASK;
+	// req.ext_req.rta_len = RTA_LENGTH(sizeof(__u32));
+	// req.ext_filter_mask = filt_mask;
+
+	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var len = 0; // updated at end
 	var nl_hdr = nk.nl.buildHdr();
 	nl_hdr._type = rt.RTM_GETLINK; // the command
 	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_ROOT|nl.NLM_F_MATCH;
-	var nd_msg = rt.buildNdmsg(nk.AF_INET6,ifndex,rt.NUD_PERMANENT,nl.NLM_F_REQUEST);
-	nd_msg._family = nk.AF_INET6;
-	nd_msg._ifindex = ifndex;
-	nd_msg._state = rt.NUD_NONE;
-	nd_msg._flags = 0;
 
 
-	var inetdest = "0000:0000:0000:0000:0000:0000:0000:0000"
-	var ans = nk.toAddress(inetdest,nk.AF_INET6);
-	if(util.isError(ans)) {
-		cb(ans);
-		return;
-	}
-	var destbuf = ans;
-	var rt_attr = nk.rt.buildRtattrBuf(nk.rt.NDA_DST,destbuf.bytes);
-	console.dir(destbuf);
-	dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-	dbg("rt_attr---> " + asHexBuffer(rt_attr));
+	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
+									rt.IFF_RUNNING,rt.IFF_CHANGE);
+	info_msg._family = rt.RTN_UNSPEC;
+
+	//bufs.push(nl_hdr.pack());
+
+	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
+	bufs.push(info_msg.pack());
+
+	// req.ext_req.rta_type = IFLA_EXT_MASK;
+	// req.ext_req.rta_len = RTA_LENGTH(sizeof(__u32));
+ 	//req.ext_filter_mask = filt_mask; RTEXT_FILTER_VF		(1 << 0)
+ 	var attr_data = Buffer(4);
+ 	attr_data.writeUInt32LE(rt.RTEXT_FILTER_VF, 0);
+	var rt_attr = nk.rt.buildRtattrBuf(rt.IFLA_EXT_MASK, attr_data);
+	dbg("rt_attr---> "  + asHexBuffer(rt_attr));
 	bufs.push(rt_attr);
-	
-//	bufs.push(nl_hdr.pack());
-	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
-	bufs.push(nd_msg.pack());
 
 	var len = 0;
 	for (var n=0;n<bufs.length;n++)
@@ -530,54 +562,21 @@ nk.monitorNetwork = function(ifname, sock, cb) {
 	dbg("Sending---> " + asHexBuffer(all));
 	console.log('all len = ' + all.length);
 
-	if(sock) {
-		cb("Not implemented");
-	} else {
-		var sock = nk.newNetlinkSocket();
-		sock.create(null,function(err) {
-			if(err) {
-				console.log("socket.create() Error: " + util.inspect(err));
-				cb(err);
-				return;
-			} else {
-				console.log("Created netlink socket.");
-			}
-	            // that was exciting. Now let's close it.
+    // that was exciting. Now let's close it.
 
-	            var msgreq = sock.createMsgReq();
+    var msgreq = sock.createMsgReq();
 
-	            msgreq.addMsg(all);
+    msgreq.addMsg(all);
 
-	            sock.sendMsg(msgreq, function(err,bytes) {
-	            	if(err) {
-	            		console.error("** Error: " + util.inspect(err));
-	            		cb(err);
-	            	} else {
-	            		console.log("in cb: " + util.inspect(arguments));
-	            		cb(err,msgreq);
-	            	}
-	            }, function(err,bufs) {
-	            	console.log("in reply cb...");
-	            	if(err) {
-	            		console.log("** Error in reply: ");
-	            		for(var n=0;n<bufs.length;n++) {
-	            			console.log('here');
-	            			console.dir(bufs[n]);
-	            			console.log('buf len = ' + bufs[n].length);
-	            			var errobj = nk.nl.parseErrorHdr(bufs[n]);
-	            			console.dir(nk.errorFromErrno(errobj._error));
-	            			console.log(util.inspect(errobj));
-	            		}
-	            	} else {
-	            		console.log("** Success in reply: ");
-	            		cb(err,buffs);
-	            	}
-	            });
-
-
-	        });
-
-	    }
+    sock.sendMsg(msgreq, function(err,bytes) {
+    	if(err) {
+    		console.error("** Error: " + util.inspect(err));
+    		cb(err);
+    	} else {
+    		console.log("in cb: " + util.inspect(arguments));
+    		cb(err,msgreq);
+    	}
+    });
 
 }
 

@@ -10,6 +10,8 @@ var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(
 
 var rtattr_fmt = "<H(_len)H(_type)";
 
+var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
 
@@ -51,6 +53,20 @@ module.exports = {
 		NDA_VNI:        7,
 		NDA_IFINDEX:    8,
 		__NDA_MAX:      9,
+
+		/* inteface types */
+		ARPHRD_ETHER:	2,
+
+		/* infomsg link device flags */
+		IFF_RUNNING:	0x40,
+		IFF_CHANGE:		0xFFFFFFFF,
+
+		/* address family attributes. see linux/if_link.h */
+		IFLA_ADDRESS:   1,
+
+		/* Filter mask */
+		IFLA_EXT_MASK:  0x1D,
+		RTEXT_FILTER_VF:0x0001,
 
 		/** message types. see linux/rtnetlink.h */
 
@@ -116,9 +132,38 @@ module.exports = {
    	    __RTN_MAX: 12,
 
 
+   	    /* RTnetlink multicast groups */
+		RTN_GRP_NONE: 0,
+		RTN_GRP_LINK: 1,
+		RTN_GRP_NOTIFY: 2,
+		RTN_GRP_NEIGH: 3,
+		RTN_GRP_TC: 4,
+		RTN_GRP_IPV4_IFADDR: 5,
+		RTN_GRP_IPV4_MROUTE: 6,
+		RTN_GRP_IPV4_ROUTE: 7,
+		RTN_GRP_IPV4_RULE: 8,
+		RTN_GRP_IPV6_IFADDR: 9,
+		RTN_GRP_IPV6_MROUTE: 10,
+		RTN_GRP_IPV6_ROUTE: 11,
+		RTN_GRP_IPV6_IFINFO: 12,
+		RTN_GRP_DECnet_IFADDR: 13,
+		RTN_GRP_NOP2: 14,
+		RTN_GRP_DECnet_ROUTE: 15,
+		RTN_GRP_DECnet_RULE: 16,
+		RTN_GRP_NOP4: 17,
+		RTN_GRP_IPV6_PREFIX: 18,
+		RTN_GRP_IPV6_RULE: 19,
+		RTN_GRP_ND_USEROPT: 20,
+		RTN_GRP_PHONET_IFADDR: 21,
+		RTN_GRP_PHONET_ROUTE: 22,
+		RTN_GRP_DCB: 23,
+		RTN_GRP_IPV4_NETCONF: 24,
+		RTN_GRP_IPV6_NETCONF: 25,
+		RTN_GRP_MDB: 26,
 
 
 
+   	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
 		// fam,ifindex,state,flags,typ
 		var o = bufferpack.metaObject(ndmsg_fmt);
@@ -131,6 +176,20 @@ module.exports = {
 		o._type = 0;
 		return o;
 	},
+
+
+	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
+	buildInfomsg: function(params) {
+		var o = bufferpack.metaObject(ifinfomsg_fmt);
+		o._family = 0;
+		o._if_pad = 0;
+		o._if_type = 0; 
+		o._if_index = 0;
+		o._if_flags = 0;
+		o._if_change = 0;
+		return o;
+	},
+
 
 // "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 	buildRtmsg: function() {

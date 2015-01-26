@@ -136,8 +136,8 @@ protected:
 
 	_net::err_ev err;
 	v8::Persistent<Function> onDataCB;
+	static bool listening;
 	static uv_poll_t handle;  // currently only one event loop supported  until we contextualize this
-//	static Request_t *recvmsg_req; // to save read request for asynch onrecv
 
 	static int do_recvmsg(Request_t *req, SocketMode mode);
 	static void do_sendmsg(uv_work_t *req);

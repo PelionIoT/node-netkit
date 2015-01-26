@@ -566,7 +566,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		DBG_OUT("req->first_seq=%d", req->first_seq);
 		DBG_OUT("req->last_seq=%d", req->last_seq);
 
-		if (nladdr.nl_pid != 0 ||  nlhdr->nlmsg_seq < req->first_seq ||
+		if (nladdr.nl_pid != 0 && nlhdr->nlmsg_seq < req->first_seq ||
 				nlhdr->nlmsg_seq > req->last_seq ) {
 			DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
 		} else {

@@ -136,12 +136,12 @@ protected:
 
 	_net::err_ev err;
 	v8::Persistent<Function> onDataCB;
-	static bool listening;
-	static uv_poll_t handle;  // currently only one event loop supported  until we contextualize this
+	bool listening;
+	uv_poll_t handle;  // currently only one event loop supported  until we contextualize this
 
 	static int do_recvmsg(Request_t *req, SocketMode mode);
-	static void do_sendmsg(uv_work_t *req);
-	static void post_recvmsg(uv_work_t *req, int status);
+	static void do_sendmsg(uv_work_t *work);
+	static void post_recvmsg(uv_work_t *work, int status);
 	static void on_recvmsg(uv_poll_t* handle, int status, int events);
 };
 

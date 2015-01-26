@@ -13,8 +13,6 @@
 
 Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
 Persistent<Function> NetlinkSocket::cstor_socket;
-uv_poll_t NetlinkSocket::handle;
-bool NetlinkSocket::listening = false;
 
 void byte_dump(char *buf, int size) {
 	int i;
@@ -352,24 +350,26 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 	sock->Ref();
 
 	if(args.Length() > 0 && args[0]->IsFunction()) {
+
+		// WHY THIS?
 		Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
 		Request_t* recvmsg_req = new Request_t(sock,v8req); // new request sequnce starts at zero
 		recvmsg_req->reqRef();
 		recvmsg_req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[0]));
 
-		memset(&handle,0,sizeof(uv_poll_t));
-		handle.data = recvmsg_req;
+		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
+		(recvmsg_req->self->handle).data = recvmsg_req;
 		uv_os_sock_t S = sock->fd;
 		int events = uv_poll_event::UV_READABLE;
 
 		DBG_OUT("listen socket->fd=%d", sock->fd);
 
-		int init_ret = uv_poll_init_socket(uv_default_loop(), &handle, S);
+		int init_ret = uv_poll_init_socket(uv_default_loop(), &recvmsg_req->self->handle, S);
 		DBG_OUT("uv_poll_init_socket=%d",init_ret);
-		int start_ret = uv_poll_start(&handle, events, NetlinkSocket::on_recvmsg);
+		int start_ret = uv_poll_start(&recvmsg_req->self->handle, events, NetlinkSocket::on_recvmsg);
 		DBG_OUT("uv_poll_start=%d",start_ret);
 		if(init_ret >= 0 && start_ret >= 0) {
-			listening = true;
+			recvmsg_req->self->listening = true;
 		} else {
 			return ThrowException(Exception::TypeError(
 				String::New("onRecv() -> scoket polling failed.")));
@@ -399,8 +399,8 @@ Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
 		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
 			Request_t *req =  ObjectWrap::Unwrap<Request_t>(v8req);
 
-			uv_poll_stop(&handle);
-			listening = false;
+			uv_poll_stop(&req->self->handle);
+			req->self->listening = false;
 			req->reqUnref();
 
 		} else {
@@ -434,26 +434,26 @@ void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 }
 
 
-void NetlinkSocket::do_sendmsg(uv_work_t *req) {
-	Request_t *S = (Request_t *) req->data;
-	if(S->self->fd != 0) {
+void NetlinkSocket::do_sendmsg(uv_work_t *work) {
+	Request_t *req = (Request_t *) work->data;
+	if(req->self->fd != 0) {
 
-		int alloc_size = sizeof(struct iovec) * S->send_queue.remaining();
+		int alloc_size = sizeof(struct iovec) * req->send_queue.remaining();
 		struct iovec *iov_array = (struct iovec *) malloc(alloc_size);
 		memset(iov_array,0,alloc_size);
 		int x = 0;
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc>::iter iter;
-		S->send_queue.startIter(iter);
-		S->first_seq = S->self->seq;
+		req->send_queue.startIter(iter);
+		req->first_seq = req->self->seq;
 		while(!iter.atEnd()) {
 			void *buf =  iter.el().rawMemory;
 			if(buf) {
-				if(S->onReplyCB.IsEmpty())
+				if(req->onReplyCB.IsEmpty())
 					AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
-				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = S->self->seq;  // update sequence number
+				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = req->self->seq;  // update sequence number
 				// other fields are handled in node.js...
-				S->last_seq = S->self->seq;
-				S->self->seq++;
+				req->last_seq = req->self->seq;
+				req->self->seq++;
 				iov_array[x].iov_base = buf;
 				iov_array[x].iov_len = iter.el().len;
 				IF_DBG( byte_dump((char *) buf,iter.el().len); );
@@ -463,7 +463,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			iter.next();
 			x++;
 		}
-		S->send_queue.releaseIter(iter);
+		req->send_queue.releaseIter(iter);
 
 		if(x > 0) {
 
@@ -481,23 +481,23 @@ void NetlinkSocket::do_sendmsg(uv_work_t *req) {
 			msg.msg_iov = iov_array;
 			msg.msg_iovlen = 1; // array length
 
-			int ret = sendmsg(S->self->fd, &msg, 0);
+			int ret = sendmsg(req->self->fd, &msg, 0);
 
 			if (ret < 0) {
 				ERROR_OUT("Error on sendmsg()\n");
-				S->err.setError(errno);
-			} else if(!listening) {
-				// receive loop
+				req->err.setError(errno);
+			} else if(!req->self->listening) {
+				// No uv_poll async listen configured, enter receive loop
 				int receiving = 1;
 				while(receiving) {					
-					receiving = do_recvmsg(S,NetlinkTypes::SOCKET_BLOCKING); //blocking read on S 
+					receiving = do_recvmsg(req,NetlinkTypes::SOCKET_BLOCKING); //blocking read on req 
 				}
 			}
 		} else {
-			S->err.setError(_net::OTHER_ERROR,"do_sendmsg: Empty request list.");
+			req->err.setError(_net::OTHER_ERROR,"do_sendmsg: Empty request list.");
 		}
 	} else {
-		S->err.setError(_net::OTHER_ERROR,"Bad FD. Socket created?");
+		req->err.setError(_net::OTHER_ERROR,"Bad FD. Socket created?");
 	}
 }
 
@@ -600,10 +600,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	}
 }
 
-void NetlinkSocket::post_recvmsg(uv_work_t *req, int status) {
+void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 	HandleScope scope;
 
-	sockMsgReq *job = (sockMsgReq *) req->data;
+	sockMsgReq *job = (sockMsgReq *) work->data;
+	if(job->self->listening)
+		return;
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
@@ -682,7 +684,14 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 		uv_work_t work;
 		memset(&work, 0, sizeof(uv_work_t));
 		work.data = recvmsg_req;
+
+		//notify post_recv to execute
+		recvmsg_req->self->listening = false;
 		post_recvmsg(&work, status);
+
+		// reenable listening so sendMsg does not execute post_recv
+		recvmsg_req->self->listening = false;
+
 	}
 }
 

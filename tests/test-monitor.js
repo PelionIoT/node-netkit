@@ -6,7 +6,7 @@ var util = require('util');
 
 var sock = nk.newNetlinkSocket();
 
-
+var msgReq;
 
 console.dir(sock);
 
@@ -52,12 +52,13 @@ console.dir(sock);
     	}
 	});
 
-	nk.monitorNetwork("eth0", sock, function(err,bufs) {
+	nk.monitorNetwork("eth0", sock, function(err,req) {
 
 		if(err)
 			console.error("** Error: " + util.inspect(err));
 		else {
 			console.log("success!");
+			msgReq = req;
 		}
 	});
 

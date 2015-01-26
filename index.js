@@ -537,14 +537,9 @@ nk.monitorNetwork = function(ifname, sock, cb) {
 									rt.IFF_RUNNING,rt.IFF_CHANGE);
 	info_msg._family = rt.RTN_UNSPEC;
 
-	//bufs.push(nl_hdr.pack());
-
 	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
 	bufs.push(info_msg.pack());
 
-	// req.ext_req.rta_type = IFLA_EXT_MASK;
-	// req.ext_req.rta_len = RTA_LENGTH(sizeof(__u32));
- 	//req.ext_filter_mask = filt_mask; RTEXT_FILTER_VF		(1 << 0)
  	var attr_data = Buffer(4);
  	attr_data.writeUInt32LE(rt.RTEXT_FILTER_VF, 0);
 	var rt_attr = nk.rt.buildRtattrBuf(rt.IFLA_EXT_MASK, attr_data);
@@ -561,8 +556,6 @@ nk.monitorNetwork = function(ifname, sock, cb) {
 
 	dbg("Sending---> " + asHexBuffer(all));
 	console.log('all len = ' + all.length);
-
-    // that was exciting. Now let's close it.
 
     var msgreq = sock.createMsgReq();
 

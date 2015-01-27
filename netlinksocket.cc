@@ -320,7 +320,11 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			if(args.Length() > 1 && args[2]->IsFunction())
 				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[2]));
 
-			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, NetlinkSocket::post_recvmsg);
+			void (*post_process_func)(uv_work_s*, int) = NULL;
+			if(!sock->listening)
+				post_process_func = &NetlinkSocket::post_recvmsg;
+
+			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 		} else {
 			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}
@@ -401,6 +405,7 @@ Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
 
 			uv_poll_stop(&req->self->handle);
 			req->self->listening = false;
+			sock->Unref();
 			req->reqUnref();
 
 		} else {
@@ -513,20 +518,23 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	nladdr.nl_pid = 0;
 	nladdr.nl_groups = 0;
 
-	struct iovec *iov_array = (struct iovec *) malloc(1); // does msghdr free iovec?
-	memset(iov_array,0,1);
-
-	if(!req->recvBuffer) {
-		req->recvBuffer = malloc(NODE_RTNETLINK_RECV_BUFFER);
-		memset(req->recvBuffer,0,NODE_RTNETLINK_RECV_BUFFER);
-		iov_array[0].iov_base = req->recvBuffer;
-		iov_array[0].iov_len = NODE_RTNETLINK_RECV_BUFFER;
-	}
+	struct iovec *iov_array = (struct iovec *) malloc(msg.msg_iovlen); // does msghdr free iovec?
+	memset(iov_array,0,msg.msg_iovlen);
 
 	msg.msg_name = &nladdr;
 	msg.msg_namelen = sizeof(nladdr);
 	msg.msg_iov = iov_array;
 	msg.msg_iovlen = 1;
+
+	if(!req->recvBuffer) {
+		req->recvBuffer = malloc(NODE_RTNETLINK_RECV_BUFFER);
+		memset(req->recvBuffer,0,NODE_RTNETLINK_RECV_BUFFER);
+	}
+
+	iov_array[0].iov_base = req->recvBuffer;
+	iov_array[0].iov_len = NODE_RTNETLINK_RECV_BUFFER;
+
+	DBG_OUT("req->recvBuffer=%p\n", &req->recvBuffer);
 
     int flags;
     if(-1 == (flags = fcntl(req->self->fd, F_GETFL,0)))
@@ -542,14 +550,24 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		return false;
 	}
 
+	DBG_OUT("fd=%d\n", req->self->fd);
+
 	int ret = recvmsg(req->self->fd, &msg, 0);
 	DBG_OUT("recv_msg ret=%d", ret);
-	if(ret < 0) {
+	DBG_OUT("EINTR=%d EAGAIN=%d EWOULDBLOCK=%d",EINTR ,EAGAIN,EWOULDBLOCK);
+
+	free(iov_array);
+
+	if(ret == 0) {
+		// No data no error
+		return false;
+	} else if(ret < 0) {
+		DBG_OUT("errno=%d", errno);
 		if(mode == NetlinkTypes::SOCKET_NONBLOCKING && errno == EWOULDBLOCK)
 			return false; // done receiving non-blocking socket
 		if (errno == EINTR || errno == EAGAIN )
 			return true;
-		ERROR_OUT("Error on recvmsg()\n");
+		ERROR_OUT("Error on recvmsg(): %d\n", ret);
 		req->err.setError(errno);
 		return false;
 	} else if (ret < sizeof(struct nlmsghdr)){
@@ -580,14 +598,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 				if (ret < sizeof(struct nlmsgerr)) {
 					req->err.setError(_net::OTHER_ERROR,"Truncated ERROR from NETLINK.");
 				} else {
-//									if (!nlerr->error) {
-						DBG_OUT("ERROR!!!!!");
-						reqWrapper *replyBuf = req->reply_queue.addEmpty();
-						replyBuf->iserr = true;
-						replyBuf->malloc(nlhdr->nlmsg_len);
-						memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
-						DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
-						DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",req->reply_queue.remaining());
+					reqWrapper *replyBuf = req->reply_queue.addEmpty();
+					replyBuf->iserr = true;
+					replyBuf->malloc(nlhdr->nlmsg_len);
+					memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
+					DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
+					DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",req->reply_queue.remaining());
 				}
 			} else {
 				reqWrapper *replyBuf = req->reply_queue.addEmpty();
@@ -600,19 +616,43 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	}
 }
 
+void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
+	DBG_OUT("on_recvmsg");
+		DBG_OUT("receive_msg: readable=%d, status=%d", (events && UV_READABLE), status);
+
+	if(events && UV_READABLE && status == 0)
+	{
+		HandleScope scope;
+		Request_t *recvmsg_req = (Request_t *) handle->data;
+
+		// Service the ready socket, loop on EGAGAIN as socket ready may not produce on first read
+		while(do_recvmsg(recvmsg_req,NetlinkTypes::SOCKET_NONBLOCKING)); //non-blocking read on sock
+
+		// copy data to buf for return via callback
+		uv_work_t work;
+		memset(&work, 0, sizeof(uv_work_t));
+		work.data = recvmsg_req;
+
+		post_recvmsg(&work, status);
+	} else if(status < 0) {
+		uv_err_t err = uv_last_error(uv_default_loop());
+		DBG_OUT("uv_poll error: %s\n", uv_err_name(err));
+	}
+}
+
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
+	DBG_OUT("post_recvmsg");
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
-	if(job->self->listening)
-		return;
-
+	
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
 	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
 	Handle<Value> v8err;
 
-	job->self->Unref();
+	 if(!job->self->listening) 
+		job->self->Unref();
 
 	Handle<Boolean> fals = Boolean::New(false);
 	Handle<Boolean> tru = Boolean::New(true);
@@ -665,36 +705,9 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 	}
 
-	job->reqUnref(); // we are done with the request object, let the GC handle it
+	 if(!job->self->listening) 
+		job->reqUnref(); // we are done with the request object, let the GC handle it
 }
-
-void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
-	DBG_OUT("on_recvmsg");
-		DBG_OUT("receive_msg: readable=%d, status=%d", (events && UV_READABLE), status);
-
-	if(events && UV_READABLE && status >= 0)
-	{
-		HandleScope scope;
-		Request_t *recvmsg_req = (Request_t *) handle->data;
-
-		// Service the ready socket, loop on EGAGAIN as socket ready may not produce on first read
-		while(do_recvmsg(recvmsg_req,NetlinkTypes::SOCKET_NONBLOCKING)); //non-blocking read on sock
-
-		// copy data to buf for return via callback
-		uv_work_t work;
-		memset(&work, 0, sizeof(uv_work_t));
-		work.data = recvmsg_req;
-
-		//notify post_recv to execute
-		recvmsg_req->self->listening = false;
-		post_recvmsg(&work, status);
-
-		// reenable listening so sendMsg does not execute post_recv
-		recvmsg_req->self->listening = false;
-
-	}
-}
-
 
 // ------------------------------------------------------------------------------
 //

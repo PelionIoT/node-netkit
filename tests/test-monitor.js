@@ -6,8 +6,6 @@ var util = require('util');
 
 var sock = nk.newNetlinkSocket();
 
-var msgReq;
-
 console.dir(sock);
 
 
@@ -15,10 +13,10 @@ console.dir(sock);
 	var opt = {
 		// type: nk.sk.SOCK_STREAM, // | nk.sk.SOCK_CLOEXEC,
 		// sock_class: nk.AF_NETLINK, 
-		subscriptions:rt.RTN_GRP_LINK
+		subscriptions: rt.RTN_GRP_LINK
 	};
 
-	sock.create(null,function(err) {
+	sock.create(opt,function(err) {
 		if(err) {
 			console.log("socket.create() Error: " + util.inspect(err));
 			cb(err);
@@ -52,15 +50,14 @@ console.dir(sock);
     	}
 	});
 
-	nk.monitorNetwork("eth0", sock, function(err,req) {
+	setTimeout(function(){
+		nk.monitorNetwork("eth0", sock, function(err,req) {
 
-		if(err)
-			console.error("** Error: " + util.inspect(err));
-		else {
-			console.log("success!");
-			msgReq = req;
-		}
-	});
-
-//}, 15000);
+			if(err)
+				console.error("** Error: " + util.inspect(err));
+			else {
+				console.log("success!");
+			}
+		});
+	}, 30000);
 

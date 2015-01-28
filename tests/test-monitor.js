@@ -44,13 +44,17 @@ console.dir(sock);
     			console.dir(bufs[n]);
     			console.log('buf len = ' + bufs[n].length);
 
-    			// TODO
-    			// Compare with last 
+    			var attrs = nk.rt.buildLinkRtattrObject(bufs[n]);
+    			//console.dir(attrs);
+
+			    for (key in attrs) {
+	    			console.log(key + ' = ' + attrs[key]);
+			    }
     		}
     	}
 	});
 
-	setTimeout(function(){
+	// setTimeout(function(){
 		nk.monitorNetwork("eth0", sock, function(err,req) {
 
 			if(err)
@@ -59,5 +63,5 @@ console.dir(sock);
 				console.log("success!");
 			}
 		});
-	}, 30000);
+	// }, 30000);
 

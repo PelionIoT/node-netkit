@@ -14,6 +14,83 @@ var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_
 
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
+var link_info_attr_name_map = [
+	"unspec",
+	"address",
+	"broadcast",
+	"ifname",
+	"mtu",
+	"link",
+	"qdisc",
+	"stats",
+	"cost",
+	"priority",
+	"master",
+	"wireless",
+	"protinfo",
+	"txqlen",
+	"map",
+	"weight",
+	"operstate",
+	"linkmode",
+	"linkinfo",
+	"net_ns_pid",
+	"ifalias",
+	"num_vf",
+	"vfinfo_list",
+	"stats64",
+	"vf_ports",
+	"port_self",
+	"af_spec",
+	"group",
+	"net_ns_fd",
+	"ext_mask",
+	"promiscuity",
+	"num_tx_queues",
+	"num_rx_queues",
+	"carrier",
+	"phys_port_id",
+	"carrier_changes"
+];	
+
+var at = {
+		IFLA_UNSPEC:			0,
+		IFLA_ADDRESS:			1,
+		IFLA_BROADCAST:			2,
+		IFLA_IFNAME:			3,
+		IFLA_MTU:				4,
+		IFLA_LINK:				5,
+		IFLA_QDISC:				6,
+		IFLA_STATS:				7,
+		IFLA_COST:				8,
+		IFLA_PRIORITY:			9,
+		IFLA_MASTER:			10,
+		IFLA_WIRELESS:			11,
+		IFLA_PROTINFO:			12,
+		IFLA_TXQLEN:			13,
+		IFLA_MAP:				14,
+		IFLA_WEIGHT:			15,
+		IFLA_OPERSTATE:			16,
+		IFLA_LINKMODE:			17,
+		IFLA_LINKINFO:			18,
+		IFLA_NET_NS_PID:		19,
+		IFLA_IFALIAS:			20,
+		IFLA_NUM_VF:			21,
+		IFLA_VFINFO_LIST:		22,
+		IFLA_STATS64:			23,
+		IFLA_VF_PORTS:			24,
+		IFLA_PORT_SELF:			25,
+		IFLA_AF_SPEC:			26,
+		IFLA_GROUP:				27,
+		IFLA_NET_NS_FD:			28,
+		IFLA_EXT_MASK:			29,
+		IFLA_PROMISCUITY:		30,
+		IFLA_NUM_TX_QUEUES:		31,
+		IFLA_NUM_RX_QUEUES:		32,
+		IFLA_CARRIER:			33,
+		IFLA_PHYS_PORT_ID:		34,
+		IFLA_CARRIER_CHANGES:	35
+};
 
 module.exports = {
 
@@ -162,7 +239,6 @@ module.exports = {
 		RTN_GRP_MDB: 26,
 
 
-
    	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
 		// fam,ifindex,state,flags,typ
@@ -226,7 +302,55 @@ module.exports = {
 	        }
      		return Buffer.concat(bufs);
      	}
+	},
+
+	buildLinkRtattrObject: function(data) {
+		console.log('buildLinkRtattrObject');
+		var ret = {};
+
+		if(data && !Buffer.isBuffer(data)) {
+			console.error("ERROR: ** Bad parameters to buildLinkRtattrObject() **");
+		} else {
+			var total_len = data.readUInt32LE(0);
+			var type = data.readUInt16LE(4);
+			// console.log('type = ' + type);
+			var NLMSG_DONE = 3;
+			if(type === NLMSG_DONE)
+				return ret;
+
+			console.log('total_len = ' + total_len);
+			var index = 32; // skip the header,header payload 16 + 16
+			while(index < total_len) {
+				// console.log('index = ' + index);
+				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
+				var type = data.readUInt16LE(index + 2);
+				// console.log('attr = ' + type + ' len = ' + len);
+				var key = link_info_attr_name_map[type];
+				index += 4; // index to the data
+				var value; // will be string
+				if(type === at.IFLA_IFNAME || type === at.IFLA_QDISC) {
+					// treat as string
+					value = data.toString('ascii',index, index + len);
+				} else {
+					// treat as network order to byte array
+					var bytes = [];
+					var bytes_idx = 0;
+					for(var idx = (index + len) - 1; idx >= index; idx--)
+					{
+						bytes[bytes_idx] = data.readUInt8(idx);
+						bytes_idx += 1;
+					}
+					value = bytes;
+				}
+				// console.log('adding [' + key + '] = ' + value)
+				ret[key] = value;
+
+				// get to next attribute padding to mod 4
+		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+		        // console.log("pad: " + pad);
+				index += (len + pad);
+			};
+		}
+		return ret;
 	}
-
-
 };

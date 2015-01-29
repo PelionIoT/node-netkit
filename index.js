@@ -206,6 +206,7 @@ var nk = {
 	// address families: bits/socket.h
 	AF_INET6: 10,
 	AF_INET: 2,
+	AF_NETLINK:	16,
 
 	FLAGS: {
 		// Interface FLAGS
@@ -281,19 +282,19 @@ var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
  */
 nk.nl = {
 
-
     // netlink message flags
 	// See: linux/netlink.h
 	
-	NLM_F_REQUEST:		1,	/* It is request message. 	*/
-	NLM_F_MULTI:		2,	/* Multipart message, terminated by NLMSG_DONE */
-	NLM_F_ACK:   		4,	/* Reply with ack, with zero or error code */
-	NLM_F_ECHO:  		8,	/* Echo this request 		*/
-    NLM_F_DUMP_INTR:	16, /* Dump was inconsistent due to sequence change */
+	NLM_F_REQUEST:		0x0001,	/* It is request message. 	*/
+	NLM_F_MULTI:		0x0002,	/* Multipart message, terminated by NLMSG_DONE */
+	NLM_F_ACK:   		0x0004,	/* Reply with ack, with zero or error code */
+	NLM_F_ECHO:  		0x0008,	/* Echo this request 		*/
+    NLM_F_DUMP_INTR:	0x0010, /* Dump was inconsistent due to sequence change */
 
-    NLM_F_ROOT:     	0x100,	/* specify tree	root	*/
-    NLM_F_MATCH:    	0x200,	/* return all matching	*/
-    NLM_F_ATOMIC:   	0x400,	/* atomic GET		*/
+   /* Modifiers to NEW request */
+     NLM_F_ROOT:     	0x0100,	/* specify tree	root	*/
+    NLM_F_MATCH:    	0x0200,	/* return all matching	*/
+    NLM_F_ATOMIC:   	0x0400,	/* atomic GET		*/
     NLM_F_DUMP:     	(this.NLM_F_ROOT|this.NLM_F_MATCH),
 
     /* Modifiers to NEW request */
@@ -338,6 +339,22 @@ nk.nl = {
 		return bufferpack.unpack(error_nlmsghdr_fmt,b,0);
 	}
 }
+
+nk.sk = {
+	// socket.h socket types
+	SOCK_DGRAM:		1,
+	SOCK_STREAM: 	2,
+	SOCK_RAW:	 	3,
+	SOCK_RDM:	 	4,
+	SOCK_SEQPACKET:	5,
+	SOCK_DCCP:	 	6,
+	SOCK_PACKET:	10,
+
+	SOCK_CLOEXEC:	0x40000000,
+	SOCK_NONBLOCK:	0x40000000
+
+};
+
 var nl = nk.nl;
 
 /**
@@ -477,6 +494,73 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	    }
 
 //    cb(ifndex); // callback with error
+
+}
+
+
+nk.netlinkCommand = function(opts, ifname, sock, cb) {
+	var ifndex = nk.ifNameToIndex(ifname);
+	if(util.isError(ifndex)) {
+		err("* Error: " + util.inspect(ans));
+		cb(ifindex); // call w/ error
+		return;
+	}
+	var bufs = [];
+
+	var len = 0; // updated at end
+	var nl_hdr = nk.nl.buildHdr();
+
+	// command defaults
+	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_ROOT|nl.NLM_F_MATCH;
+	nl_hdr._type = rt.RTM_GETLINK; // the command
+
+	if(typeof(opts) != 'undefined') {
+		if(opts.hasOwnProperty('type')) {
+			nl_hdr._type = opts['type'];
+		}
+		if(opts.hasOwnProperty('flags')) {
+			nl_hdr._flags = opts['flags'];
+		}
+	} 
+
+	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
+	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
+									rt.IFF_RUNNING,rt.IFF_CHANGE);
+	info_msg._family = rt.RTN_UNSPEC;
+
+	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
+	bufs.push(info_msg.pack());
+
+ 	var attr_data = Buffer(4);
+ 	attr_data.writeUInt32LE(rt.RTEXT_FILTER_VF, 0);
+	var rt_attr = nk.rt.buildRtattrBuf(rt.IFLA_EXT_MASK, attr_data);
+	dbg("rt_attr---> "  + asHexBuffer(rt_attr));
+	bufs.push(rt_attr);
+
+	var len = 0;
+	for (var n=0;n<bufs.length;n++)
+		len += bufs[n].length;
+	console.log("nl_hdr._length = " + nl_hdr._length);
+	nl_hdr._len = nl_hdr._length + len;
+	bufs.unshift(nl_hdr.pack());
+	var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
+
+	dbg("Sending---> " + asHexBuffer(all));
+	console.log('all len = ' + all.length);
+
+    var msgreq = sock.createMsgReq();
+
+    msgreq.addMsg(all);
+
+    sock.sendMsg(msgreq, function(err,bytes) {
+    	if(err) {
+    		console.error("** Error: " + util.inspect(err));
+    		cb(err);
+    	} else {
+    		console.log("in cb: " + util.inspect(arguments));
+    		cb(err);//,msgreq);
+    	}
+    });
 
 }
 

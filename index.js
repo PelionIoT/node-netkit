@@ -286,12 +286,13 @@ nk.nl = {
 	// See: linux/netlink.h
 	
 	NLM_F_REQUEST:		0x0001,	/* It is request message. 	*/
-	NLM_F_MULTI:		2,	/* Multipart message, terminated by NLMSG_DONE */
-	NLM_F_ACK:   		4,	/* Reply with ack, with zero or error code */
-	NLM_F_ECHO:  		8,	/* Echo this request 		*/
-    NLM_F_DUMP_INTR:	16, /* Dump was inconsistent due to sequence change */
+	NLM_F_MULTI:		0x0002,	/* Multipart message, terminated by NLMSG_DONE */
+	NLM_F_ACK:   		0x0004,	/* Reply with ack, with zero or error code */
+	NLM_F_ECHO:  		0x0008,	/* Echo this request 		*/
+    NLM_F_DUMP_INTR:	0x0010, /* Dump was inconsistent due to sequence change */
 
-    NLM_F_ROOT:     	0x0100,	/* specify tree	root	*/
+   /* Modifiers to NEW request */
+     NLM_F_ROOT:     	0x0100,	/* specify tree	root	*/
     NLM_F_MATCH:    	0x0200,	/* return all matching	*/
     NLM_F_ATOMIC:   	0x0400,	/* atomic GET		*/
     NLM_F_DUMP:     	(this.NLM_F_ROOT|this.NLM_F_MATCH),
@@ -497,7 +498,7 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 }
 
 
-nk.monitorNetwork = function(ifname, sock, cb) {
+nk.netlinkCommand = function(opts, ifname, sock, cb) {
 	var ifndex = nk.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
 		err("* Error: " + util.inspect(ans));
@@ -506,33 +507,23 @@ nk.monitorNetwork = function(ifname, sock, cb) {
 	}
 	var bufs = [];
 
-	// 	struct {
-	// 	struct nlmsghdr nlh;
-	// 	struct ifinfomsg ifm;
-	// 	/* attribute has to be NLMSG aligned */
-	// 	struct rtattr ext_req __attribute__ ((aligned(NLMSG_ALIGNTO)));
-	// 	__u32 ext_filter_mask;
-	// } req;
-
-	// memset(&req, 0, sizeof(req));
-	// req.nlh.nlmsg_len = sizeof(req);
-	// req.nlh.nlmsg_type = type;
-	// req.nlh.nlmsg_flags = NLM_F_DUMP|NLM_F_REQUEST;
-	// req.nlh.nlmsg_pid = 0;
-	// req.nlh.nlmsg_seq = rth->dump = ++rth->seq;
-	// req.ifm.ifi_family = family;
-
-	// req.ext_req.rta_type = IFLA_EXT_MASK;
-	// req.ext_req.rta_len = RTA_LENGTH(sizeof(__u32));
-	// req.ext_filter_mask = filt_mask;
-
-	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var len = 0; // updated at end
 	var nl_hdr = nk.nl.buildHdr();
-	nl_hdr._type = rt.RTM_GETLINK; // the command
+
+	// command defaults
 	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_ROOT|nl.NLM_F_MATCH;
+	nl_hdr._type = rt.RTM_GETLINK; // the command
 
+	if(typeof(opts) != 'undefined') {
+		if(opts.hasOwnProperty('type')) {
+			nl_hdr._type = opts['type'];
+		}
+		if(opts.hasOwnProperty('flags')) {
+			nl_hdr._flags = opts['flags'];
+		}
+	} 
 
+	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
 									rt.IFF_RUNNING,rt.IFF_CHANGE);
 	info_msg._family = rt.RTN_UNSPEC;

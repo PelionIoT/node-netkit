@@ -10,13 +10,12 @@ console.dir(sock);
 
 
 //setTimeout(function(){
-	var opt = {
-		// type: nk.sk.SOCK_STREAM, // | nk.sk.SOCK_CLOEXEC,
-		// sock_class: nk.AF_NETLINK, 
-		subscriptions: rt.RTN_GRP_LINK
+	var sock_opts = {
+		// subscriptions: rt.RTN_GRP_IPV4_IFADDR(rt.RTN_GRP_LINK)
+		subscriptions: rt.make_group(rt.RTN_GRP_IPV4_IFADDR)// | rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
 	};
 
-	sock.create(opt,function(err) {
+	sock.create(sock_opts,function(err) {
 		if(err) {
 			console.log("socket.create() Error: " + util.inspect(err));
 			cb(err);
@@ -41,27 +40,40 @@ console.dir(sock);
     	} else {
     		for(var n=0;n<bufs.length;n++) {
     			console.log('here');
-    			console.dir(bufs[n]);
+    			console.log(bufs[n]);
     			console.log('buf len = ' + bufs[n].length);
 
-    			var attrs = nk.rt.buildLinkRtattrObject(bufs[n]);
-    			//console.dir(attrs);
+    			var attrs = nk.rt.parseRtattributes(bufs[n]);
+    			// console.dir(attrs);
 
 			    for (key in attrs) {
 	    			console.log(key + ' = ' + attrs[key]);
 			    }
+
     		}
     	}
 	});
 
-	// setTimeout(function(){
-		nk.monitorNetwork("eth0", sock, function(err,req) {
 
-			if(err)
-				console.error("** Error: " + util.inspect(err));
-			else {
-				console.log("success!");
-			}
-		});
-	// }, 30000);
+	// use this to get link or address info before receiving the first change event
+	// or comment out to just start listening for changes
+	// /*
+
+	var command_opts = {
+		// The info you want to retrieve before listening
+
+		type: nk.rt.RTM_GETLINK, // get link
+		//type: 	nk.rt.RTM_GETADDR, // get addr
+		flags: 	nk.nl.NLM_F_REQUEST|nk.nl.NLM_F_ROOT|nk.nl.NLM_F_MATCH
+	};
+	nk.netlinkCommand(command_opts, "", sock, function(err,req) {
+
+		if(err)
+			console.error("** Error: " + util.inspect(err));
+		else {
+			console.log("success!");
+		}
+	});
+	// */
+
 

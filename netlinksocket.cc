@@ -182,14 +182,13 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 			subscription = (uint32_t) js_subs->IntegerValue();
 
 		}
-
 	}
-	DBG_OUT("type_flags: %08x", type_flags);
-	DBG_OUT("subscription=%08x",subscription);
+	DBG_OUT("type_flags = %x", type_flags);
+	DBG_OUT("netlink_class = %d", netlink_class);
+	DBG_OUT("subscription = %x", subscription);
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
-	DBG_OUT("socket->fd=%d", obj->fd);
 	if (obj->fd < 0) {
 		obj->err.setError(errno);
 		ERROR_OUT("Could not create AF_NETLINK socket\n");
@@ -345,9 +344,6 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
  *
  */
 Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
-
-	DBG_OUT("OnRecv");
-
 	HandleScope scope;
 
 	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
@@ -364,14 +360,11 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
 		(recvmsg_req->self->handle).data = recvmsg_req;
 		uv_os_sock_t S = sock->fd;
+		// DBG_OUT("sock->fd = %d", sock->fd);
 		int events = uv_poll_event::UV_READABLE;
 
-		DBG_OUT("listen socket->fd=%d", sock->fd);
-
 		int init_ret = uv_poll_init_socket(uv_default_loop(), &recvmsg_req->self->handle, S);
-		DBG_OUT("uv_poll_init_socket=%d",init_ret);
 		int start_ret = uv_poll_start(&recvmsg_req->self->handle, events, NetlinkSocket::on_recvmsg);
-		DBG_OUT("uv_poll_start=%d",start_ret);
 		if(init_ret >= 0 && start_ret >= 0) {
 			recvmsg_req->self->listening = true;
 		} else {
@@ -392,8 +385,6 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
  *
  */
 Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
-	DBG_OUT("StopRecv");
-
 	HandleScope scope;
 
 	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
@@ -440,6 +431,8 @@ void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 
 
 void NetlinkSocket::do_sendmsg(uv_work_t *work) {
+	DBG_OUT("NetlinkSocket::do_sendmsg");
+
 	Request_t *req = (Request_t *) work->data;
 	if(req->self->fd != 0) {
 
@@ -453,8 +446,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 		while(!iter.atEnd()) {
 			void *buf =  iter.el().rawMemory;
 			if(buf) {
-				if(req->onReplyCB.IsEmpty())
-					AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
+				// if(req->onReplyCB.IsEmpty())
+				// 	AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
 				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = req->self->seq;  // update sequence number
 				// other fields are handled in node.js...
 				req->last_seq = req->self->seq;
@@ -507,8 +500,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 }
 
 int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
+	DBG_OUT("NetlinkSocket::do_recvmsg");
 
-	DBG_OUT("in do_recv");
 	struct msghdr msg;         // used by sendmsg / recvmsg
 	struct sockaddr_nl nladdr; // NETLINK address
 
@@ -534,8 +527,6 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	iov_array[0].iov_base = req->recvBuffer;
 	iov_array[0].iov_len = NODE_RTNETLINK_RECV_BUFFER;
 
-	DBG_OUT("req->recvBuffer=%p\n", &req->recvBuffer);
-
     int flags;
     if(-1 == (flags = fcntl(req->self->fd, F_GETFL,0)))
      flags = 0;
@@ -550,19 +541,13 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		return false;
 	}
 
-	DBG_OUT("fd=%d\n", req->self->fd);
-
 	int ret = recvmsg(req->self->fd, &msg, 0);
-	DBG_OUT("recv_msg ret=%d", ret);
-	DBG_OUT("EINTR=%d EAGAIN=%d EWOULDBLOCK=%d",EINTR ,EAGAIN,EWOULDBLOCK);
-
 	free(iov_array);
 
 	if(ret == 0) {
 		// No data no error
 		return false;
 	} else if(ret < 0) {
-		DBG_OUT("errno=%d", errno);
 		if(mode == NetlinkTypes::SOCKET_NONBLOCKING && errno == EWOULDBLOCK)
 			return false; // done receiving non-blocking socket
 		if (errno == EINTR || errno == EAGAIN )
@@ -570,56 +555,50 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		ERROR_OUT("Error on recvmsg(): %d\n", ret);
 		req->err.setError(errno);
 		return false;
-	} else if (ret < sizeof(struct nlmsghdr)){
-		ERROR_OUT("Truncated recvmsg()\n");
-		req->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
-		return false;
-	} else {
+	} else if (ret > sizeof(struct nlmsghdr)){
+		// parse the read for multiple netlink messages, otherwise only the first message 
+		// will get processed if there are multiple messages in the read.
+
 		struct nlmsghdr *nlhdr = (struct nlmsghdr *) req->recvBuffer;
-		// ignore stuff which does not belong to us, or is not something in reply
-		// to what we sent
-		// ok, we have at least a header... let's parse it.
+		while(ret >= sizeof(struct nlmsghdr))
+		{
+			int nlmsghdr_length = nlhdr->nlmsg_len;
+			if((nlmsghdr_length - sizeof(struct nlmsghdr)) < 0 || nlmsghdr_length > ret) {
+				
+				ERROR_OUT("Truncated recvmsg()\n");
+				req->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
+				return false;
+			}
 
-		DBG_OUT("nlhdr->nlmsg_seq=%d", nlhdr->nlmsg_seq);
-		DBG_OUT("req->first_seq=%d", req->first_seq);
-		DBG_OUT("req->last_seq=%d", req->last_seq);
-
-		if (nladdr.nl_pid != 0 && nlhdr->nlmsg_seq < req->first_seq ||
-				nlhdr->nlmsg_seq > req->last_seq ) {
-			DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
-		} else {
-			req->replies++; // mark this request as having replies, so we can do the correct
-			              // action in the callback which will run in the v8 thread.
-			DBG_OUT("nlhdr->nlmsg_type=%d",nlhdr->nlmsg_type);
-			DBG_OUT("NLMSG_ERROR=%d",NLMSG_ERROR);
-			if(nlhdr->nlmsg_type == NLMSG_ERROR) {
-				struct nlmsgerr *nlerr = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
-
-				if (ret < sizeof(struct nlmsgerr)) {
-					req->err.setError(_net::OTHER_ERROR,"Truncated ERROR from NETLINK.");
-				} else {
+			// ignore stuff which does not belong to us, or is not something in reply
+			// to what we sent
+			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
+					nlhdr->nlmsg_seq > req->last_seq) ) {
+				DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
+			} else {
+				req->replies++; // mark this request as having replies, so we can do the correct
+				              // action in the callback which will run in the v8 thread.
+				if(nlhdr->nlmsg_type == NLMSG_ERROR) {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();
 					replyBuf->iserr = true;
+					replyBuf->malloc(nlmsghdr_length);
+					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+				} else {
+					reqWrapper *replyBuf = req->reply_queue.addEmpty();
 					replyBuf->malloc(nlhdr->nlmsg_len);
-					memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
-					DBG_OUT("Got reply. len = %d",nlhdr->nlmsg_len);
-					DBG_OUT("Got reply. NLMSG_ERROR Queuing... (%d)",req->reply_queue.remaining());
+					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
 				}
-			} else {
-				reqWrapper *replyBuf = req->reply_queue.addEmpty();
-				replyBuf->malloc(nlhdr->nlmsg_len);
-				memcpy(replyBuf->rawMemory,nlhdr,nlhdr->nlmsg_len);
-				DBG_OUT("Got reply. Queuing... (%d)",req->reply_queue.remaining());
 			}
+			ret -= NLMSG_ALIGN(nlmsghdr_length);
+			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
+
 		return false;
 	}
 }
 
 void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
-	DBG_OUT("on_recvmsg");
-		DBG_OUT("receive_msg: readable=%d, status=%d", (events && UV_READABLE), status);
-
+	DBG_OUT("NetlinkSocket::on_recvmsg");
 	if(events && UV_READABLE && status == 0)
 	{
 		HandleScope scope;
@@ -636,12 +615,12 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 		post_recvmsg(&work, status);
 	} else if(status < 0) {
 		uv_err_t err = uv_last_error(uv_default_loop());
-		DBG_OUT("uv_poll error: %s\n", uv_err_name(err));
+		ERROR_OUT("uv_poll error: %s\n", uv_err_name(err));
 	}
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	DBG_OUT("post_recvmsg");
+	DBG_OUT("NetlinkSocket::post_recvmsg");
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
@@ -659,7 +638,6 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 
 	// TODO: go through all of the FIFO, empty and DetachBuffer all items
 
-	DBG_OUT("job->err.hasErr()=%d",job->err.hasErr());
 	if(!job->err.hasErr()) {
 		// ok - no error on job creation - now let's see if there was an error in using netlink...
 		bool nlError = false;
@@ -668,7 +646,6 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		Handle<Object> retbufs = Object::New();
 		int n = 0;
 		while(job->replies && job->reply_queue.remove(req)) {
-			DBG_OUT("iserr=%d", req.iserr);
 			if(req.iserr) nlError = true;
 			if(req.hasBuffer()) {
 				retbufs->Set(n,req.ExportBuffer());

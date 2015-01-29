@@ -112,7 +112,7 @@ protected:
 			uv_async_t async;
 			_net::err_ev err; // the errno that happened sendmsg if an error occurred.
 			v8::Persistent<Function> onSendCB;
-			v8::Persistent<Function> onReplyCB;       // not using yet: This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
+			v8::Persistent<Function> onReplyCB;       // This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
 			v8::Persistent<Object> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;

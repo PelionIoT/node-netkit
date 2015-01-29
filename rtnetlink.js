@@ -53,7 +53,7 @@ var link_info_attr_name_map = [
 	"carrier_changes"
 ];	
 
-var at = {
+var link_attributes = {
 		IFLA_UNSPEC:			0,
 		IFLA_ADDRESS:			1,
 		IFLA_BROADCAST:			2,
@@ -91,6 +91,81 @@ var at = {
 		IFLA_PHYS_PORT_ID:		34,
 		IFLA_CARRIER_CHANGES:	35
 };
+
+var addr_info_attr_name_map = [
+	"unspec",
+	"address",
+	"local",
+	"label",
+	"broadcast",
+	"anycast",
+	"cacheinfo",
+	"multicast",
+	"flags"
+];
+
+var addr_attributes = {
+	IFA_UNSPEC: 0,
+	IFA_ADDRESS: 1,
+	IFA_LOCAL: 2,
+	IFA_LABEL: 3,
+	IFA_BROADCAST: 4,
+	IFA_ANYCAST: 5,
+	IFA_CACHEINFO: 6,
+	IFA_MULTICAST: 7,
+	IFA_FLAGS: 8
+};
+
+var payload_sizes = [
+
+	16,	//RTM_NEWLINK: 
+	16,	//RTM_DELLINK: 
+	16,	//RTM_GETLINK: 
+	16,	//RTM_SETLINK: 
+	8,	//RTM_NEWADDR: 
+	8,	//RTM_DELADDR: 
+	8,	//RTM_GETADDR: 
+
+	// not confirmed the rest
+	8,	//RTM_NEWROUTE: 
+	8,	//RTM_DELROUTE: 
+	8,	//RTM_GETROUTE: 
+	8,	//RTM_NEWNEIGH: 
+	8,	//RTM_DELNEIGH: 
+	8,	//RTM_GETNEIGH: 
+	8,	//RTM_NEWRULE: 
+	8,	//RTM_DELRULE: 
+	8,	//RTM_GETRULE: 
+	8,	//RTM_NEWQDISC: 
+	8,	//RTM_DELQDISC: 
+	8,	//RTM_GETQDISC: 
+	8,	//RTM_NEWTCLASS: 
+	8,	//RTM_DELTCLASS: 
+	8,	//RTM_GETTCLASS: 
+	8,	//RTM_NEWTFILTER: 
+	8,	//RTM_DELTFILTER: 
+	8,	//RTM_GETTFILTER: 
+	8,	//RTM_NEWACTION: 
+	8,	//RTM_DELACTION: 
+	8,	//RTM_GETACTION: 
+	8,	//RTM_NEWPREFIX: 
+	8,	//RTM_GETMULTICAST: 
+	8,	//RTM_GETANYCAST: 
+	8,	//RTM_NEWNEIGHTBL: 
+	8,	//RTM_GETNEIGHTBL: 
+	8,	//RTM_SETNEIGHTBL: 
+	8,	//RTM_NEWNDUSEROPT: 
+	8,	//RTM_NEWADDRLABEL: 
+	8,	//RTM_DELADDRLABEL: 
+	8,	//RTM_GETADDRLABEL: 
+	8,	//RTM_GETDCB: 
+	8,	//RTM_SETDCB: 
+	8,	//RTM_NEWNETCONF: 
+	8,	//RTM_GETNETCONF: 
+	8,	//RTM_NEWMDB: 
+	8,	//RTM_DELMDB: 
+	8	//RTM_GETMDB: 
+];
 
 module.exports = {
 
@@ -146,7 +221,7 @@ module.exports = {
 		RTEXT_FILTER_VF:0x0001,
 
 		/** message types. see linux/rtnetlink.h */
-
+		NLMSG_DONE: 3, 
 		RTM_BASE:       16,
 		RTM_NEWLINK: 16,
 		RTM_DELLINK: 17,
@@ -238,6 +313,10 @@ module.exports = {
 		RTN_GRP_IPV6_NETCONF: 25,
 		RTN_GRP_MDB: 26,
 
+	make_group: function(group) {
+		return (1 << (group - 1));
+	},
+
 
    	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
@@ -304,46 +383,57 @@ module.exports = {
      	}
 	},
 
-	buildLinkRtattrObject: function(data) {
-		console.log('buildLinkRtattrObject');
+	parseRtattributes: function(data) {
+		// Only supports link and address right now
+
+		// console.log('parseRtattributes');
 		var ret = {};
 
 		if(data && !Buffer.isBuffer(data)) {
-			console.error("ERROR: ** Bad parameters to buildLinkRtattrObject() **");
+			console.error("ERROR: ** Bad parameters to parseRtattributes() **");
 		} else {
 			var total_len = data.readUInt32LE(0);
 			var type = data.readUInt16LE(4);
-			// console.log('type = ' + type);
-			var NLMSG_DONE = 3;
-			if(type === NLMSG_DONE)
+			if(type == exports.NLMSG_DONE)
 				return ret;
+			// console.log('msg type = ' + type);
 
-			console.log('total_len = ' + total_len);
-			var index = 32; // skip the header,header payload 16 + 16
+			// skip the header,header payload padding that rounds the message up to multiple of 16
+			var index = 16 + payload_sizes[type - 16];
+			// console.log('start index = ' + index);
 			while(index < total_len) {
 				// console.log('index = ' + index);
 				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
-				var type = data.readUInt16LE(index + 2);
-				// console.log('attr = ' + type + ' len = ' + len);
-				var key = link_info_attr_name_map[type];
-				index += 4; // index to the data
-				var value; // will be string
-				if(type === at.IFLA_IFNAME || type === at.IFLA_QDISC) {
-					// treat as string
-					value = data.toString('ascii',index, index + len);
-				} else {
-					// treat as network order to byte array
-					var bytes = [];
-					var bytes_idx = 0;
-					for(var idx = (index + len) - 1; idx >= index; idx--)
-					{
-						bytes[bytes_idx] = data.readUInt8(idx);
-						bytes_idx += 1;
-					}
-					value = bytes;
+				var attr_type = data.readUInt16LE(index + 2);
+				// console.log('attr = ' + attr_type + ' len = ' + len);
+				// console.log(' msgtype = ' + msgtype);
+				var key;
+
+				if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
+					key = link_info_attr_name_map[attr_type];
+				} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+					key = addr_info_attr_name_map[attr_type];
 				}
-				// console.log('adding [' + key + '] = ' + value)
-				ret[key] = value;
+
+				index += 4; // index to the data
+				var value;
+
+				// treat as network order to byte array
+				var bytes = [];
+				var bytes_idx = 0;
+				for(var idx = index; idx < index + len; idx++)
+				{
+					bytes[bytes_idx] = data.readUInt8(idx);
+					bytes_idx += 1;
+				}
+
+				var regExNm = /name/;
+				if(regExNm.test(key)) {
+					ret[key] = Buffer(bytes).toString('ascii');
+				} else {
+					ret[key] = bytes;
+				}
+				// console.log('added [' + key + '] = ' + ret[key])
 
 				// get to next attribute padding to mod 4
 		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;

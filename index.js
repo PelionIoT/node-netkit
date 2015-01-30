@@ -375,7 +375,7 @@ var netutil = nk.util = require('./netutils.js');
 nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	var ifndex = nk.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
-		err("* Error: " + util.inspect(ans));
+		err("* Error: " + util.inspect(ifndex));
 		cb(ifindex); // call w/ error
 		return;
 	}
@@ -501,8 +501,8 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 nk.netlinkCommand = function(opts, ifname, sock, cb) {
 	var ifndex = nk.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
-		err("* Error: " + util.inspect(ans));
-		cb(ifindex); // call w/ error
+		err("* Error: " + util.inspect(ifndex));
+		cb(ifndex); // call w/ error
 		return;
 	}
 	var bufs = [];

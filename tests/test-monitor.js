@@ -66,7 +66,7 @@ console.dir(sock);
 		//type: 	nk.rt.RTM_GETADDR, // get addr
 		flags: 	nk.nl.NLM_F_REQUEST|nk.nl.NLM_F_ROOT|nk.nl.NLM_F_MATCH
 	};
-	nk.netlinkCommand(command_opts, "", sock, function(err,req) {
+	nk.netlinkCommand(command_opts, "eth0", sock, function(err,req) {
 
 		if(err)
 			console.error("** Error: " + util.inspect(err));

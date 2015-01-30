@@ -502,7 +502,7 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 	var ifndex = nk.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
 		err("* Error: " + util.inspect(ans));
-		cb(ifindex); // call w/ error
+		cb(ifndex); // call w/ error
 		return;
 	}
 	var bufs = [];

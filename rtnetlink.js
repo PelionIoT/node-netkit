@@ -10,8 +10,162 @@ var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(
 
 var rtattr_fmt = "<H(_len)H(_type)";
 
+var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
+var link_info_attr_name_map = [
+	"unspec",
+	"address",
+	"broadcast",
+	"ifname",
+	"mtu",
+	"link",
+	"qdisc",
+	"stats",
+	"cost",
+	"priority",
+	"master",
+	"wireless",
+	"protinfo",
+	"txqlen",
+	"map",
+	"weight",
+	"operstate",
+	"linkmode",
+	"linkinfo",
+	"net_ns_pid",
+	"ifalias",
+	"num_vf",
+	"vfinfo_list",
+	"stats64",
+	"vf_ports",
+	"port_self",
+	"af_spec",
+	"group",
+	"net_ns_fd",
+	"ext_mask",
+	"promiscuity",
+	"num_tx_queues",
+	"num_rx_queues",
+	"carrier",
+	"phys_port_id",
+	"carrier_changes"
+];	
+
+var link_attributes = {
+		IFLA_UNSPEC:			0,
+		IFLA_ADDRESS:			1,
+		IFLA_BROADCAST:			2,
+		IFLA_IFNAME:			3,
+		IFLA_MTU:				4,
+		IFLA_LINK:				5,
+		IFLA_QDISC:				6,
+		IFLA_STATS:				7,
+		IFLA_COST:				8,
+		IFLA_PRIORITY:			9,
+		IFLA_MASTER:			10,
+		IFLA_WIRELESS:			11,
+		IFLA_PROTINFO:			12,
+		IFLA_TXQLEN:			13,
+		IFLA_MAP:				14,
+		IFLA_WEIGHT:			15,
+		IFLA_OPERSTATE:			16,
+		IFLA_LINKMODE:			17,
+		IFLA_LINKINFO:			18,
+		IFLA_NET_NS_PID:		19,
+		IFLA_IFALIAS:			20,
+		IFLA_NUM_VF:			21,
+		IFLA_VFINFO_LIST:		22,
+		IFLA_STATS64:			23,
+		IFLA_VF_PORTS:			24,
+		IFLA_PORT_SELF:			25,
+		IFLA_AF_SPEC:			26,
+		IFLA_GROUP:				27,
+		IFLA_NET_NS_FD:			28,
+		IFLA_EXT_MASK:			29,
+		IFLA_PROMISCUITY:		30,
+		IFLA_NUM_TX_QUEUES:		31,
+		IFLA_NUM_RX_QUEUES:		32,
+		IFLA_CARRIER:			33,
+		IFLA_PHYS_PORT_ID:		34,
+		IFLA_CARRIER_CHANGES:	35
+};
+
+var addr_info_attr_name_map = [
+	"unspec",
+	"address",
+	"local",
+	"label",
+	"broadcast",
+	"anycast",
+	"cacheinfo",
+	"multicast",
+	"flags"
+];
+
+var addr_attributes = {
+	IFA_UNSPEC: 0,
+	IFA_ADDRESS: 1,
+	IFA_LOCAL: 2,
+	IFA_LABEL: 3,
+	IFA_BROADCAST: 4,
+	IFA_ANYCAST: 5,
+	IFA_CACHEINFO: 6,
+	IFA_MULTICAST: 7,
+	IFA_FLAGS: 8
+};
+
+var payload_sizes = [
+
+	16,	//RTM_NEWLINK: 
+	16,	//RTM_DELLINK: 
+	16,	//RTM_GETLINK: 
+	16,	//RTM_SETLINK: 
+	8,	//RTM_NEWADDR: 
+	8,	//RTM_DELADDR: 
+	8,	//RTM_GETADDR: 
+
+	// not confirmed the rest
+	8,	//RTM_NEWROUTE: 
+	8,	//RTM_DELROUTE: 
+	8,	//RTM_GETROUTE: 
+	8,	//RTM_NEWNEIGH: 
+	8,	//RTM_DELNEIGH: 
+	8,	//RTM_GETNEIGH: 
+	8,	//RTM_NEWRULE: 
+	8,	//RTM_DELRULE: 
+	8,	//RTM_GETRULE: 
+	8,	//RTM_NEWQDISC: 
+	8,	//RTM_DELQDISC: 
+	8,	//RTM_GETQDISC: 
+	8,	//RTM_NEWTCLASS: 
+	8,	//RTM_DELTCLASS: 
+	8,	//RTM_GETTCLASS: 
+	8,	//RTM_NEWTFILTER: 
+	8,	//RTM_DELTFILTER: 
+	8,	//RTM_GETTFILTER: 
+	8,	//RTM_NEWACTION: 
+	8,	//RTM_DELACTION: 
+	8,	//RTM_GETACTION: 
+	8,	//RTM_NEWPREFIX: 
+	8,	//RTM_GETMULTICAST: 
+	8,	//RTM_GETANYCAST: 
+	8,	//RTM_NEWNEIGHTBL: 
+	8,	//RTM_GETNEIGHTBL: 
+	8,	//RTM_SETNEIGHTBL: 
+	8,	//RTM_NEWNDUSEROPT: 
+	8,	//RTM_NEWADDRLABEL: 
+	8,	//RTM_DELADDRLABEL: 
+	8,	//RTM_GETADDRLABEL: 
+	8,	//RTM_GETDCB: 
+	8,	//RTM_SETDCB: 
+	8,	//RTM_NEWNETCONF: 
+	8,	//RTM_GETNETCONF: 
+	8,	//RTM_NEWMDB: 
+	8,	//RTM_DELMDB: 
+	8	//RTM_GETMDB: 
+];
 
 module.exports = {
 
@@ -52,8 +206,22 @@ module.exports = {
 		NDA_IFINDEX:    8,
 		__NDA_MAX:      9,
 
-		/** message types. see linux/rtnetlink.h */
+		/* inteface types */
+		ARPHRD_ETHER:	2,
 
+		/* infomsg link device flags */
+		IFF_RUNNING:	0x40,
+		IFF_CHANGE:		0xFFFFFFFF,
+
+		/* address family attributes. see linux/if_link.h */
+		IFLA_ADDRESS:   1,
+
+		/* Filter mask */
+		IFLA_EXT_MASK:  0x1D,
+		RTEXT_FILTER_VF:0x0001,
+
+		/** message types. see linux/rtnetlink.h */
+		NLMSG_DONE: 3, 
 		RTM_BASE:       16,
 		RTM_NEWLINK: 16,
 		RTM_DELLINK: 17,
@@ -116,9 +284,41 @@ module.exports = {
    	    __RTN_MAX: 12,
 
 
+   	    /* RTnetlink multicast groups */
+		RTN_GRP_NONE: 0,
+		RTN_GRP_LINK: 1,
+		RTN_GRP_NOTIFY: 2,
+		RTN_GRP_NEIGH: 3,
+		RTN_GRP_TC: 4,
+		RTN_GRP_IPV4_IFADDR: 5,
+		RTN_GRP_IPV4_MROUTE: 6,
+		RTN_GRP_IPV4_ROUTE: 7,
+		RTN_GRP_IPV4_RULE: 8,
+		RTN_GRP_IPV6_IFADDR: 9,
+		RTN_GRP_IPV6_MROUTE: 10,
+		RTN_GRP_IPV6_ROUTE: 11,
+		RTN_GRP_IPV6_IFINFO: 12,
+		RTN_GRP_DECnet_IFADDR: 13,
+		RTN_GRP_NOP2: 14,
+		RTN_GRP_DECnet_ROUTE: 15,
+		RTN_GRP_DECnet_RULE: 16,
+		RTN_GRP_NOP4: 17,
+		RTN_GRP_IPV6_PREFIX: 18,
+		RTN_GRP_IPV6_RULE: 19,
+		RTN_GRP_ND_USEROPT: 20,
+		RTN_GRP_PHONET_IFADDR: 21,
+		RTN_GRP_PHONET_ROUTE: 22,
+		RTN_GRP_DCB: 23,
+		RTN_GRP_IPV4_NETCONF: 24,
+		RTN_GRP_IPV6_NETCONF: 25,
+		RTN_GRP_MDB: 26,
+
+	make_group: function(group) {
+		return (1 << (group - 1));
+	},
 
 
-
+   	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
 		// fam,ifindex,state,flags,typ
 		var o = bufferpack.metaObject(ndmsg_fmt);
@@ -131,6 +331,20 @@ module.exports = {
 		o._type = 0;
 		return o;
 	},
+
+
+	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
+	buildInfomsg: function(params) {
+		var o = bufferpack.metaObject(ifinfomsg_fmt);
+		o._family = 0;
+		o._if_pad = 0;
+		o._if_type = 0; 
+		o._if_index = 0;
+		o._if_flags = 0;
+		o._if_change = 0;
+		return o;
+	},
+
 
 // "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 	buildRtmsg: function() {
@@ -167,7 +381,66 @@ module.exports = {
 	        }
      		return Buffer.concat(bufs);
      	}
+	},
+
+	parseRtattributes: function(data) {
+		// Only supports link and address right now
+
+		// console.log('parseRtattributes');
+		var ret = {};
+
+		if(data && !Buffer.isBuffer(data)) {
+			console.error("ERROR: ** Bad parameters to parseRtattributes() **");
+		} else {
+			var total_len = data.readUInt32LE(0);
+			var type = data.readUInt16LE(4);
+			if(type == exports.NLMSG_DONE)
+				return ret;
+			// console.log('msg type = ' + type);
+
+			// skip the header,header payload padding that rounds the message up to multiple of 16
+			var index = 16 + payload_sizes[type - 16];
+			// console.log('start index = ' + index);
+			while(index < total_len) {
+				// console.log('index = ' + index);
+				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
+				var attr_type = data.readUInt16LE(index + 2);
+				// console.log('attr = ' + attr_type + ' len = ' + len);
+				// console.log(' msgtype = ' + msgtype);
+				var key;
+
+				if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
+					key = link_info_attr_name_map[attr_type];
+				} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+					key = addr_info_attr_name_map[attr_type];
+				}
+
+				index += 4; // index to the data
+				var value;
+
+				// treat as network order to byte array
+				var bytes = [];
+				var bytes_idx = 0;
+				for(var idx = index; idx < index + len; idx++)
+				{
+					bytes[bytes_idx] = data.readUInt8(idx);
+					bytes_idx += 1;
+				}
+
+				var regExNm = /name/;
+				if(regExNm.test(key)) {
+					ret[key] = Buffer(bytes).toString('ascii');
+				} else {
+					ret[key] = bytes;
+				}
+				// console.log('added [' + key + '] = ' + ret[key])
+
+				// get to next attribute padding to mod 4
+		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+		        // console.log("pad: " + pad);
+				index += (len + pad);
+			};
+		}
+		return ret;
 	}
-
-
 };

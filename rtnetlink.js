@@ -125,11 +125,11 @@ var payload_sizes = [
 	8,	//RTM_NEWADDR: 
 	8,	//RTM_DELADDR: 
 	8,	//RTM_GETADDR: 
+	12,	//RTM_NEWROUTE: 
+	12,	//RTM_DELROUTE: 
+	12,	//RTM_GETROUTE: 
 
 	// not confirmed the rest
-	8,	//RTM_NEWROUTE: 
-	8,	//RTM_DELROUTE: 
-	8,	//RTM_GETROUTE: 
 	8,	//RTM_NEWNEIGH: 
 	8,	//RTM_DELNEIGH: 
 	8,	//RTM_GETNEIGH: 
@@ -166,6 +166,82 @@ var payload_sizes = [
 	8,	//RTM_DELMDB: 
 	8	//RTM_GETMDB: 
 ];
+	
+var rtm_types_name_map = [
+	"newLink",
+	"deleteLink",
+	"getLink",
+	"setLink",
+	"newAddress",
+	"delAddress", 
+	"getAddress",
+	"undefined",
+	"newRoute",
+	"delRoute",
+	"getRoute",
+	"undefined",
+	"newNeighbor",
+	"delNeighbor",
+	"getNeighbor",
+	"undefined",
+	"newRule",
+	"delRule",
+	"getRule",
+	"undefined",
+	"RTM_NEWQDISC",
+	"RTM_DELQDISC",
+	"RTM_GETQDISC",
+	"undefined",
+	"RTM_NEWTCLASS",
+	"RTM_DELTCLASS",
+	"RTM_GETTCLASS",
+	"undefined",
+	"RTM_NEWTFILTER",
+	"RTM_DELTFILTER",
+	"RTM_GETTFILTER",
+	"undefined",
+	"RTM_NEWACTION",
+	"RTM_DELACTION",
+	"RTM_GETACTION",
+	"undefined",
+	"RTM_NEWPREFIX",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETMULTICAST", 
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETANYCAST",
+	"undefined",
+	"RTM_NEWNEIGHTBL",
+	"undefined",
+	"RTM_GETNEIGHTBL",
+	"RTM_SETNEIGHTBL",
+	"RTM_NEWNDUSEROPT",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_NEWADDRLABEL",
+	"RTM_DELADDRLABEL",
+	"RTM_GETADDRLABEL",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETDCB",
+	"RTM_SETDCB",
+	"RTM_NEWNETCONF", 
+	"undefined",
+	"RTM_GETNETCONF",
+	"undefined",
+	"RTM_NEWMDB",
+	"RTM_DELMDB",
+	"RTM_GETMDB"
+	];
+
+
 
 module.exports = {
 
@@ -220,55 +296,6 @@ module.exports = {
 		IFLA_EXT_MASK:  0x1D,
 		RTEXT_FILTER_VF:0x0001,
 
-		/** message types. see linux/rtnetlink.h */
-		NLMSG_DONE: 3, 
-		RTM_BASE:       16,
-		RTM_NEWLINK: 16,
-		RTM_DELLINK: 17,
-		RTM_GETLINK: 18,
-		RTM_SETLINK: 19,
-		RTM_NEWADDR	: 20,
-		RTM_DELADDR : 21,
-		RTM_GETADDR: 22,
-		RTM_NEWROUTE: 24,
-		RTM_DELROUTE: 25,
-		RTM_GETROUTE: 26,
-		RTM_NEWNEIGH	: 28,
-		RTM_DELNEIGH: 29,
-		RTM_GETNEIGH: 30,
-		RTM_NEWRULE	: 32,
-		RTM_DELRULE: 33,
-		RTM_GETRULE: 34,
-		RTM_NEWQDISC: 36,
-		RTM_DELQDISC: 37,
-		RTM_GETQDISC: 38,
-		RTM_NEWTCLASS	: 40,
-		RTM_DELTCLASS: 41,
-		RTM_GETTCLASS: 42,
-		RTM_NEWTFILTER	: 44,
-		RTM_DELTFILTER: 45,
-		RTM_GETTFILTER: 46,
-		RTM_NEWACTION	: 48,
-		RTM_DELACTION: 49,
-		RTM_GETACTION: 50,
-		RTM_NEWPREFIX	: 52,
-		RTM_GETMULTICAST : 58,
-		RTM_GETANYCAST	: 62,
-		RTM_NEWNEIGHTBL	: 64,
-		RTM_GETNEIGHTBL	: 66,
-		RTM_SETNEIGHTBL: 67,
-		RTM_NEWNDUSEROPT : 68,
-		RTM_NEWADDRLABEL : 72,
-		RTM_DELADDRLABEL: 73,
-		RTM_GETADDRLABEL: 74,
-		RTM_GETDCB : 78,
-		RTM_SETDCB: 79,
-		RTM_NEWNETCONF : 80,
-		RTM_GETNETCONF : 82,
-		RTM_NEWMDB : 84,
-		RTM_DELMDB : 85,
-		RTM_GETMDB: 86,
-
 		RTN_UNSPEC: 0,
 		RTN_UNICAST: 1,		/* Gateway or direct route	*/
 		RTN_LOCAL: 2,		/* Accept locally		*/
@@ -317,6 +344,59 @@ module.exports = {
 		return (1 << (group - 1));
 	},
 
+		NLMSG_DONE: 3, 
+
+		/** message types. see linux/rtnetlink.h */
+		RTM_BASE:       16,
+		RTM_NEWLINK: 16,
+		RTM_DELLINK: 17,
+		RTM_GETLINK: 18,
+		RTM_SETLINK: 19,
+		RTM_NEWADDR	: 20,
+		RTM_DELADDR : 21,
+		RTM_GETADDR: 22,
+		RTM_NEWROUTE: 24,
+		RTM_DELROUTE: 25,
+		RTM_GETROUTE: 26,
+		RTM_NEWNEIGH	: 28,
+		RTM_DELNEIGH: 29,
+		RTM_GETNEIGH: 30,
+		RTM_NEWRULE	: 32,
+		RTM_DELRULE: 33,
+		RTM_GETRULE: 34,
+		RTM_NEWQDISC: 36,
+		RTM_DELQDISC: 37,
+		RTM_GETQDISC: 38,
+		RTM_NEWTCLASS	: 40,
+		RTM_DELTCLASS: 41,
+		RTM_GETTCLASS: 42,
+		RTM_NEWTFILTER	: 44,
+		RTM_DELTFILTER: 45,
+		RTM_GETTFILTER: 46,
+		RTM_NEWACTION	: 48,
+		RTM_DELACTION: 49,
+		RTM_GETACTION: 50,
+		RTM_NEWPREFIX	: 52,
+		RTM_GETMULTICAST : 58,
+		RTM_GETANYCAST	: 62,
+		RTM_NEWNEIGHTBL	: 64,
+		RTM_GETNEIGHTBL	: 66,
+		RTM_SETNEIGHTBL: 67,
+		RTM_NEWNDUSEROPT : 68,
+		RTM_NEWADDRLABEL : 72,
+		RTM_DELADDRLABEL: 73,
+		RTM_GETADDRLABEL: 74,
+		RTM_GETDCB : 78,
+		RTM_SETDCB: 79,
+		RTM_NEWNETCONF : 80,
+		RTM_GETNETCONF : 82,
+		RTM_NEWMDB : 84,
+		RTM_DELMDB : 85,
+		RTM_GETMDB: 86,
+
+	getRtmTypeName: function(type) {
+		return rtm_types_name_map[type - this.RTM_BASE];
+	},
 
    	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
@@ -350,6 +430,24 @@ module.exports = {
 	buildRtmsg: function() {
 		var o = bufferpack.metaObject(rtmsg_fmt,true);
 		return o;
+	},
+
+	ipArrayAsString: function(addr) {
+		if(addr.length == 4) {
+			return addr[0] + "." + addr[1] + "." + addr[2] + "." + addr[3]
+		} else if (addr.length == 16) {
+			var ip6 = '';
+			for(var i = 0; i < 16; i+=2) {
+				var num = (addr[i] << 8) | addr[i + 1];
+				if(ip6) { 
+					ip6 = ip6 + ':';
+				}
+				ip6 = ip6 + num.toString(16);
+			}
+			return ip6;
+		} else {
+			return 'undefined';
+		}
 	},
 
 	/**
@@ -398,6 +496,13 @@ module.exports = {
 				return ret;
 			// console.log('msg type = ' + type);
 
+			var keys;
+			if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
+				keys = link_info_attr_name_map;
+			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETNEIGH) {
+				keys = addr_info_attr_name_map;
+			}
+
 			// skip the header,header payload padding that rounds the message up to multiple of 16
 			var index = 16 + payload_sizes[type - 16];
 			// console.log('start index = ' + index);
@@ -406,19 +511,11 @@ module.exports = {
 				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 				var attr_type = data.readUInt16LE(index + 2);
 				// console.log('attr = ' + attr_type + ' len = ' + len);
-				// console.log(' msgtype = ' + msgtype);
-				var key;
-
-				if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
-					key = link_info_attr_name_map[attr_type];
-				} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
-					key = addr_info_attr_name_map[attr_type];
-				}
 
 				index += 4; // index to the data
 				var value;
 
-				// treat as network order to byte array
+				// treat as network order to byte array?
 				var bytes = [];
 				var bytes_idx = 0;
 				for(var idx = index; idx < index + len; idx++)
@@ -427,9 +524,10 @@ module.exports = {
 					bytes_idx += 1;
 				}
 
+				var key = keys[attr_type];
 				var regExNm = /name/;
 				if(regExNm.test(key)) {
-					ret[key] = Buffer(bytes).toString('ascii');
+					ret[key] = Buffer(bytes).toString('ascii',0,len-1);
 				} else {
 					ret[key] = bytes;
 				}
@@ -440,6 +538,7 @@ module.exports = {
 		        // console.log("pad: " + pad);
 				index += (len + pad);
 			};
+			ret['operation'] = this.getRtmTypeName(type); 
 		}
 		return ret;
 	}

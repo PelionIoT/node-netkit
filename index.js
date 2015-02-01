@@ -525,7 +525,7 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 
 	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
-									rt.IFF_RUNNING,rt.IFF_CHANGE);
+									rt.IFF_ALLMULTI,rt.IFF_CHANGE);
 	info_msg._family = rt.RTN_UNSPEC;
 
 	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
@@ -557,14 +557,91 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
     		console.error("** Error: " + util.inspect(err));
     		cb(err);
     	} else {
-    		console.log("in cb: " + util.inspect(arguments));
-    		cb(err);//,msgreq);
+    		cb(err,bytes);
     	}
     });
 
 }
 
+nk.onNetworkChange = function(ifname, event_type, cb) {
+	var links = [];
 
+	var sock = nk.newNetlinkSocket();
+	var sock_opts;
+	if(!event_type) {
+		sock_opts = {
+			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
+							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
+						// | rt.make_group(rt.RTNLGRP_LINK)
+						// | rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
+						// | rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
+						// | rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
+						// | rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
+						// | rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
+						// | rt.make_group(rt.RTNLGRP_NEIGH)
+						// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
+						// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
+		}
+	} else if(event_type == 'address') {
+		sock_opts = {
+			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
+							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
+		}
+	} else {
+		err("event type = '" + event_type + "'' : Not supported");
+		return;	
+	}
+
+	sock.create(sock_opts,function(err) {
+		if(err) {
+			console.log("socket.create() Error: " + util.inspect(err));
+			cb(err);
+			return;
+		} else {
+			console.log("Created netlink socket.");
+		}
+	 });
+
+	var command_opts = {
+		type: 	nk.rt.RTM_GETLINK, // get link
+		flags: 	nk.nl.NLM_F_REQUEST|nk.nl.NLM_F_ROOT|nk.nl.NLM_F_MATCH
+	};
+
+	nk.netlinkCommand(command_opts, "eth0", sock, function(err,bufs) {
+		if(err)
+			console.error("** Error: " + util.inspect(err));
+		else {
+
+
+			// get the attributes of all the links first for later reference
+			for(var i = 0; i < bufs.length; i++) {
+				var l = rt.parseRtattributes(bufs[i]);
+				links[i] = l;
+			}
+
+			sock.onRecv(function(err,bufs) {
+				if(err) {
+					console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
+				} else {
+					var ch = rt.parseRtattributes(bufs[0]);
+
+					if(typeof(ch['operation']) != 'undefined') {
+						if(!ifname || (ifname == ch['ifname'])) {
+							var addr = rt.ipArrayAsString(ch['address']);
+							var data = {
+								ifname: ch['ifname'], // the interface name as labeled by the OS
+								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call
+								eventname: ch['operation'], // an event name. We will need to define 
+								event:  {  address: addr }
+							};
+							cb(data);
+						}
+					}
+				}
+			});
+		}
+	});
+}
 
 module.exports = nk;
 

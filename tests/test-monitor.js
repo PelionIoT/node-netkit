@@ -1,18 +1,28 @@
 var nk = require('../index.js');
 
+
+/*
 var rt = nk.rt;
-
 var util = require('util');
-
 var sock = nk.newNetlinkSocket();
-
 console.dir(sock);
-
 
 //setTimeout(function(){
 	var sock_opts = {
 		// subscriptions: rt.RTN_GRP_IPV4_IFADDR(rt.RTN_GRP_LINK)
-		subscriptions: rt.make_group(rt.RTN_GRP_IPV4_IFADDR)// | rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
+		//subscriptions: rt.make_group(rt.RTN_GRP_IPV4_IFADDR)// | rt.make_group(rt.RTN_GRP_IPV6_IFADDR) | rt.make_group(rt.RTN_GRP_IPV6_ROUTE) 
+				subscriptions: 	rt.make_group(rt.RTN_GRP_IPV4_IFADDR) 	| 
+						rt.make_group(rt.RTN_GRP_IPV6_IFADDR) 	| 
+						rt.make_group(rt.RTNLGRP_LINK) 	|
+						rt.make_group(rt.RTNLGRP_IPV4_ROUTE) 	|
+						rt.make_group(rt.RTN_GRP_IPV6_ROUTE) 	|
+						rt.make_group(rt.RTNLGRP_IPV4_MROUTE) 	|
+						rt.make_group(rt.RTNLGRP_IPV6_MROUTE) 	|
+						rt.make_group(rt.RTNLGRP_IPV6_PREFIX) 	|
+						rt.make_group(rt.RTNLGRP_NEIGH) 	|
+						rt.make_group(rt.RTNLGRP_IPV4_NETCONF) 	|
+						rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
+
 	};
 
 	sock.create(sock_opts,function(err) {
@@ -62,8 +72,8 @@ console.dir(sock);
 	var command_opts = {
 		// The info you want to retrieve before listening
 
-		type: nk.rt.RTM_GETLINK, // get link
-		//type: 	nk.rt.RTM_GETADDR, // get addr
+		//type: nk.rt.RTM_GETLINK, // get link
+		type: 	nk.rt.RTM_GETADDR, // get addr
 		flags: 	nk.nl.NLM_F_REQUEST|nk.nl.NLM_F_ROOT|nk.nl.NLM_F_MATCH
 	};
 	nk.netlinkCommand(command_opts, "eth0", sock, function(err,req) {
@@ -76,4 +86,7 @@ console.dir(sock);
 	});
 	// */
 
-
+	nk.onNetworkChange("", "address", function (data) {
+		console.log("changed...");
+		console.dir(data);
+	});

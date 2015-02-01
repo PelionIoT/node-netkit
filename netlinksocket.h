@@ -27,6 +27,14 @@ public:
 		                  // my guess is this number just needs to be unique.
 		memset(&addr_local,0,sizeof(sockaddr_nl));
 		memset(&addr_peer,0,sizeof(sockaddr_nl));
+
+		// malloc_info(0, stderr);
+		// fprintf(stderr,"======================================================\n" );
+	}
+
+	~NetlinkSocket()
+	{
+		// malloc_info(0, stderr);
 	}
 
 	static Handle<Value> Init(const Arguments& args);

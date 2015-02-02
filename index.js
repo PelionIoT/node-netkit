@@ -630,9 +630,8 @@ nk.onNetworkChange = function(ifname, event_type, cb) {
 							var addr = rt.ipArrayAsString(ch['address']);
 							var data = {
 								ifname: ch['ifname'], // the interface name as labeled by the OS
-								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call
-								eventname: ch['operation'], // an event name. We will need to define 
-								event:  {  address: addr }
+								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
+								event:  { name: ch['operation'], address: addr }
 							};
 							cb(data);
 						}

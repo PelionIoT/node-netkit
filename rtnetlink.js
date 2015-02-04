@@ -116,6 +116,49 @@ var addr_attributes = {
 	IFA_FLAGS: 8
 };
 
+var route_info_attr_name_map = [
+	"unspec",
+	"dst",
+	"src",
+	"iif",
+	"oif",
+	"gateway",
+	"priority",
+	"prefsrc",
+	"metrics",
+	"multipath",
+	"protoinfo",
+	"flow",
+	"cacheinfo",
+	"session",
+	"mp_algo",
+	"table",
+	"mark",
+	"mfc_stats"
+];
+
+var route_attributes = {
+	RTA_UNSPEC: 0,
+	RTA_DST: 1,
+	RTA_SRC: 2,
+	RTA_IIF: 3,
+	RTA_OIF: 4,
+	RTA_GATEWAY: 5,
+	RTA_PRIORITY: 6,
+	RTA_PREFSRC: 7,
+	RTA_METRICS: 8,
+	RTA_MULTIPATH: 9,
+	RTA_PROTOINFO: 10, /* no longer used */
+	RTA_FLOW: 11,
+	RTA_CACHEINFO: 12,
+	RTA_SESSION: 13, /* no longer used */
+	RTA_MP_ALGO: 14, /* no longer used */
+	RTA_TABLE: 15,
+	RTA_MARK: 16,
+	RTA_MFC_STATS: 17
+};
+
+
 var payload_sizes = [
 
 	16,	//RTM_NEWLINK: 
@@ -169,7 +212,7 @@ var payload_sizes = [
 	
 var rtm_types_name_map = [
 	"newLink",
-	"deleteLink",
+	"delLink",
 	"getLink",
 	"setLink",
 	"newAddress",
@@ -432,24 +475,6 @@ module.exports = {
 		return o;
 	},
 
-	ipArrayAsString: function(addr) {
-		if(addr.length == 4) {
-			return addr[0] + "." + addr[1] + "." + addr[2] + "." + addr[3]
-		} else if (addr.length == 16) {
-			var ip6 = '';
-			for(var i = 0; i < 16; i+=2) {
-				var num = (addr[i] << 8) | addr[i + 1];
-				if(ip6) { 
-					ip6 = ip6 + ':';
-				}
-				ip6 = ip6 + num.toString(16);
-			}
-			return ip6;
-		} else {
-			return 'undefined';
-		}
-	},
-
 	/**
 	 * Returns a rt attribute, which consist of a struct rtattr { type, length } followed by data.
 	 * @param  {integer} typ  no larger that an unsigned short (65536)
@@ -494,13 +519,15 @@ module.exports = {
 			var type = data.readUInt16LE(4);
 			if(type == exports.NLMSG_DONE)
 				return ret;
-			// console.log('msg type = ' + type);
+			console.log('msg type = ' + type);
 
 			var keys;
-			if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
+			if(this.RTM_NEWLINK <= type && this.RTM_GETLINK) {
 				keys = link_info_attr_name_map;
-			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETNEIGH) {
+			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
 				keys = addr_info_attr_name_map;
+			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
+				keys = route_info_attr_name_map
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16

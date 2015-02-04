@@ -195,6 +195,7 @@ var nk = {
 	ifNameToIndex: nativelib.ifNameToIndex,
 	ifIndexToName: nativelib.ifIndexToName,
 	toAddress: nativelib.toAddress,
+	fromAddress: nativelib.fromAddress,
 
 	assignDbgCB: function(func) {
 		dbg = func;
@@ -573,8 +574,8 @@ nk.onNetworkChange = function(ifname, event_type, cb) {
 			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
 							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
 						// | rt.make_group(rt.RTNLGRP_LINK)
-						// | rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-						// | rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
+							| rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
+							| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
 						// | rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
 						// | rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
 						// | rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
@@ -586,6 +587,11 @@ nk.onNetworkChange = function(ifname, event_type, cb) {
 		sock_opts = {
 			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
 							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
+		}
+	} else if(event_type == 'route') {
+		sock_opts = {
+			subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
+							| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
 		}
 	} else {
 		err("event type = '" + event_type + "'' : Not supported");
@@ -627,7 +633,7 @@ nk.onNetworkChange = function(ifname, event_type, cb) {
 
 					if(typeof(ch['operation']) != 'undefined') {
 						if(!ifname || (ifname == ch['ifname'])) {
-							var addr = rt.ipArrayAsString(ch['address']);
+							var addr = nk.fromAddress(ch['address'], nk.AF_INET6);
 							var data = {
 								ifname: ch['ifname'], // the interface name as labeled by the OS
 								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call 

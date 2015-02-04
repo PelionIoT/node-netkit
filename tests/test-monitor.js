@@ -86,7 +86,7 @@ console.dir(sock);
 	});
 	// */
 
-	nk.onNetworkChange("", "address", function (data) {
+	nk.onNetworkChange("", "route", function (data) {
 		console.log("changed...");
 		console.dir(data);
 	});

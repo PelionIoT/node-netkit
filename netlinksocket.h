@@ -32,10 +32,10 @@ public:
 		// fprintf(stderr,"======================================================\n" );
 	}
 
-	~NetlinkSocket()
-	{
-		// malloc_info(0, stderr);
-	}
+	// virtual ~NetlinkSocket()
+	// {
+	// 	malloc_info(0, stderr);
+	// }
 
 	static Handle<Value> Init(const Arguments& args);
 	static void ExtendFrom(const Arguments& args);

@@ -8,9 +8,12 @@ var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type
 // for documentation see: /usr/include/linux/rtnetlink.h:~175
 var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 
-var rtattr_fmt = "<H(_len)H(_type)";
+// for documentation see: /usr/include/linux/if_addr.h:~5
+var ifaddrmsg_fmt = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)";
 
 var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+
+var rtattr_fmt = "<H(_len)H(_type)";
 
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
@@ -475,6 +478,12 @@ module.exports = {
 		return o;
 	},
 
+// ifaddrmsg = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)"
+	buildRtmsg: function() {
+		var o = bufferpack.metaObject(ifaddrmsg_fmt,true);
+		return o;
+	},
+
 	/**
 	 * Returns a rt attribute, which consist of a struct rtattr { type, length } followed by data.
 	 * @param  {integer} typ  no larger that an unsigned short (65536)
@@ -520,18 +529,23 @@ module.exports = {
 			if(type == exports.NLMSG_DONE)
 				return ret;
 			console.log('msg type = ' + type);
+			var index = 16; // start after the msghdr
 
-			var keys;
+			var keys, payload;
 			if(this.RTM_NEWLINK <= type && this.RTM_GETLINK) {
 				keys = link_info_attr_name_map;
+				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
 			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
 				keys = addr_info_attr_name_map;
+				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
 			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
 				keys = route_info_attr_name_map
+				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
-			var index = 16 + payload_sizes[type - 16];
+			index += payload_sizes[type - 16];
+
 			// console.log('start index = ' + index);
 			while(index < total_len) {
 				// console.log('index = ' + index);
@@ -565,6 +579,7 @@ module.exports = {
 		        // console.log("pad: " + pad);
 				index += (len + pad);
 			};
+			ret['payload'] = payload;
 			ret['operation'] = this.getRtmTypeName(type); 
 		}
 		return ret;

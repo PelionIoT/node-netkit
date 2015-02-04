@@ -86,7 +86,7 @@ console.dir(sock);
 	});
 	// */
 
-	nk.onNetworkChange("", "route", function (data) {
+	nk.onNetworkChange("eth1", "all", function (data) {
 		console.log("changed...");
 		console.dir(data);
 	});

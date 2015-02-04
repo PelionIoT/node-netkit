@@ -564,21 +564,28 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 
 }
 
+var mn = require('./ipmonitor.js');
+
 nk.onNetworkChange = function(ifname, event_type, cb) {
 	var links = [];
 
 	var sock = nk.newNetlinkSocket();
 	var sock_opts;
-	if(!event_type) {
+	if(!event_type || event_type == 'all') {
 		sock_opts = {
-			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
+			subscriptions: 	 
+						
+							  rt.make_group(rt.RTNLGRP_LINK)
+
+							| rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
 							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-						// | rt.make_group(rt.RTNLGRP_LINK)
+							| rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
+
 							| rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
 							| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
+							| rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
+							| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
+
 						// | rt.make_group(rt.RTNLGRP_NEIGH)
 						// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
 						// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
@@ -623,22 +630,22 @@ nk.onNetworkChange = function(ifname, event_type, cb) {
 			for(var i = 0; i < bufs.length; i++) {
 				var l = rt.parseRtattributes(bufs[i]);
 				links[i] = l;
+				console.dir(l);
 			}
 
 			sock.onRecv(function(err,bufs) {
 				if(err) {
 					console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
 				} else {
-					var ch = rt.parseRtattributes(bufs[0]);
+					var at = rt.parseRtattributes(bufs[0]);
 
-					if(typeof(ch['operation']) != 'undefined') {
-						if(!ifname || (ifname == ch['ifname'])) {
-							var addr = nk.fromAddress(ch['address'], nk.AF_INET6);
-							var data = {
-								ifname: ch['ifname'], // the interface name as labeled by the OS
-								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
-								event:  { name: ch['operation'], address: addr }
-							};
+					if(typeof(at['operation']) != 'undefined') {
+						if(!ifname || (ifname == at['ifname'])) {
+							console.dir(at);
+
+							var tname = 'packageInfo' + at['operation'].slice(3);
+							console.log("tname = " + tname);
+							var data = mn[tname](at);
 							cb(data);
 						}
 					}

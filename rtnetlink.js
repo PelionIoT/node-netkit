@@ -479,7 +479,7 @@ module.exports = {
 	},
 
 // ifaddrmsg = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)"
-	buildRtmsg: function() {
+	buildIfaddressmsg: function() {
 		var o = bufferpack.metaObject(ifaddrmsg_fmt,true);
 		return o;
 	},
@@ -532,13 +532,16 @@ module.exports = {
 			var index = 16; // start after the msghdr
 
 			var keys, payload;
-			if(this.RTM_NEWLINK <= type && this.RTM_GETLINK) {
+			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
+			    console.log('LINK');
 				keys = link_info_attr_name_map;
 				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
 			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+			    console.log('ADDR');
 				keys = addr_info_attr_name_map;
 				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
 			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
+			    console.log('ROUTE');
 				keys = route_info_attr_name_map
 				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			}
@@ -566,7 +569,7 @@ module.exports = {
 				}
 
 				var key = keys[attr_type];
-				var regExNm = /name/;
+				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
 					ret[key] = Buffer(bytes).toString('ascii',0,len-1);
 				} else {

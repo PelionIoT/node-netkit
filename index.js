@@ -171,7 +171,7 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 
 var boundOnNetworkChange = monitor.onNetworkChange;
-boundOnNetworkChange.bind(this,nativelib);
+boundOnNetworkChange.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test

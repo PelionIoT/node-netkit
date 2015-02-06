@@ -342,6 +342,7 @@ module.exports = {
 		IFLA_EXT_MASK:  0x1D,
 		RTEXT_FILTER_VF:0x0001,
 
+		/* Route Type */
 		RTN_UNSPEC: 0,
 		RTN_UNICAST: 1,		/* Gateway or direct route	*/
 		RTN_LOCAL: 2,		/* Accept locally		*/
@@ -354,7 +355,13 @@ module.exports = {
    	    RTN_THROW: 9,		/* Not in this table		*/
    	    RTN_NAT: 10,		/* Translate this address	*/
    	    RTN_XRESOLVE: 11,	/* Use external resolver	*/
-   	    __RTN_MAX: 12,
+
+   	    /* Route scope */
+		RT_SCOPE_UNIVERSE: 0,
+		RT_SCOPE_SITE: 200,
+		RT_SCOPE_LINK: 253,
+		RT_SCOPE_HOST: 254,
+		RT_SCOPE_NOWHERE: 255,
 
 
    	    /* RTnetlink multicast groups */
@@ -560,20 +567,14 @@ module.exports = {
 				var value;
 
 				// treat as network order to byte array?
-				var bytes = [];
-				var bytes_idx = 0;
-				for(var idx = index; idx < index + len; idx++)
-				{
-					bytes[bytes_idx] = data.readUInt8(idx);
-					bytes_idx += 1;
-				}
+				var bytes = this.bufToArray(data,index,len);
 
 				var key = keys[attr_type];
 				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
 					ret[key] = Buffer(bytes).toString('ascii',0,len-1);
 				} else {
-					ret[key] = bytes;
+					ret[key] = data.slice(index, index + len);// bytes;
 				}
 				// console.log('added [' + key + '] = ' + ret[key])
 
@@ -586,5 +587,16 @@ module.exports = {
 			ret['operation'] = this.getRtmTypeName(type); 
 		}
 		return ret;
+	},
+
+	bufToArray: function(data, index, len) {
+		var bytes = [];
+		var bytes_idx = 0;
+		for(var idx = index; idx < index + len; idx++)
+		{
+			bytes[bytes_idx] = data.readUInt8(idx);
+			bytes_idx += 1;
+		}
+		return bytes;
 	}
 };

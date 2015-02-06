@@ -1,4 +1,5 @@
 var rt = require('./rtnetlink.js');
+var bufferpack = require('./libs/bufferpack.js');
 
 var nativelib = null;
 try {
@@ -16,7 +17,6 @@ var monitor = {
 	AF_INET: 2,
 	AF_DECnet: 12,
 	
-
 	onNetworkChange: function(ifname, event_type, cb) {
 		var links = [];
 
@@ -92,10 +92,12 @@ var monitor = {
 
 						if(typeof(at['operation']) != 'undefined') {
 							console.dir(at);
-							if(!ifname || (ifname == at['ifname']) || (ifname == at['label'])) {
-								var tname = 'packageInfo' + at['operation'].slice(3);
-								console.log("tname = " + tname);
-								var data = monitor[tname](this, at);
+							var handler_name = 'packageInfo' + at['operation'].slice(3);
+							console.log("handler_name = " + handler_name);
+							var boundApply = monitor[handler_name];
+							var data = boundApply(at,links);
+
+							if(!ifname || (ifname == data['ifname'])) {
 								cb(data);
 							}
 						}
@@ -105,7 +107,7 @@ var monitor = {
 		});
 	},
 
-	packageInfoLink: function(nk, ch) {
+	packageInfoLink: function(ch,links) {
 
 		var addr = nativelib.fromAddress(ch['address'], ch['payload']['_family']);
 		var data = {
@@ -117,7 +119,7 @@ var monitor = {
 		return data;
 	},
 
-	packageInfoAddress: function(nk, ch) {
+	packageInfoAddress: function(ch,links) {
 
 		var addr = nativelib.fromAddress(ch['address'], ch['payload']['_family']);
 		var data = {
@@ -125,22 +127,25 @@ var monitor = {
 			ifnum: nativelib.ifNameToIndex(ch['label']), // the interface number, as per system call 
 			event:  { 	name: ch['operation'], 
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'], 
-						family: this.getFamily(addr['family']), 
-						scope: this.getScope(ch['payload']['_scope'])
+						family: monitor.getFamily(addr['family']), 
+						scope: monitor.getScope(ch['payload']['_scope'])
 					}
 		};
 
 		return data;
 	},
 
-	packageInfoRoute: function(nk, ch) {
+	packageInfoRoute: function(ch,links) {
 
-		var addr = nativelib.fromAddress(ch['address'], ch['payload']['_family']);
+		var oif = ch['oif'].readUInt32LE(0);
 		var data = {
+			ifname: links[oif-1]['ifname'],
+			ifnum: oif,
 			event:  { 	name: ch['operation'], 
-						address: this.getRouteAddress(ch, addr), 
-						family: this.getFamily(ch['payload']['_family']), 
-						scope: this.getScope(ch['payload']['_scope'])
+						address: monitor.getRouteAddress(ch), 
+						routeType: monitor.routeType(ch['payload']['_type']),
+						family: monitor.getFamily(ch['payload']['_family']), 
+						scope: monitor.getScope(ch['payload']['_scope'])
 					}
 		};
 
@@ -155,30 +160,22 @@ var monitor = {
 	},
 
 	getScope: function(sco) {
-
-		/*
-		enum rt_scope_t {
-		RT_SCOPE_UNIVERSE=0,
-		RT_SCOPE_SITE=200,
-		RT_SCOPE_LINK=253,
-		RT_SCOPE_HOST=254,
-		RT_SCOPE_NOWHERE=255
-		};
-		*/
-
 		switch(sco) {
-			case 0: return 'global'; break;
-			case 200: return 'local'; break;
-			case 253: return 'link'; break;
-			case 254: return 'host'; break;
+			case rt.RT_SCOPE_UNIVERSE: return 'global'; break;
+			case rt.RT_SCOPE_SITE: return 'local'; break;
+			case rt.RT_SCOPE_LINK: return 'link'; break;
+			case rt.RT_SCOPE_HOST: return 'host'; break;
+			case rt.RT_SCOPE_NOWHERE:
 			default: 'nowhere'; break;
 		}
 	},
 
 	getRouteAddress: function(ch, addr) {
-		if(ch['payload']['dst'].length > 0) {
-			if(ch['payload']['_dst_len'] == this.calcHostLen(ch['payload']['_family'])) {
-				return addr + '/' + ch['payload']['_dst_len'];
+		if(ch['dst'].length > 0) {
+			if(ch['payload']['_dst_len'] != this.calcHostLen(ch['payload']['_family'])) {
+				var addr_a = rt.bufToArray(ch['dst'], 0, 16);
+				var addr = nativelib.fromAddress(addr_a, ch['payload']['_family']);
+				return addr['address'] + '/' + ch['payload']['_dst_len'];
 			} else {
 				if(  + '/' + ch['payload']['_dst_len']){ 
 				}
@@ -194,7 +191,39 @@ var monitor = {
 			return 32;
 		else
 			return 0;
+	},
+
+	routeType: function(id) {
+		switch (id) {
+		case rt.RTN_UNSPEC:
+			return "none";
+		case rt.RTN_UNICAST:
+			return "unicast";
+		case rt.RTN_LOCAL:
+			return "local";
+		case rt.RTN_BROADCAST:
+			return "broadcast";
+		case rt.RTN_ANYCAST:
+			return "anycast";
+		case rt.RTN_MULTICAST:
+			return "multicast";
+		case rt.RTN_BLACKHOLE:
+			return "blackhole";
+		case rt.RTN_UNREACHABLE:
+			return "unreachable";
+		case rt.RTN_PROHIBIT:
+			return "prohibit";
+		case rt.RTN_THROW:
+			return "throw";
+		case rt.RTN_NAT:
+			return "nat";
+		case rt.RTN_XRESOLVE:
+			return "xresolve";
+		default:
+			return id;
+		}
 	}
+
 };
 
 module.exports = monitor;

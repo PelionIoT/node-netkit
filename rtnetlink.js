@@ -287,9 +287,35 @@ var rtm_types_name_map = [
 	"RTM_GETMDB"
 	];
 
-
-
 module.exports = {
+
+	oper_states: [
+		"UNKNOWN", "NOTPRESENT", "DOWN", "LOWERLAYERDOWN",
+		"TESTING", "DORMANT",	 "UP"
+	],
+
+
+	net_device_flags: [
+		{fl: 0x00001,	nm: 'IFF_UP'},
+		{fl: 0x00002,	nm: 'IFF_BROADCAST'},
+		{fl: 0x00004,	nm: 'IFF_DEBUG'},
+		{fl: 0x00008,	nm: 'IFF_LOOPBACK'},
+		{fl: 0x00010,	nm: 'IFF_POINTOPOINT'},
+		{fl: 0x00020,	nm: 'IFF_NOTRAILERS'},
+		{fl: 0x00040,	nm: 'IFF_RUNNING'},
+		{fl: 0x00080,	nm: 'IFF_NOARP'},
+		{fl: 0x00100,	nm: 'IFF_PROMISC'},
+		{fl: 0x00200,	nm: 'IFF_ALLMULTI'},
+		{fl: 0x00400,	nm: 'IFF_MASTER'},
+		{fl: 0x00800,	nm: 'IFF_SLAVE'},
+		{fl: 0x01000,	nm: 'IFF_MULTICAST'},
+		{fl: 0x02000,	nm: 'IFF_PORTSEL'},
+		{fl: 0x04000,	nm: 'IFF_AUTOMEDIA'},
+		{fl: 0x08000,	nm: 'IFF_DYNAMIC'},
+		{fl: 0x10000,	nm: 'IFF_LOWER_UP'},
+		{fl: 0x20000,	nm: 'IFF_DORMANT'},
+		{fl: 0x40000,	nm: 'IFF_ECHO'}
+	],
 
 
 	    // see: linux/neighbor.h
@@ -535,20 +561,20 @@ module.exports = {
 			var type = data.readUInt16LE(4);
 			if(type == exports.NLMSG_DONE)
 				return ret;
-			console.log('msg type = ' + type);
+			//console.log('msg type = ' + type);
 			var index = 16; // start after the msghdr
 
 			var keys, payload;
 			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
-			    console.log('LINK');
+			    //console.log('LINK');
 				keys = link_info_attr_name_map;
 				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
 			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
-			    console.log('ADDR');
+			    //console.log('ADDR');
 				keys = addr_info_attr_name_map;
 				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
 			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
-			    console.log('ROUTE');
+			    //console.log('ROUTE');
 				keys = route_info_attr_name_map
 				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			}

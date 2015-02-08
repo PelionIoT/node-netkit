@@ -32,25 +32,29 @@ var monitor = {
 								| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
 								| rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
 
-								| rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-								| rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
-								| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
+								// | rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
+								// | rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
+								// | rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
+								// | rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
 
 							// | rt.make_group(rt.RTNLGRP_NEIGH)
 							// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
 							// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
+			}
+		} else if(event_type == 'link') {
+			sock_opts = {
+				subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_LINK)
 			}
 		} else if(event_type == 'address') {
 			sock_opts = {
 				subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
 								| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
 			}
-		} else if(event_type == 'route') {
-			sock_opts = {
-				subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-			}
+		// } else if(event_type == 'route') {
+		// 	sock_opts = {
+		// 		subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
+		// 						| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
+		// 	}
 		} else {
 			err("event type = '" + event_type + "'' : Not supported");
 			return;	
@@ -81,7 +85,7 @@ var monitor = {
 				for(var i = 0; i < bufs.length; i++) {
 					var l = rt.parseRtattributes(bufs[i]);
 					links[i] = l;
-					console.dir(l);
+					//console.dir(l);
 				}
 
 				sock.onRecv(function(err,bufs) {
@@ -91,9 +95,9 @@ var monitor = {
 						var at = rt.parseRtattributes(bufs[0]);
 
 						if(typeof(at['operation']) != 'undefined') {
-							console.dir(at);
+							//console.dir(at);
 							var handler_name = 'packageInfo' + at['operation'].slice(3);
-							console.log("handler_name = " + handler_name);
+							//console.log("handler_name = " + handler_name);
 							var boundApply = monitor[handler_name];
 							var data = boundApply(at,links);
 
@@ -108,12 +112,15 @@ var monitor = {
 	},
 
 	packageInfoLink: function(ch,links) {
-
-		var addr = nativelib.fromAddress(ch['address'], ch['payload']['_family']);
+		var operstate = rt.oper_states[ch['operstate'].readUInt8(0)];
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
-			event:  { name: ch['operation'], address: addr }
+			event:  { name: ch['operation'], 
+					  state: operstate,
+					  address: monitor.getBufferAsHexAddr(ch['address']),
+					  broadcast: monitor.getBufferAsHexAddr(ch['broadcast']),
+					  flags: monitor.getLinkDeviceFlags(ch['payload']['_if_flags'])  }
 		};
 
 		return data;
@@ -121,7 +128,8 @@ var monitor = {
 
 	packageInfoAddress: function(ch,links) {
 
-		var addr = nativelib.fromAddress(ch['address'], ch['payload']['_family']);
+		var addr_ar =  rt.bufToArray(ch['address'], 0, ch['address'].length);
+		var addr = nativelib.fromAddress(addr_ar, ch['payload']['_family']);
 		var data = {
 			ifname: ch['label'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['label']), // the interface number, as per system call 
@@ -222,8 +230,29 @@ var monitor = {
 		default:
 			return id;
 		}
-	}
+	},
 
+	getLinkDeviceFlags: function(flags) {
+		var flags_str = "";	
+		for (var k = 0; k < rt.net_device_flags.length; k++){
+	 		if(flags & rt.net_device_flags[k]['fl']) {
+	 			if(flags_str.length)
+	 				flags_str += ",";
+	 			flags_str += rt.net_device_flags[k]['nm'];
+	 		}
+		}
+		return flags_str;
+	},
+
+	getBufferAsHexAddr: function(buf) {
+		var addr = "";
+		for(var b = 0; b < buf.length; b++) {
+			if(addr.length)
+				addr += ":";
+			addr += buf.toString('hex', b, b+1);
+		}
+		return addr;
+	}	
 };
 
 module.exports = monitor;

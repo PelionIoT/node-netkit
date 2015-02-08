@@ -592,13 +592,10 @@ module.exports = {
 				index += 4; // index to the data
 				var value;
 
-				// treat as network order to byte array?
-				var bytes = this.bufToArray(data,index,len);
-
 				var key = keys[attr_type];
 				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
-					ret[key] = Buffer(bytes).toString('ascii',0,len-1);
+					ret[key] = data.toString('ascii',index,index + len-1);
 				} else {
 					ret[key] = data.slice(index, index + len);// bytes;
 				}

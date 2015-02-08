@@ -26,6 +26,8 @@ var Stream = require('stream');
 var util = require('util');
 var net = require('net');
 
+var monitor = require('./ipmonitor.js');
+
 var dbg = function() {
 	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
 }
@@ -168,12 +170,12 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 
 
+var boundOnNetworkChange = monitor.onNetworkChange;
+boundOnNetworkChange.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test
 	wrapMemBufferTest: nativelib.wrapMemBufferTest,
-
-
 
 	ERR: nativelib.ERR,
 	errorFromErrno: function(errno) {
@@ -195,6 +197,9 @@ var nk = {
 	ifNameToIndex: nativelib.ifNameToIndex,
 	ifIndexToName: nativelib.ifIndexToName,
 	toAddress: nativelib.toAddress,
+	fromAddress: nativelib.fromAddress,
+
+	onNetworkChange: boundOnNetworkChange,
 
 	assignDbgCB: function(func) {
 		dbg = func;
@@ -561,85 +566,6 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
     	}
     });
 
-}
-
-nk.onNetworkChange = function(ifname, event_type, cb) {
-	var links = [];
-
-	var sock = nk.newNetlinkSocket();
-	var sock_opts;
-	if(!event_type) {
-		sock_opts = {
-			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
-							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-						// | rt.make_group(rt.RTNLGRP_LINK)
-						// | rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-						// | rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
-						// | rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
-						// | rt.make_group(rt.RTNLGRP_NEIGH)
-						// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
-						// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
-		}
-	} else if(event_type == 'address') {
-		sock_opts = {
-			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
-							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-		}
-	} else {
-		err("event type = '" + event_type + "'' : Not supported");
-		return;	
-	}
-
-	sock.create(sock_opts,function(err) {
-		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
-			cb(err);
-			return;
-		} else {
-			console.log("Created netlink socket.");
-		}
-	 });
-
-	var command_opts = {
-		type: 	nk.rt.RTM_GETLINK, // get link
-		flags: 	nk.nl.NLM_F_REQUEST|nk.nl.NLM_F_ROOT|nk.nl.NLM_F_MATCH
-	};
-
-	nk.netlinkCommand(command_opts, "eth0", sock, function(err,bufs) {
-		if(err)
-			console.error("** Error: " + util.inspect(err));
-		else {
-
-
-			// get the attributes of all the links first for later reference
-			for(var i = 0; i < bufs.length; i++) {
-				var l = rt.parseRtattributes(bufs[i]);
-				links[i] = l;
-			}
-
-			sock.onRecv(function(err,bufs) {
-				if(err) {
-					console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
-				} else {
-					var ch = rt.parseRtattributes(bufs[0]);
-
-					if(typeof(ch['operation']) != 'undefined') {
-						if(!ifname || (ifname == ch['ifname'])) {
-							var addr = rt.ipArrayAsString(ch['address']);
-							var data = {
-								ifname: ch['ifname'], // the interface name as labeled by the OS
-								ifnum: nk.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
-								event:  { name: ch['operation'], address: addr }
-							};
-							cb(data);
-						}
-					}
-				}
-			});
-		}
-	});
 }
 
 module.exports = nk;

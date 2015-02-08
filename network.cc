@@ -691,6 +691,79 @@ Handle<Value> ToAddress(const Arguments& args) {
 		return scope.Close(ret);
 }
 
+/**
+ * Returns an string from an address
+ * @param {Byte Array} addr
+ * @param {number} family  netkit.AFINET6 | netkit.AFINET
+ * @return {Object|Error} The object is of the format:<br>
+ * </pre>
+ * obj {
+ *   address,  // a String stating the address
+ *   family  // a String stating the family
+ * }
+ */
+Handle<Value> FromAddress(const Arguments& args) {
+	HandleScope scope;
+
+	Local<Object> ret;
+
+	_net::err_ev err;
+
+	if(args.Length() > 1 && args[0]->IsArray() && args[1]->IsInt32()) {
+		ret = Object::New();
+		Local<Array> addr = Local<Array>::Cast(args[0]);
+		int32_t family = args[1]->ToInt32()->Int32Value();
+
+		if(family == AF_INET6) {
+			unsigned char addr_a[sizeof(struct in6_addr)];
+
+			for (size_t i = 0; i < addr->Length(); i++) {
+				Local<Number> el = addr->Get(i)->ToUint32();
+				addr_a[i] = static_cast<uint8_t>(el->Uint32Value());
+			}
+
+			char str[INET6_ADDRSTRLEN];
+			memset(&str, 0, sizeof(INET6_ADDRSTRLEN));
+			const char *r;
+			if( (r = inet_ntop(AF_INET6, addr_a, str, INET6_ADDRSTRLEN)) == nullptr ) {
+				if(r == nullptr) {
+					err.setError(errno,"Error on inet_ntop.");
+				}
+			} else {
+				ret->Set(String::New("address"), v8::String::New(r) );
+				ret->Set(String::New("family"), Int32::New(AF_INET6));
+			}
+		} else
+		if(family == AF_INET) {
+			unsigned char addr_a[sizeof(struct in_addr)];
+
+			for (size_t i = 0; i < addr->Length(); i++) {
+				Local<Number> el = addr->Get(i)->ToUint32();
+				addr_a[i] = static_cast<uint8_t>(el->Uint32Value());
+			}
+
+			char str[INET6_ADDRSTRLEN];
+			memset(&str, 0, sizeof(INET_ADDRSTRLEN));
+			const char *r;
+			if( (r = inet_ntop(AF_INET, addr_a, str, INET_ADDRSTRLEN)) == nullptr ) {
+				if(r == nullptr) {
+					err.setError(errno,"Error on inet_ntop.");
+				}
+			} else {
+				ret->Set(String::New("address"), v8::String::New(r) );
+				ret->Set(String::New("family"), Int32::New(AF_INET));
+			}
+		}
+	} else {
+		err.setError(_net::OTHER_ERROR,"Invalid parameters.");
+	}
+
+	if(err.hasErr())
+		return scope.Close(_net::err_ev_to_JS(err,"fromAddress: "));
+	else
+		return scope.Close(ret);
+}
+
 
 
 
@@ -1461,6 +1534,7 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 	exports->Set(String::NewSymbol("ifNameToIndex"), FunctionTemplate::New(IfNameToIndex)->GetFunction());
 	exports->Set(String::NewSymbol("ifIndexToName"), FunctionTemplate::New(IfIndexToName)->GetFunction());
 	exports->Set(String::NewSymbol("toAddress"), FunctionTemplate::New(ToAddress)->GetFunction());
+	exports->Set(String::NewSymbol("fromAddress"), FunctionTemplate::New(FromAddress)->GetFunction());
 	exports->Set(String::NewSymbol("errorFromErrno"), FunctionTemplate::New(ErrorFromErrno)->GetFunction());
 
 	exports->Set(String::NewSymbol("wrapMemBufferTest"), FunctionTemplate::New(WrapMemBufferTest)->GetFunction());

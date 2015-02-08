@@ -8,9 +8,12 @@ var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type
 // for documentation see: /usr/include/linux/rtnetlink.h:~175
 var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 
-var rtattr_fmt = "<H(_len)H(_type)";
+// for documentation see: /usr/include/linux/if_addr.h:~5
+var ifaddrmsg_fmt = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)";
 
 var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+
+var rtattr_fmt = "<H(_len)H(_type)";
 
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
@@ -116,6 +119,49 @@ var addr_attributes = {
 	IFA_FLAGS: 8
 };
 
+var route_info_attr_name_map = [
+	"unspec",
+	"dst",
+	"src",
+	"iif",
+	"oif",
+	"gateway",
+	"priority",
+	"prefsrc",
+	"metrics",
+	"multipath",
+	"protoinfo",
+	"flow",
+	"cacheinfo",
+	"session",
+	"mp_algo",
+	"table",
+	"mark",
+	"mfc_stats"
+];
+
+var route_attributes = {
+	RTA_UNSPEC: 0,
+	RTA_DST: 1,
+	RTA_SRC: 2,
+	RTA_IIF: 3,
+	RTA_OIF: 4,
+	RTA_GATEWAY: 5,
+	RTA_PRIORITY: 6,
+	RTA_PREFSRC: 7,
+	RTA_METRICS: 8,
+	RTA_MULTIPATH: 9,
+	RTA_PROTOINFO: 10, /* no longer used */
+	RTA_FLOW: 11,
+	RTA_CACHEINFO: 12,
+	RTA_SESSION: 13, /* no longer used */
+	RTA_MP_ALGO: 14, /* no longer used */
+	RTA_TABLE: 15,
+	RTA_MARK: 16,
+	RTA_MFC_STATS: 17
+};
+
+
 var payload_sizes = [
 
 	16,	//RTM_NEWLINK: 
@@ -169,7 +215,7 @@ var payload_sizes = [
 	
 var rtm_types_name_map = [
 	"newLink",
-	"deleteLink",
+	"delLink",
 	"getLink",
 	"setLink",
 	"newAddress",
@@ -241,9 +287,35 @@ var rtm_types_name_map = [
 	"RTM_GETMDB"
 	];
 
-
-
 module.exports = {
+
+	oper_states: [
+		"UNKNOWN", "NOTPRESENT", "DOWN", "LOWERLAYERDOWN",
+		"TESTING", "DORMANT",	 "UP"
+	],
+
+
+	net_device_flags: [
+		{fl: 0x00001,	nm: 'IFF_UP'},
+		{fl: 0x00002,	nm: 'IFF_BROADCAST'},
+		{fl: 0x00004,	nm: 'IFF_DEBUG'},
+		{fl: 0x00008,	nm: 'IFF_LOOPBACK'},
+		{fl: 0x00010,	nm: 'IFF_POINTOPOINT'},
+		{fl: 0x00020,	nm: 'IFF_NOTRAILERS'},
+		{fl: 0x00040,	nm: 'IFF_RUNNING'},
+		{fl: 0x00080,	nm: 'IFF_NOARP'},
+		{fl: 0x00100,	nm: 'IFF_PROMISC'},
+		{fl: 0x00200,	nm: 'IFF_ALLMULTI'},
+		{fl: 0x00400,	nm: 'IFF_MASTER'},
+		{fl: 0x00800,	nm: 'IFF_SLAVE'},
+		{fl: 0x01000,	nm: 'IFF_MULTICAST'},
+		{fl: 0x02000,	nm: 'IFF_PORTSEL'},
+		{fl: 0x04000,	nm: 'IFF_AUTOMEDIA'},
+		{fl: 0x08000,	nm: 'IFF_DYNAMIC'},
+		{fl: 0x10000,	nm: 'IFF_LOWER_UP'},
+		{fl: 0x20000,	nm: 'IFF_DORMANT'},
+		{fl: 0x40000,	nm: 'IFF_ECHO'}
+	],
 
 
 	    // see: linux/neighbor.h
@@ -296,6 +368,7 @@ module.exports = {
 		IFLA_EXT_MASK:  0x1D,
 		RTEXT_FILTER_VF:0x0001,
 
+		/* Route Type */
 		RTN_UNSPEC: 0,
 		RTN_UNICAST: 1,		/* Gateway or direct route	*/
 		RTN_LOCAL: 2,		/* Accept locally		*/
@@ -308,7 +381,13 @@ module.exports = {
    	    RTN_THROW: 9,		/* Not in this table		*/
    	    RTN_NAT: 10,		/* Translate this address	*/
    	    RTN_XRESOLVE: 11,	/* Use external resolver	*/
-   	    __RTN_MAX: 12,
+
+   	    /* Route scope */
+		RT_SCOPE_UNIVERSE: 0,
+		RT_SCOPE_SITE: 200,
+		RT_SCOPE_LINK: 253,
+		RT_SCOPE_HOST: 254,
+		RT_SCOPE_NOWHERE: 255,
 
 
    	    /* RTnetlink multicast groups */
@@ -432,22 +511,10 @@ module.exports = {
 		return o;
 	},
 
-	ipArrayAsString: function(addr) {
-		if(addr.length == 4) {
-			return addr[0] + "." + addr[1] + "." + addr[2] + "." + addr[3]
-		} else if (addr.length == 16) {
-			var ip6 = '';
-			for(var i = 0; i < 16; i+=2) {
-				var num = (addr[i] << 8) | addr[i + 1];
-				if(ip6) { 
-					ip6 = ip6 + ':';
-				}
-				ip6 = ip6 + num.toString(16);
-			}
-			return ip6;
-		} else {
-			return 'undefined';
-		}
+// ifaddrmsg = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)"
+	buildIfaddressmsg: function() {
+		var o = bufferpack.metaObject(ifaddrmsg_fmt,true);
+		return o;
 	},
 
 	/**
@@ -494,17 +561,27 @@ module.exports = {
 			var type = data.readUInt16LE(4);
 			if(type == exports.NLMSG_DONE)
 				return ret;
-			// console.log('msg type = ' + type);
+			//console.log('msg type = ' + type);
+			var index = 16; // start after the msghdr
 
-			var keys;
-			if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
+			var keys, payload;
+			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
+			    //console.log('LINK');
 				keys = link_info_attr_name_map;
-			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETNEIGH) {
+				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
+			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+			    //console.log('ADDR');
 				keys = addr_info_attr_name_map;
+				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
+			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
+			    //console.log('ROUTE');
+				keys = route_info_attr_name_map
+				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
-			var index = 16 + payload_sizes[type - 16];
+			index += payload_sizes[type - 16];
+
 			// console.log('start index = ' + index);
 			while(index < total_len) {
 				// console.log('index = ' + index);
@@ -516,20 +593,14 @@ module.exports = {
 				var value;
 
 				// treat as network order to byte array?
-				var bytes = [];
-				var bytes_idx = 0;
-				for(var idx = index; idx < index + len; idx++)
-				{
-					bytes[bytes_idx] = data.readUInt8(idx);
-					bytes_idx += 1;
-				}
+				var bytes = this.bufToArray(data,index,len);
 
 				var key = keys[attr_type];
-				var regExNm = /name/;
+				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
 					ret[key] = Buffer(bytes).toString('ascii',0,len-1);
 				} else {
-					ret[key] = bytes;
+					ret[key] = data.slice(index, index + len);// bytes;
 				}
 				// console.log('added [' + key + '] = ' + ret[key])
 
@@ -538,8 +609,20 @@ module.exports = {
 		        // console.log("pad: " + pad);
 				index += (len + pad);
 			};
+			ret['payload'] = payload;
 			ret['operation'] = this.getRtmTypeName(type); 
 		}
 		return ret;
+	},
+
+	bufToArray: function(data, index, len) {
+		var bytes = [];
+		var bytes_idx = 0;
+		for(var idx = index; idx < index + len; idx++)
+		{
+			bytes[bytes_idx] = data.readUInt8(idx);
+			bytes_idx += 1;
+		}
+		return bytes;
 	}
 };

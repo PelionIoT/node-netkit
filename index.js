@@ -26,6 +26,8 @@ var Stream = require('stream');
 var util = require('util');
 var net = require('net');
 
+var monitor = require('./ipmonitor.js');
+
 var dbg = function() {
 	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
 }
@@ -168,12 +170,12 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 
 
 
+var boundOnNetworkChange = monitor.onNetworkChange;
+boundOnNetworkChange.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test
 	wrapMemBufferTest: nativelib.wrapMemBufferTest,
-
-
 
 	ERR: nativelib.ERR,
 	errorFromErrno: function(errno) {
@@ -195,6 +197,9 @@ var nk = {
 	ifNameToIndex: nativelib.ifNameToIndex,
 	ifIndexToName: nativelib.ifIndexToName,
 	toAddress: nativelib.toAddress,
+	fromAddress: nativelib.fromAddress,
+
+	onNetworkChange: boundOnNetworkChange,
 
 	assignDbgCB: function(func) {
 		dbg = func;
@@ -525,7 +530,7 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 
 	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
-									rt.IFF_RUNNING,rt.IFF_CHANGE);
+									rt.IFF_ALLMULTI,rt.IFF_CHANGE);
 	info_msg._family = rt.RTN_UNSPEC;
 
 	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
@@ -557,14 +562,11 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
     		console.error("** Error: " + util.inspect(err));
     		cb(err);
     	} else {
-    		console.log("in cb: " + util.inspect(arguments));
-    		cb(err);//,msgreq);
+    		cb(err,bytes);
     	}
     });
 
 }
-
-
 
 module.exports = nk;
 

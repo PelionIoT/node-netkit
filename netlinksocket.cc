@@ -431,7 +431,7 @@ void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 
 
 void NetlinkSocket::do_sendmsg(uv_work_t *work) {
-	DBG_OUT("NetlinkSocket::do_sendmsg");
+	//DBG_OUT("NetlinkSocket::do_sendmsg");
 
 	Request_t *req = (Request_t *) work->data;
 	if(req->self->fd != 0) {
@@ -500,7 +500,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 }
 
 int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
-	DBG_OUT("NetlinkSocket::do_recvmsg");
+	//DBG_OUT("NetlinkSocket::do_recvmsg");
 
 	struct msghdr msg;         // used by sendmsg / recvmsg
 	struct sockaddr_nl nladdr; // NETLINK address
@@ -598,7 +598,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 }
 
 void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
-	DBG_OUT("NetlinkSocket::on_recvmsg");
+	//DBG_OUT("NetlinkSocket::on_recvmsg");
 	if(events && UV_READABLE && status == 0)
 	{
 		HandleScope scope;
@@ -620,7 +620,7 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	DBG_OUT("NetlinkSocket::post_recvmsg");
+	//DBG_OUT("NetlinkSocket::post_recvmsg");
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
@@ -658,7 +658,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 			// if we don't have a reply callback,
 			if(!nlError) {
 				argv[0] = fals->ToBoolean();
-				argv[1] = Integer::New(job->len);
+				argv[1] = retbufs->ToObject();
 				job->onSendCB->Call(Context::GetCurrent()->Global(),2,argv);
 			} else {
 				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
@@ -738,7 +738,7 @@ Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
 		//				return scope.Close(UNI_BUFFER_FROM_CPOINTER(buf));
 		// -----------------------------------------------------
 		// so we will just copy it for now...
-		DBG_OUT("len=%d",len);
+		//DBG_OUT("len=%d",len);
 		Handle<Object> buf = UNI_BUFFER_NEW(len);
 		char *backing = node::Buffer::Data(buf);
 		memcpy(backing,rawMemory,len);

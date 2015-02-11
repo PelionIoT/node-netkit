@@ -8,9 +8,12 @@ var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type
 // for documentation see: /usr/include/linux/rtnetlink.h:~175
 var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 
-var rtattr_fmt = "<H(_len)H(_type)";
+// for documentation see: /usr/include/linux/if_addr.h:~5
+var ifaddrmsg_fmt = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)";
 
 var ifinfomsg_fmt = "<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+
+var rtattr_fmt = "<H(_len)H(_type)";
 
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
@@ -116,6 +119,49 @@ var addr_attributes = {
 	IFA_FLAGS: 8
 };
 
+var route_info_attr_name_map = [
+	"unspec",
+	"dst",
+	"src",
+	"iif",
+	"oif",
+	"gateway",
+	"priority",
+	"prefsrc",
+	"metrics",
+	"multipath",
+	"protoinfo",
+	"flow",
+	"cacheinfo",
+	"session",
+	"mp_algo",
+	"table",
+	"mark",
+	"mfc_stats"
+];
+
+var route_attributes = {
+	RTA_UNSPEC: 0,
+	RTA_DST: 1,
+	RTA_SRC: 2,
+	RTA_IIF: 3,
+	RTA_OIF: 4,
+	RTA_GATEWAY: 5,
+	RTA_PRIORITY: 6,
+	RTA_PREFSRC: 7,
+	RTA_METRICS: 8,
+	RTA_MULTIPATH: 9,
+	RTA_PROTOINFO: 10, /* no longer used */
+	RTA_FLOW: 11,
+	RTA_CACHEINFO: 12,
+	RTA_SESSION: 13, /* no longer used */
+	RTA_MP_ALGO: 14, /* no longer used */
+	RTA_TABLE: 15,
+	RTA_MARK: 16,
+	RTA_MFC_STATS: 17
+};
+
+
 var payload_sizes = [
 
 	16,	//RTM_NEWLINK: 
@@ -125,11 +171,11 @@ var payload_sizes = [
 	8,	//RTM_NEWADDR: 
 	8,	//RTM_DELADDR: 
 	8,	//RTM_GETADDR: 
+	12,	//RTM_NEWROUTE: 
+	12,	//RTM_DELROUTE: 
+	12,	//RTM_GETROUTE: 
 
 	// not confirmed the rest
-	8,	//RTM_NEWROUTE: 
-	8,	//RTM_DELROUTE: 
-	8,	//RTM_GETROUTE: 
 	8,	//RTM_NEWNEIGH: 
 	8,	//RTM_DELNEIGH: 
 	8,	//RTM_GETNEIGH: 
@@ -166,8 +212,110 @@ var payload_sizes = [
 	8,	//RTM_DELMDB: 
 	8	//RTM_GETMDB: 
 ];
+	
+var rtm_types_name_map = [
+	"newLink",
+	"delLink",
+	"getLink",
+	"setLink",
+	"newAddress",
+	"delAddress", 
+	"getAddress",
+	"undefined",
+	"newRoute",
+	"delRoute",
+	"getRoute",
+	"undefined",
+	"newNeighbor",
+	"delNeighbor",
+	"getNeighbor",
+	"undefined",
+	"newRule",
+	"delRule",
+	"getRule",
+	"undefined",
+	"RTM_NEWQDISC",
+	"RTM_DELQDISC",
+	"RTM_GETQDISC",
+	"undefined",
+	"RTM_NEWTCLASS",
+	"RTM_DELTCLASS",
+	"RTM_GETTCLASS",
+	"undefined",
+	"RTM_NEWTFILTER",
+	"RTM_DELTFILTER",
+	"RTM_GETTFILTER",
+	"undefined",
+	"RTM_NEWACTION",
+	"RTM_DELACTION",
+	"RTM_GETACTION",
+	"undefined",
+	"RTM_NEWPREFIX",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETMULTICAST", 
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETANYCAST",
+	"undefined",
+	"RTM_NEWNEIGHTBL",
+	"undefined",
+	"RTM_GETNEIGHTBL",
+	"RTM_SETNEIGHTBL",
+	"RTM_NEWNDUSEROPT",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_NEWADDRLABEL",
+	"RTM_DELADDRLABEL",
+	"RTM_GETADDRLABEL",
+	"undefined",
+	"undefined",
+	"undefined",
+	"RTM_GETDCB",
+	"RTM_SETDCB",
+	"RTM_NEWNETCONF", 
+	"undefined",
+	"RTM_GETNETCONF",
+	"undefined",
+	"RTM_NEWMDB",
+	"RTM_DELMDB",
+	"RTM_GETMDB"
+	];
 
 module.exports = {
+
+	oper_states: [
+		"UNKNOWN", "NOTPRESENT", "DOWN", "LOWERLAYERDOWN",
+		"TESTING", "DORMANT",	 "UP"
+	],
+
+
+	net_device_flags: [
+		{fl: 0x00001,	nm: 'IFF_UP'},
+		{fl: 0x00002,	nm: 'IFF_BROADCAST'},
+		{fl: 0x00004,	nm: 'IFF_DEBUG'},
+		{fl: 0x00008,	nm: 'IFF_LOOPBACK'},
+		{fl: 0x00010,	nm: 'IFF_POINTOPOINT'},
+		{fl: 0x00020,	nm: 'IFF_NOTRAILERS'},
+		{fl: 0x00040,	nm: 'IFF_RUNNING'},
+		{fl: 0x00080,	nm: 'IFF_NOARP'},
+		{fl: 0x00100,	nm: 'IFF_PROMISC'},
+		{fl: 0x00200,	nm: 'IFF_ALLMULTI'},
+		{fl: 0x00400,	nm: 'IFF_MASTER'},
+		{fl: 0x00800,	nm: 'IFF_SLAVE'},
+		{fl: 0x01000,	nm: 'IFF_MULTICAST'},
+		{fl: 0x02000,	nm: 'IFF_PORTSEL'},
+		{fl: 0x04000,	nm: 'IFF_AUTOMEDIA'},
+		{fl: 0x08000,	nm: 'IFF_DYNAMIC'},
+		{fl: 0x10000,	nm: 'IFF_LOWER_UP'},
+		{fl: 0x20000,	nm: 'IFF_DORMANT'},
+		{fl: 0x40000,	nm: 'IFF_ECHO'}
+	],
 
 
 	    // see: linux/neighbor.h
@@ -220,8 +368,64 @@ module.exports = {
 		IFLA_EXT_MASK:  0x1D,
 		RTEXT_FILTER_VF:0x0001,
 
-		/** message types. see linux/rtnetlink.h */
+		/* Route Type */
+		RTN_UNSPEC: 0,
+		RTN_UNICAST: 1,		/* Gateway or direct route	*/
+		RTN_LOCAL: 2,		/* Accept locally		*/
+   	    RTN_BROADCAST: 3,	/* Accept locally as broadcast, send as broadcast */
+   	    RTN_ANYCAST: 4,		/* Accept locally as broadcast, but send as unicast */
+   	    RTN_MULTICAST: 5,	/* Multicast route		*/
+   	    RTN_BLACKHOLE: 6,	/* Drop				*/
+   	    RTN_UNREACHABLE: 7,	/* Destination is unreachable   */
+   	    RTN_PROHIBIT: 8,	/* Administratively prohibited	*/
+   	    RTN_THROW: 9,		/* Not in this table		*/
+   	    RTN_NAT: 10,		/* Translate this address	*/
+   	    RTN_XRESOLVE: 11,	/* Use external resolver	*/
+
+   	    /* Route scope */
+		RT_SCOPE_UNIVERSE: 0,
+		RT_SCOPE_SITE: 200,
+		RT_SCOPE_LINK: 253,
+		RT_SCOPE_HOST: 254,
+		RT_SCOPE_NOWHERE: 255,
+
+
+   	    /* RTnetlink multicast groups */
+		RTN_GRP_NONE: 0,
+		RTN_GRP_LINK: 1,
+		RTN_GRP_NOTIFY: 2,
+		RTN_GRP_NEIGH: 3,
+		RTN_GRP_TC: 4,
+		RTN_GRP_IPV4_IFADDR: 5,
+		RTN_GRP_IPV4_MROUTE: 6,
+		RTN_GRP_IPV4_ROUTE: 7,
+		RTN_GRP_IPV4_RULE: 8,
+		RTN_GRP_IPV6_IFADDR: 9,
+		RTN_GRP_IPV6_MROUTE: 10,
+		RTN_GRP_IPV6_ROUTE: 11,
+		RTN_GRP_IPV6_IFINFO: 12,
+		RTN_GRP_DECnet_IFADDR: 13,
+		RTN_GRP_NOP2: 14,
+		RTN_GRP_DECnet_ROUTE: 15,
+		RTN_GRP_DECnet_RULE: 16,
+		RTN_GRP_NOP4: 17,
+		RTN_GRP_IPV6_PREFIX: 18,
+		RTN_GRP_IPV6_RULE: 19,
+		RTN_GRP_ND_USEROPT: 20,
+		RTN_GRP_PHONET_IFADDR: 21,
+		RTN_GRP_PHONET_ROUTE: 22,
+		RTN_GRP_DCB: 23,
+		RTN_GRP_IPV4_NETCONF: 24,
+		RTN_GRP_IPV6_NETCONF: 25,
+		RTN_GRP_MDB: 26,
+
+	make_group: function(group) {
+		return (1 << (group - 1));
+	},
+
 		NLMSG_DONE: 3, 
+
+		/** message types. see linux/rtnetlink.h */
 		RTM_BASE:       16,
 		RTM_NEWLINK: 16,
 		RTM_DELLINK: 17,
@@ -269,54 +473,9 @@ module.exports = {
 		RTM_DELMDB : 85,
 		RTM_GETMDB: 86,
 
-		RTN_UNSPEC: 0,
-		RTN_UNICAST: 1,		/* Gateway or direct route	*/
-		RTN_LOCAL: 2,		/* Accept locally		*/
-   	    RTN_BROADCAST: 3,	/* Accept locally as broadcast, send as broadcast */
-   	    RTN_ANYCAST: 4,		/* Accept locally as broadcast, but send as unicast */
-   	    RTN_MULTICAST: 5,	/* Multicast route		*/
-   	    RTN_BLACKHOLE: 6,	/* Drop				*/
-   	    RTN_UNREACHABLE: 7,	/* Destination is unreachable   */
-   	    RTN_PROHIBIT: 8,	/* Administratively prohibited	*/
-   	    RTN_THROW: 9,		/* Not in this table		*/
-   	    RTN_NAT: 10,		/* Translate this address	*/
-   	    RTN_XRESOLVE: 11,	/* Use external resolver	*/
-   	    __RTN_MAX: 12,
-
-
-   	    /* RTnetlink multicast groups */
-		RTN_GRP_NONE: 0,
-		RTN_GRP_LINK: 1,
-		RTN_GRP_NOTIFY: 2,
-		RTN_GRP_NEIGH: 3,
-		RTN_GRP_TC: 4,
-		RTN_GRP_IPV4_IFADDR: 5,
-		RTN_GRP_IPV4_MROUTE: 6,
-		RTN_GRP_IPV4_ROUTE: 7,
-		RTN_GRP_IPV4_RULE: 8,
-		RTN_GRP_IPV6_IFADDR: 9,
-		RTN_GRP_IPV6_MROUTE: 10,
-		RTN_GRP_IPV6_ROUTE: 11,
-		RTN_GRP_IPV6_IFINFO: 12,
-		RTN_GRP_DECnet_IFADDR: 13,
-		RTN_GRP_NOP2: 14,
-		RTN_GRP_DECnet_ROUTE: 15,
-		RTN_GRP_DECnet_RULE: 16,
-		RTN_GRP_NOP4: 17,
-		RTN_GRP_IPV6_PREFIX: 18,
-		RTN_GRP_IPV6_RULE: 19,
-		RTN_GRP_ND_USEROPT: 20,
-		RTN_GRP_PHONET_IFADDR: 21,
-		RTN_GRP_PHONET_ROUTE: 22,
-		RTN_GRP_DCB: 23,
-		RTN_GRP_IPV4_NETCONF: 24,
-		RTN_GRP_IPV6_NETCONF: 25,
-		RTN_GRP_MDB: 26,
-
-	make_group: function(group) {
-		return (1 << (group - 1));
+	getRtmTypeName: function(type) {
+		return rtm_types_name_map[type - this.RTM_BASE];
 	},
-
 
    	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 	buildNdmsg: function(params) {
@@ -349,6 +508,12 @@ module.exports = {
 // "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 	buildRtmsg: function() {
 		var o = bufferpack.metaObject(rtmsg_fmt,true);
+		return o;
+	},
+
+// ifaddrmsg = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)"
+	buildIfaddressmsg: function() {
+		var o = bufferpack.metaObject(ifaddrmsg_fmt,true);
 		return o;
 	},
 
@@ -396,42 +561,43 @@ module.exports = {
 			var type = data.readUInt16LE(4);
 			if(type == exports.NLMSG_DONE)
 				return ret;
-			// console.log('msg type = ' + type);
+			//console.log('msg type = ' + type);
+			var index = 16; // start after the msghdr
+
+			var keys, payload;
+			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
+			    //console.log('LINK');
+				keys = link_info_attr_name_map;
+				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
+			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+			    //console.log('ADDR');
+				keys = addr_info_attr_name_map;
+				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
+			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
+			    //console.log('ROUTE');
+				keys = route_info_attr_name_map
+				payload = bufferpack.unpack(rtmsg_fmt,data,index)
+			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
-			var index = 16 + payload_sizes[type - 16];
+			index += payload_sizes[type - 16];
+
 			// console.log('start index = ' + index);
 			while(index < total_len) {
 				// console.log('index = ' + index);
 				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 				var attr_type = data.readUInt16LE(index + 2);
 				// console.log('attr = ' + attr_type + ' len = ' + len);
-				// console.log(' msgtype = ' + msgtype);
-				var key;
-
-				if(this.RTM_NEWLINK <= type && this.RTM_NEWLINK) {
-					key = link_info_attr_name_map[attr_type];
-				} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
-					key = addr_info_attr_name_map[attr_type];
-				}
 
 				index += 4; // index to the data
 				var value;
 
-				// treat as network order to byte array
-				var bytes = [];
-				var bytes_idx = 0;
-				for(var idx = index; idx < index + len; idx++)
-				{
-					bytes[bytes_idx] = data.readUInt8(idx);
-					bytes_idx += 1;
-				}
-
-				var regExNm = /name/;
+				var key = keys[attr_type];
+				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
-					ret[key] = Buffer(bytes).toString('ascii');
+					ret[key] = data.toString('ascii',index,index + len-1);
 				} else {
-					ret[key] = bytes;
+					ret[key] = data.slice(index, index + len);// bytes;
 				}
 				// console.log('added [' + key + '] = ' + ret[key])
 
@@ -440,7 +606,20 @@ module.exports = {
 		        // console.log("pad: " + pad);
 				index += (len + pad);
 			};
+			ret['payload'] = payload;
+			ret['operation'] = this.getRtmTypeName(type); 
 		}
 		return ret;
+	},
+
+	bufToArray: function(data, index, len) {
+		var bytes = [];
+		var bytes_idx = 0;
+		for(var idx = index; idx < index + len; idx++)
+		{
+			bytes[bytes_idx] = data.readUInt8(idx);
+			bytes_idx += 1;
+		}
+		return bytes;
 	}
 };

@@ -163,7 +163,7 @@ var monitor = {
 						var at = rt.parseRtattributes(bufs[0]);
 
 						if(typeof(at['operation']) !== 'undefined') {
-							//console.dir(at);
+							console.dir(at);
 							var handler_name = 'packageInfo' + at['operation'].slice(3);
 							//console.log("handler_name = " + handler_name);
 							var boundApply = monitor[handler_name];
@@ -247,9 +247,19 @@ var monitor = {
 		var ret = {};
 
 		ret.name = ch['operation'];
-		ret.address = monitor.getRouteAddress(ch); 
 		ret.type = monitor.routeType(ch['payload']['_type']);
-		ret.family = monitor.getFamily(ch['payload']['_family']);
+
+		var fam = ch['payload']['_family'];
+		ret.family = monitor.getFamily(fam);
+
+		var dest = ch['dst'];
+		var dest_len = ch['payload']['_dst_len'];
+		ret.address = monitor.getRouteAddress(dest, dest_len, fam);
+
+		var src = ch['src'];
+		var src_len = ch['payload']['_src_len'];
+		ret.src = monitor.getRouteAddress(src, src_len, ret.family);
+
 		ret.table = monitor.getRouteTable(ch['payload']['_table']);
 		ret.protocol = monitor.getRouteProtocol(ch['payload']['_protocol']);
 		ret.scope = monitor.getScope(ch['payload']['_scope']);
@@ -259,6 +269,13 @@ var monitor = {
 			var src_a = rt.bufToArray(src, 0, src.length);
 			var src_o = nativelib.fromAddress(src_a, ch['payload']['_family'])
 			ret.source = src_o['address'];
+		}
+
+		var gw = ch['gateway'];
+		if(typeof(gw) !== 'undefined') {
+			var gw_a = rt.bufToArray(gw, 0, gw.length);
+			var gw_o = nativelib.fromAddress(gw_a, ch['payload']['_family'])
+			ret.source = gw_o['address'];
 		}
 
 		var mark = ch['mark'];
@@ -293,17 +310,14 @@ var monitor = {
 		return table;
 	},
 
-	getRouteAddress: function(ch) {
-		if(ch['dst'].length > 0) {
-			var family = ch['payload']['_family'];
+	getRouteAddress: function(address, len, family) {
+		if(typeof(address) !== 'undefined') {
+			var addr_a = rt.bufToArray(address, 0, address.length);
+			var addr = nativelib.fromAddress(addr_a, family);
+			console.dir (family);
 
-			var dest_o = ch['dst'];
-			var dest_len = ch['payload']['_dst_len'];
-			var addr_a = rt.bufToArray(dest_o, 0, dest_o.length);
-			var addr = nativelib.fromAddress(addr_a, ch['payload']['_family']);
-
-			if(dest_len != this.calcHostLen(family)) {
-				return addr['address'] + '/' + dest_len;
+			if(len != this.calcHostLen(family)) {
+				return addr['address'] + '/' + len;
 			} else {
 				// here were are suppossed to show the hostname
 				// same as linux gethostbyaddr
@@ -314,12 +328,15 @@ var monitor = {
 
 				} 
 				if(name.length === 0)
-					return addr['address'] + '/' + dest_len;
+					return addr['address'] + '/' + len;
 				else
 					return name;
 			}
-		}		
-
+		} else if(len > 0) {
+			return "0/" + len;
+		} else {
+			return "default";
+		}
 	},
 
 	calcHostLen: function(family) {

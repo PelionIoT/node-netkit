@@ -1,6 +1,6 @@
 var nk = require('../index.js');
 
-var routes = nk.getRoutes(null,null,null, function(routes){
+var routes = nk.getRoutes(null, function(routes){
 	console.log('routes....')
 	console.dir(routes);
 });

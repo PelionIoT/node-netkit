@@ -13,7 +13,14 @@ try {
 
 var routes = {
 
-	getRoutes: function(ifname,family,type,cb) {
+	getRoutes: function(filter_spec,cb) {
+		var filters = {};
+		if(filter_spec !== null){
+			filters = filter_spec;
+		} else {
+			filters['table'] = 'main';
+		}
+
 		var sock = this.newNetlinkSocket();
 		var sock_opts = {
 			subscriptions: 
@@ -59,7 +66,6 @@ var routes = {
 						console.error("** Error: " + util.inspect(err));
 					else {
 						var data = [];
-						var filters = { table: 'main' };
 
 						for(var n=0;n<routes_bufs.length;n++) {
 							var route = monitor.parseAttributes(filters,links,routes_bufs[n]);

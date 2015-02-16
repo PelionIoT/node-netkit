@@ -288,6 +288,8 @@ var rtm_types_name_map = [
 	];
 
 module.exports = {
+		AF_INET6: 10,
+		AF_INET: 2,
 
 	    // see: linux/neighbor.h
 	    NTF_USE:		0x01,
@@ -394,6 +396,7 @@ module.exports = {
 		return (1 << (group - 1));
 	},
 
+		NLMSG_MULTI: 2,
 		NLMSG_DONE: 3, 
 
 		/** message types. see linux/rtnetlink.h */
@@ -519,10 +522,7 @@ module.exports = {
      	}
 	},
 
-	parseRtattributes: function(data) {
-		// Only supports link and address right now
-
-		// console.log('parseRtattributes');
+	parseRtattributes: function(data, opts) {
 		var ret = {};
 
 		if(data && !Buffer.isBuffer(data)) {
@@ -530,9 +530,10 @@ module.exports = {
 		} else {
 			var total_len = data.readUInt32LE(0);
 			var type = data.readUInt16LE(4);
-			if(type == exports.NLMSG_DONE)
+			if(type == module.exports.NLMSG_DONE) {
 				return ret;
-			//console.log('msg type = ' + type);
+			}
+
 			var index = 16; // start after the msghdr
 
 			var keys, payload;

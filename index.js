@@ -27,6 +27,7 @@ var util = require('util');
 var net = require('net');
 
 var monitor = require('./ipmonitor.js');
+var routes = require('./ipcommand.js');
 
 var dbg = function() {
 	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
@@ -173,6 +174,9 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 var boundOnNetworkChange = monitor.onNetworkChange;
 boundOnNetworkChange.bind(this);
 
+var boundGetRoutes = routes.getRoutes;
+boundGetRoutes.bind(this);
+
 var nk = {
 	packTest: nativelib.packTest, // a test
 	wrapMemBufferTest: nativelib.wrapMemBufferTest,
@@ -200,6 +204,7 @@ var nk = {
 	fromAddress: nativelib.fromAddress,
 
 	onNetworkChange: boundOnNetworkChange,
+	getRoutes: boundGetRoutes,
 
 	assignDbgCB: function(func) {
 		dbg = func;
@@ -212,6 +217,7 @@ var nk = {
 	AF_INET6: 10,
 	AF_INET: 2,
 	AF_NETLINK:	16,
+	AF_UNSPEC: 0,
 
 	FLAGS: {
 		// Interface FLAGS
@@ -519,7 +525,7 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 	nl_hdr._flags = nl.NLM_F_REQUEST|nl.NLM_F_ROOT|nl.NLM_F_MATCH;
 	nl_hdr._type = rt.RTM_GETLINK; // the command
 
-	if(typeof(opts) != 'undefined') {
+	if(typeof(opts) !== 'undefined') {
 		if(opts.hasOwnProperty('type')) {
 			nl_hdr._type = opts['type'];
 		}
@@ -531,7 +537,7 @@ nk.netlinkCommand = function(opts, ifname, sock, cb) {
 	//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
 	var info_msg = rt.buildInfomsg(nk.AF_INET,rt.ARPHRD_ETHER, ifndex,
 									rt.IFF_ALLMULTI,rt.IFF_CHANGE);
-	info_msg._family = rt.RTN_UNSPEC;
+	info_msg._family = nk.AF_UNSPEC;
 
 	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
 	bufs.push(info_msg.pack());

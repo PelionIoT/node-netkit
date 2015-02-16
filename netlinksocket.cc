@@ -543,15 +543,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 
 	int ret = recvmsg(req->self->fd, &msg, 0);
 	free(iov_array);
-
 	if(ret == 0) {
 		// No data no error
 		return false;
 	} else if(ret < 0) {
-		if(mode == NetlinkTypes::SOCKET_NONBLOCKING && errno == EWOULDBLOCK)
+		if(errno == EWOULDBLOCK || errno == EAGAIN)
 			return false; // done receiving non-blocking socket
-		if (errno == EINTR || errno == EAGAIN )
-			return true;
 		ERROR_OUT("Error on recvmsg(): %d\n", ret);
 		req->err.setError(errno);
 		return false;
@@ -593,7 +590,8 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
 
-		return false;
+		if(mode == NetlinkTypes::SOCKET_BLOCKING)
+			return true;
 	}
 }
 

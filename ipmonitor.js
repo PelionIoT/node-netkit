@@ -23,7 +23,6 @@ var monitor = {
 		"TESTING", "DORMANT",	 "UP"
 	],
 
-
 	net_device_flags: [
 		{fl: 0x00001,	nm: 'IFF_UP'},
 		{fl: 0x00002,	nm: 'IFF_BROADCAST'},
@@ -160,23 +159,52 @@ var monitor = {
 					if(err) {
 						console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
 					} else {
-						var at = rt.parseRtattributes(bufs[0]);
-
-						if(typeof(at['operation']) !== 'undefined') {
-							console.dir(at);
-							var handler_name = 'packageInfo' + at['operation'].slice(3);
-							//console.log("handler_name = " + handler_name);
-							var boundApply = monitor[handler_name];
-							var data = boundApply(at,links);
-
-							if(!ifname || (ifname === data['ifname'])) {
-								cb(data);
-							}
+						var filters = {};
+						if(ifname) filters['ifname'] = ifname;
+						var mObject = monitor.parseAttributes(filters,links,bufs[0]);
+						if(typeof(mObject) != 'undefined') {
+							cb(mObject);
 						}
 					}
 				});
 			}
 		});
+	},
+
+
+	parseAttributes: function(filters,links,buf) {
+		var at = rt.parseRtattributes(buf);
+		if(typeof(at['operation']) !== 'undefined') {
+			//console.dir(at);
+			var handler_name = 'packageInfo' + at['operation'].slice(3);
+			//console.log("handler_name = " + handler_name);
+			var boundApply = monitor[handler_name];
+			var data = boundApply(at,links);
+
+			// Does filter apply?
+			var applies = true;
+			for(fkey in filters) {
+
+				if(typeof(data[fkey]) !== 'undefined') {
+					if(data.hasOwnProperty(fkey) && (data[fkey] !== filters[fkey])) {
+						applies = false;
+						break;
+					}
+				} else {
+					var ev = data['event'];
+					if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters[fkey])) {
+						applies = false;
+						break;
+					}
+				}
+			}
+
+			if(applies) {
+				return data;
+			} else {
+				return;
+			}
+		}
 	},
 
 	packageInfoLink: function(ch,links) {
@@ -225,7 +253,7 @@ var monitor = {
 	},
 
 	getFamily: function(fam) {
-		if(fam == this.AF_INET)
+		if(fam == monitor.AF_INET)
 			return 'inet'
 		else
 			return 'inet6'
@@ -268,24 +296,24 @@ var monitor = {
 		if(typeof(src) !== 'undefined') {
 			var src_a = rt.bufToArray(src, 0, src.length);
 			var src_o = nativelib.fromAddress(src_a, ch['payload']['_family'])
-			ret.source = src_o['address'];
+			ret.prefsrc = src_o['address'];
 		}
 
 		var gw = ch['gateway'];
 		if(typeof(gw) !== 'undefined') {
 			var gw_a = rt.bufToArray(gw, 0, gw.length);
 			var gw_o = nativelib.fromAddress(gw_a, ch['payload']['_family'])
-			ret.source = gw_o['address'];
+			ret.gateway = gw_o['address'];
 		}
 
 		var mark = ch['mark'];
 		if(typeof(mark) !== 'undefined') {
-			ret.source = mark >= 16 ? mark.toString(16) : mark;
+			ret.mark = mark >= 16 ? mark.toString(16) : mark;
 		}
 
 		var m = ch['priority'];
 		if(typeof(m) !== 'undefined') {
-			ret.metric = m.readUInt32LE(0);
+			ret.priority = m.readUInt32LE(0);
 		}
 
 		var flags = ch['payload']['_flags'];
@@ -314,7 +342,6 @@ var monitor = {
 		if(typeof(address) !== 'undefined') {
 			var addr_a = rt.bufToArray(address, 0, address.length);
 			var addr = nativelib.fromAddress(addr_a, family);
-			console.dir (family);
 
 			if(len != this.calcHostLen(family)) {
 				return addr['address'] + '/' + len;
@@ -324,7 +351,7 @@ var monitor = {
 				var name = "";
 				if(family === this.AF_INET6){
 
-				} else if(family === AF_INET) {
+				} else if(family === monitor.AF_INET) {
 
 				} 
 				if(name.length === 0)
@@ -340,9 +367,9 @@ var monitor = {
 	},
 
 	calcHostLen: function(family) {
-		if (family == this.AF_INET6)
+		if (family == monitor.AF_INET6)
 			return 128;
-		else if (family == this.AF_INET)
+		else if (family == monitor.AF_INET)
 			return 32;
 		else
 			return 0;

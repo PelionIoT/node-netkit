@@ -21,7 +21,8 @@ public:
 		, fd(0)
 		, seq(0)
 		, err()
-		, onDataCB() 
+		, onDataCB()
+		, listening(false)
 	{
 		seq = time(NULL); // yes. I did the same thing as iproute2 guys. See: iproute2/lib/libnetlink.c:~80
 		                  // my guess is this number just needs to be unique.

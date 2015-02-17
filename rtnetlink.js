@@ -288,35 +288,8 @@ var rtm_types_name_map = [
 	];
 
 module.exports = {
-
-	oper_states: [
-		"UNKNOWN", "NOTPRESENT", "DOWN", "LOWERLAYERDOWN",
-		"TESTING", "DORMANT",	 "UP"
-	],
-
-
-	net_device_flags: [
-		{fl: 0x00001,	nm: 'IFF_UP'},
-		{fl: 0x00002,	nm: 'IFF_BROADCAST'},
-		{fl: 0x00004,	nm: 'IFF_DEBUG'},
-		{fl: 0x00008,	nm: 'IFF_LOOPBACK'},
-		{fl: 0x00010,	nm: 'IFF_POINTOPOINT'},
-		{fl: 0x00020,	nm: 'IFF_NOTRAILERS'},
-		{fl: 0x00040,	nm: 'IFF_RUNNING'},
-		{fl: 0x00080,	nm: 'IFF_NOARP'},
-		{fl: 0x00100,	nm: 'IFF_PROMISC'},
-		{fl: 0x00200,	nm: 'IFF_ALLMULTI'},
-		{fl: 0x00400,	nm: 'IFF_MASTER'},
-		{fl: 0x00800,	nm: 'IFF_SLAVE'},
-		{fl: 0x01000,	nm: 'IFF_MULTICAST'},
-		{fl: 0x02000,	nm: 'IFF_PORTSEL'},
-		{fl: 0x04000,	nm: 'IFF_AUTOMEDIA'},
-		{fl: 0x08000,	nm: 'IFF_DYNAMIC'},
-		{fl: 0x10000,	nm: 'IFF_LOWER_UP'},
-		{fl: 0x20000,	nm: 'IFF_DORMANT'},
-		{fl: 0x40000,	nm: 'IFF_ECHO'}
-	],
-
+		AF_INET6: 10,
+		AF_INET: 2,
 
 	    // see: linux/neighbor.h
 	    NTF_USE:		0x01,
@@ -423,6 +396,7 @@ module.exports = {
 		return (1 << (group - 1));
 	},
 
+		NLMSG_MULTI: 2,
 		NLMSG_DONE: 3, 
 
 		/** message types. see linux/rtnetlink.h */
@@ -548,10 +522,7 @@ module.exports = {
      	}
 	},
 
-	parseRtattributes: function(data) {
-		// Only supports link and address right now
-
-		// console.log('parseRtattributes');
+	parseRtattributes: function(data, opts) {
 		var ret = {};
 
 		if(data && !Buffer.isBuffer(data)) {
@@ -559,9 +530,10 @@ module.exports = {
 		} else {
 			var total_len = data.readUInt32LE(0);
 			var type = data.readUInt16LE(4);
-			if(type == exports.NLMSG_DONE)
+			if(type == module.exports.NLMSG_DONE) {
 				return ret;
-			//console.log('msg type = ' + type);
+			}
+
 			var index = 16; // start after the msghdr
 
 			var keys, payload;

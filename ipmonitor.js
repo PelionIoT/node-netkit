@@ -123,7 +123,7 @@ var monitor = {
 								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
 			}
 		} else {
-			err("event type = '" + event_type + "'' : Not supported");
+			this.err("event type = '" + event_type + "'' : Not supported");
 			return;	
 		}
 
@@ -208,7 +208,7 @@ var monitor = {
 	},
 
 	packageInfoLink: function(ch,links) {
-		var operstate = link_oper_states[ch['operstate'].readUInt8(0)];
+		var operstate = monitor.link_oper_states[ch['operstate'].readUInt8(0)];
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
@@ -226,9 +226,11 @@ var monitor = {
 
 		var addr_ar =  rt.bufToArray(ch['address'], 0, ch['address'].length);
 		var addr = nativelib.fromAddress(addr_ar, ch['payload']['_family']);
+		var linkno = ch['payload']['_index'];
+
 		var data = {
-			ifname: ch['label'], // the interface name as labeled by the OS
-			ifnum: nativelib.ifNameToIndex(ch['label']), // the interface number, as per system call 
+			ifname: links[linkno]['ifname'], // the interface name as labeled by the OS
+			ifnum: linkno, // the interface number, as per system call 
 			event:  { 	name: ch['operation'], 
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'], 
 						family: monitor.getFamily(addr['family']), 
@@ -408,11 +410,11 @@ var monitor = {
 
 	getLinkDeviceFlags: function(flags) {
 		var flags_str = "";	
-		for (var k = 0; k < net_device_flags.length; k++){
-	 		if(flags & net_device_flags[k]['fl']) {
+		for (var k = 0; k < monitor.net_device_flags.length; k++){
+	 		if(flags & monitor.net_device_flags[k]['fl']) {
 	 			if(flags_str.length)
 	 				flags_str += ",";
-	 			flags_str += net_device_flags[k]['nm'];
+	 			flags_str += monitor.net_device_flags[k]['nm'];
 	 		}
 		}
 		return flags_str;

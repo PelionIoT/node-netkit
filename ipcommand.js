@@ -30,6 +30,7 @@ var routes = {
 				| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
 		};
 
+		var netkitObject = this;
 		sock.create(sock_opts,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
@@ -37,47 +38,47 @@ var routes = {
 				return;
 			} else {
 				console.log("Created netlink socket.");
-			}
-		 });
 
-		var getlink_command_opts = {
-			type: 	rt.RTM_GETLINK, // get link
-			flags: 	this.nl.NLM_F_REQUEST|this.nl.NLM_F_ROOT|this.nl.NLM_F_MATCH
-		};
-		var getroute_command_opts = {
-			type: 	rt.RTM_GETROUTE,
-			flags: 	this.nl.NLM_F_REQUEST|this.nl.NLM_F_ROOT|this.nl.NLM_F_MATCH
-		};
-		var netkitObject = this;
-		this.netlinkCommand(getlink_command_opts, "eth0", sock, function(err,bufs) {
-			if(err)
-				console.error("** Error: " + util.inspect(err));
-			else {
-				// get the attributes of all the links first for later reference
-				var links = [];
-				for(var i = 0; i < bufs.length; i++) {
-					var l = rt.parseRtattributes(bufs[i]);
-					links[i] = l;
-					//console.dir(l);
-				}
-
-				netkitObject.netlinkCommand(getroute_command_opts, "eth0", sock, function(err,routes_bufs) {
+				var getlink_command_opts = {
+					type: 	rt.RTM_GETLINK, // get link
+					flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
+				};
+				var getroute_command_opts = {
+					type: 	rt.RTM_GETROUTE,
+					flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
+				};
+				netkitObject.netlinkCommand(getlink_command_opts, "eth0", sock, function(err,bufs) {
 					if(err)
 						console.error("** Error: " + util.inspect(err));
 					else {
-						var data = [];
-
-						for(var n=0;n<routes_bufs.length;n++) {
-							var route = monitor.parseAttributes(filters,links,routes_bufs[n]);
-							if(typeof(route) !== 'undefined') {
-								data.push(route);
-							}
+						// get the attributes of all the links first for later reference
+						var links = [];
+						for(var i = 0; i < bufs.length; i++) {
+							var l = rt.parseRtattributes(bufs[i]);
+							links[i] = l;
+							//console.dir(l);
 						}
-						cb(data);
+
+						netkitObject.netlinkCommand(getroute_command_opts, "eth0", sock, function(err,routes_bufs) {
+							if(err)
+								console.error("** Error: " + util.inspect(err));
+							else {
+								var data = [];
+
+								for(var n=0;n<routes_bufs.length;n++) {
+									var route = monitor.parseAttributes(filters,links,routes_bufs[n]);
+									if(typeof(route) !== 'undefined') {
+										data.push(route);
+									}
+								}
+								sock.close();
+								cb(data);
+							}
+						});
 					}
 				});
 			}
-		});
+		 });
 	}
 };
 

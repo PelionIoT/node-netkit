@@ -26,8 +26,7 @@ var Stream = require('stream');
 var util = require('util');
 var net = require('net');
 
-var monitor = require('./ipmonitor.js');
-var routes = require('./ipcommand.js');
+var ipcommands = require('./ipcommand.js');
 
 var dbg = function() {
 	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
@@ -170,12 +169,15 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 };
 
 
-
-var boundOnNetworkChange = monitor.onNetworkChange;
+// ip commands 
+var boundOnNetworkChange = ipcommands.onNetworkChange;
 boundOnNetworkChange.bind(this);
-
-var boundGetRoutes = routes.getRoutes;
+var boundGetRoutes = ipcommands.getRoutes;
 boundGetRoutes.bind(this);
+var boundGetLinks = ipcommands.getLinks;
+boundGetLinks.bind(this);
+var boundGetAddresses = ipcommands.getAddresses;
+boundGetAddresses.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test
@@ -205,6 +207,8 @@ var nk = {
 
 	onNetworkChange: boundOnNetworkChange,
 	getRoutes: boundGetRoutes,
+	getLinks: boundGetLinks,
+	getAddresses: boundGetAddresses,
 
 	assignDbgCB: function(func) {
 		dbg = func;

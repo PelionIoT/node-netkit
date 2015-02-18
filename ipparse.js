@@ -1,5 +1,4 @@
 var rt = require('./rtnetlink.js');
-var bufferpack = require('./libs/bufferpack.js');
 var dns = require('dns');
 
 var nativelib = null;
@@ -12,7 +11,7 @@ try {
 		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
 }
 
-var monitor = {
+var ipparse = {
 
 	AF_INET6: 10,
 	AF_INET: 2,
@@ -84,101 +83,13 @@ var monitor = {
 		0x800: 	"prefix",		/* Prefix addresses		*/
 	},
 
-	onNetworkChange: function(ifname, event_type, cb) {
-		var links = [];
-
-		var sock = this.newNetlinkSocket();
-		var sock_opts;
-		if(!event_type || event_type === 'all') {
-			sock_opts = {
-				subscriptions: 	 
-							
-								  rt.make_group(rt.RTNLGRP_LINK)
-
-								| rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
-								| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-								| rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
-
-								| rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-								| rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
-								| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
-
-							// | rt.make_group(rt.RTNLGRP_NEIGH)
-							// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
-							// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
-			}
-		} else if(event_type === 'link') {
-			sock_opts = {
-				subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_LINK)
-			}
-		} else if(event_type === 'address') {
-			sock_opts = {
-				subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
-								| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-			}
-		} else if(event_type === 'route') {
-			sock_opts = {
-				subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-			}
-		} else {
-			this.err("event type = '" + event_type + "'' : Not supported");
-			return;	
-		}
-
-		sock.create(sock_opts,function(err) {
-			if(err) {
-				console.log("socket.create() Error: " + util.inspect(err));
-				cb(err);
-				return;
-			} else {
-				console.log("Created netlink socket.");
-			}
-		 });
-
-		var command_opts = {
-			type: 	rt.RTM_GETLINK, // get link
-			flags: 	this.nl.NLM_F_REQUEST|this.nl.NLM_F_ROOT|this.nl.NLM_F_MATCH
-		};
-
-		this.netlinkCommand(command_opts, "eth0", sock, function(err,bufs) {
-			if(err)
-				console.error("** Error: " + util.inspect(err));
-			else {
-
-
-				// get the attributes of all the links first for later reference
-				for(var i = 0; i < bufs.length; i++) {
-					var l = rt.parseRtattributes(bufs[i]);
-					links[i] = l;
-					//console.dir(l);
-				}
-
-				sock.onRecv(function(err,bufs) {
-					if(err) {
-						console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
-					} else {
-						var filters = {};
-						if(ifname) filters['ifname'] = ifname;
-						var mObject = monitor.parseAttributes(filters,links,bufs[0]);
-						if(typeof(mObject) != 'undefined') {
-							cb(mObject);
-						}
-					}
-				});
-			}
-		});
-	},
-
-
 	parseAttributes: function(filters,links,buf) {
 		var at = rt.parseRtattributes(buf);
 		if(typeof(at['operation']) !== 'undefined') {
 			//console.dir(at);
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
 			//console.log("handler_name = " + handler_name);
-			var boundApply = monitor[handler_name];
+			var boundApply = ipparse[handler_name];
 			var data = boundApply(at,links);
 
 			// Does filter apply?
@@ -208,15 +119,16 @@ var monitor = {
 	},
 
 	packageInfoLink: function(ch,links) {
-		var operstate = monitor.link_oper_states[ch['operstate'].readUInt8(0)];
+
+		var operstate = ipparse.link_oper_states[ch['operstate'].readUInt8(0)];
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
 			event:  { name: ch['operation'], 
 					  state: operstate,
-					  address: monitor.getBufferAsHexAddr(ch['address']),
-					  broadcast: monitor.getBufferAsHexAddr(ch['broadcast']),
-					  flags: monitor.getLinkDeviceFlags(ch['payload']['_if_flags'])  }
+					  address: ipparse.getBufferAsHexAddr(ch['address']),
+					  broadcast: ipparse.getBufferAsHexAddr(ch['broadcast']),
+					  flags: ipparse.getLinkDeviceFlags(ch['payload']['_if_flags'])  }
 		};
 
 		return data;
@@ -229,12 +141,12 @@ var monitor = {
 		var linkno = ch['payload']['_index'];
 
 		var data = {
-			ifname: links[linkno]['ifname'], // the interface name as labeled by the OS
+			ifname: links[linkno-1]['ifname'], // the interface name as labeled by the OS
 			ifnum: linkno, // the interface number, as per system call 
 			event:  { 	name: ch['operation'], 
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'], 
-						family: monitor.getFamily(addr['family']), 
-						scope: monitor.getScope(ch['payload']['_scope'])
+						family: ipparse.getFamily(addr['family']), 
+						scope: ipparse.getScope(ch['payload']['_scope'])
 					}
 		};
 
@@ -244,7 +156,7 @@ var monitor = {
 	packageInfoRoute: function(ch,links) {
 
 		var oif = ch['oif'].readUInt32LE(0);
-		var ev = monitor.getRouteEventObj(ch);
+		var ev = ipparse.getRouteEventObj(ch);
 		var data = {
 			ifname: links[oif-1]['ifname'],
 			ifnum: oif,
@@ -255,7 +167,7 @@ var monitor = {
 	},
 
 	getFamily: function(fam) {
-		if(fam == monitor.AF_INET)
+		if(fam == ipparse.AF_INET)
 			return 'inet'
 		else
 			return 'inet6'
@@ -277,22 +189,22 @@ var monitor = {
 		var ret = {};
 
 		ret.name = ch['operation'];
-		ret.type = monitor.routeType(ch['payload']['_type']);
+		ret.type = ipparse.routeType(ch['payload']['_type']);
 
 		var fam = ch['payload']['_family'];
-		ret.family = monitor.getFamily(fam);
+		ret.family = ipparse.getFamily(fam);
 
 		var dest = ch['dst'];
 		var dest_len = ch['payload']['_dst_len'];
-		ret.address = monitor.getRouteAddress(dest, dest_len, fam);
+		ret.address = ipparse.getRouteAddress(dest, dest_len, fam);
 
 		var src = ch['src'];
 		var src_len = ch['payload']['_src_len'];
-		ret.src = monitor.getRouteAddress(src, src_len, ret.family);
+		ret.src = ipparse.getRouteAddress(src, src_len, ret.family);
 
-		ret.table = monitor.getRouteTable(ch['payload']['_table']);
-		ret.protocol = monitor.getRouteProtocol(ch['payload']['_protocol']);
-		ret.scope = monitor.getScope(ch['payload']['_scope']);
+		ret.table = ipparse.getRouteTable(ch['payload']['_table']);
+		ret.protocol = ipparse.getRouteProtocol(ch['payload']['_protocol']);
+		ret.scope = ipparse.getScope(ch['payload']['_scope']);
 
 		var src = ch['prefsrc'];
 		if(typeof(src) !== 'undefined') {
@@ -320,21 +232,21 @@ var monitor = {
 
 		var flags = ch['payload']['_flags'];
 		if(typeof(flags) !== 'undefined' && flags > 0) {
-			ret.flags = monitor.getRouteFlags(flags);
+			ret.flags = ipparse.getRouteFlags(flags);
 		}
 
 		return ret;
 	},
 
 	getRouteProtocol: function(proto) {
-		var p = monitor.protocol_map[proto];
+		var p = ipparse.protocol_map[proto];
 		if(typeof(p) !== 'undefined')
 			return p;
 		return proto;
 	},
 
 	getRouteTable: function(table) {
-		var t = monitor.table_map[table];
+		var t = ipparse.table_map[table];
 		if(typeof(t) !== 'undefined')
 			return t;
 		return table;
@@ -353,7 +265,7 @@ var monitor = {
 				var name = "";
 				if(family === this.AF_INET6){
 
-				} else if(family === monitor.AF_INET) {
+				} else if(family === ipparse.AF_INET) {
 
 				} 
 				if(name.length === 0)
@@ -369,9 +281,9 @@ var monitor = {
 	},
 
 	calcHostLen: function(family) {
-		if (family == monitor.AF_INET6)
+		if (family == ipparse.AF_INET6)
 			return 128;
-		else if (family == monitor.AF_INET)
+		else if (family == ipparse.AF_INET)
 			return 32;
 		else
 			return 0;
@@ -410,11 +322,11 @@ var monitor = {
 
 	getLinkDeviceFlags: function(flags) {
 		var flags_str = "";	
-		for (var k = 0; k < monitor.net_device_flags.length; k++){
-	 		if(flags & monitor.net_device_flags[k]['fl']) {
+		for (var k = 0; k < ipparse.net_device_flags.length; k++){
+	 		if(flags & ipparse.net_device_flags[k]['fl']) {
 	 			if(flags_str.length)
 	 				flags_str += ",";
-	 			flags_str += monitor.net_device_flags[k]['nm'];
+	 			flags_str += ipparse.net_device_flags[k]['nm'];
 	 		}
 		}
 		return flags_str;
@@ -445,4 +357,4 @@ var monitor = {
 	}	
 };
 
-module.exports = monitor;
+module.exports = ipparse;

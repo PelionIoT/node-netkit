@@ -1,4 +1,5 @@
 var rt = require('./rtnetlink.js');
+var nl = require('./netlink.js')
 var ipparse = require('./ipparse.js');
 
 var nativelib = null;
@@ -15,8 +16,9 @@ var routes = {
 
 	onNetworkChange: function(ifname, event_type, cb) {
 		var links = [];
+		var netkitObject = this;
 
-		var sock = this.newNetlinkSocket();
+		var sock = netkitObject.newNetlinkSocket();
 		var sock_opts;
 		if(!event_type || event_type === 'all') {
 			sock_opts = {
@@ -52,7 +54,7 @@ var routes = {
 								| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
 			}
 		} else {
-			this.err("event type = '" + event_type + "'' : Not supported");
+			netkitObject.err("event type = '" + event_type + "'' : Not supported");
 			return;	
 		}
 
@@ -68,10 +70,10 @@ var routes = {
 
 		var command_opts = {
 			type: 	rt.RTM_GETLINK, // get link
-			flags: 	this.nl.NLM_F_REQUEST|this.nl.NLM_F_ROOT|this.nl.NLM_F_MATCH
+			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
 
-		this.netlinkCommand(command_opts, "eth0", sock, function(err,bufs) {
+		nl.netlinkInfoCommand.call(this,command_opts, "eth0", sock, function(err,bufs) {
 			if(err)
 				console.error("** Error: " + util.inspect(err));
 			else {
@@ -108,7 +110,9 @@ var routes = {
 			filters['table'] = 'main';
 		}
 
-		var sock = this.newNetlinkSocket();
+		var netkitObject = this;
+
+		var sock = netkitObject.newNetlinkSocket();
 		var sock_opts = {
 			subscriptions: 
 				  rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
@@ -117,7 +121,6 @@ var routes = {
 				| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
 		};
 
-		var netkitObject = this;
 		sock.create(sock_opts,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
@@ -134,7 +137,7 @@ var routes = {
 					type: 	rt.RTM_GETROUTE,
 					flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 				};
-				netkitObject.netlinkCommand(getlink_command_opts, "eth0", sock, function(err,bufs) {
+				nl.netlinkInfoCommand.call(netkitObject,getlink_command_opts, "eth0", sock, function(err,bufs) {
 					if(err)
 						console.error("** Error: " + util.inspect(err));
 					else {
@@ -146,7 +149,7 @@ var routes = {
 							//console.dir(l);
 						}
 
-						netkitObject.netlinkCommand(getroute_command_opts, "eth0", sock, function(err,routes_bufs) {
+						nl.netlinkInfoCommand.call(netkitObject,getroute_command_opts, "eth0", sock, function(err,routes_bufs) {
 							if(err)
 								console.error("** Error: " + util.inspect(err));
 							else {
@@ -174,10 +177,10 @@ var routes = {
 			filters = filter_spec;
 		}
 
-		var sock = this.newNetlinkSocket();
-		var sock_opts = {};
-
 		var netkitObject = this;
+
+		var sock = netkitObject.newNetlinkSocket();
+		var sock_opts = {};
 		sock.create(sock_opts,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
@@ -194,7 +197,7 @@ var routes = {
 					type: 	rt.RTM_GETROUTE,
 					flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 				};
-				netkitObject.netlinkCommand(getlink_command_opts, "eth0", sock, function(err,bufs) {
+				nl.netlinkInfoCommand.call(netkitObject,getlink_command_opts, "eth0", sock, function(err,bufs) {
 					if(err)
 						console.error("** Error: " + util.inspect(err));
 					else {
@@ -206,7 +209,7 @@ var routes = {
 							//console.dir(l);
 						}
 
-						netkitObject.netlinkCommand(getaddr_command_opts, "eth0", sock, function(err,addr_bufs) {
+						nl.netlinkInfoCommand.call(netkitObject,getaddr_command_opts, "eth0", sock, function(err,addr_bufs) {
 							if(err)
 								console.error("** Error: " + util.inspect(err));
 							else {
@@ -234,10 +237,10 @@ var routes = {
 			filters = filter_spec;
 		}
 
-		var sock = this.newNetlinkSocket();
-		var sock_opts = {};
-
 		var netkitObject = this;
+
+		var sock = netkitObject.newNetlinkSocket();
+		var sock_opts = {};
 		sock.create(sock_opts,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
@@ -250,7 +253,7 @@ var routes = {
 					type: 	rt.RTM_GETLINK, // get link
 					flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 				};
-				netkitObject.netlinkCommand(getlink_command_opts, "eth0", sock, function(err,link_bufs) {
+				nl.netlinkInfoCommand.call(netkitObject,getlink_command_opts, "eth0", sock, function(err,link_bufs) {
 					if(err)
 						console.error("** Error: " + util.inspect(err));
 					else {
@@ -268,6 +271,49 @@ var routes = {
 				});
 			}
 		 });
+	},
+
+	addIPv4Neighbor: function(ifname,inet4dest,lladdr,cb,sock) {
+		var filters = {};
+		if(filter_spec !== null){
+			filters = filter_spec;
+		}
+
+		var netkitObject = this;
+
+		var sock = netkitObject.newNetlinkSocket();
+		var sock_opts = {};
+		sock.create(sock_opts,function(err) {
+			if(err) {
+				console.log("socket.create() Error: " + util.inspect(err));
+				cb(err);
+				return;
+			} else {
+				console.log("Created netlink socket.");
+
+				var newneigh_opts = {
+					type: rt.RTM_NEWNEIGH, // the command
+					flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
+					family: rt.AF_INET
+				};
+				nl.netlinkInfoCommand.call(netkitObject,getlink_command_opts, "eth0", sock, function(err,link_bufs) {
+					if(err)
+						console.error("** Error: " + util.inspect(err));
+					else {
+						var data = [];
+
+						for(var l = 0; l < link_bufs.length; l++) {
+							var link = ipparse.parseAttributes(filters,null,link_bufs[l]);
+							if(typeof(link) !== 'undefined') {
+								data.push(link);
+							}
+						}
+						sock.close();
+						cb(data);
+					}
+				});
+			}
+		});
 	}
 };
 

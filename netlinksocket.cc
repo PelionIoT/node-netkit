@@ -582,9 +582,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 						replyBuf->iserr = true;
 						replyBuf->malloc(nlmsghdr_length);
 						memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
-						char errmsg[256];
-						sprintf(errmsg, "RTNetlink error: %s", strerror(-err->error));
-						req->err.setError(_net::OTHER_ERROR, errmsg);
+						req->err.setError(_net::OTHER_ERROR, strerror(-err->error));
 					}
 				} else {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();

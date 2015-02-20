@@ -576,10 +576,16 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
 				if(nlhdr->nlmsg_type == NLMSG_ERROR) {
-					reqWrapper *replyBuf = req->reply_queue.addEmpty();
-					replyBuf->iserr = true;
-					replyBuf->malloc(nlmsghdr_length);
-					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+					struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
+					if(err->error) {
+						reqWrapper *replyBuf = req->reply_queue.addEmpty();
+						replyBuf->iserr = true;
+						replyBuf->malloc(nlmsghdr_length);
+						memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+						char errmsg[256];
+						sprintf(errmsg, "RTNetlink error: %s", strerror(-err->error));
+						req->err.setError(_net::OTHER_ERROR, errmsg);
+					}
 				} else {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();
 					replyBuf->malloc(nlhdr->nlmsg_len);

@@ -1,5 +1,6 @@
 var rt = require('./rtnetlink.js');
 var nl = require('./netlink.js')
+var util = require('util');
 var ipparse = require('./ipparse.js');
 
 var nativelib = null;
@@ -273,12 +274,7 @@ var routes = {
 		 });
 	},
 
-	addIPv4Neighbor: function(ifname,inet4dest,lladdr,cb,sock) {
-		var filters = {};
-		if(filter_spec !== null){
-			filters = filter_spec;
-		}
-
+	addIPv4Neighbor: function(ifname,inet4dest,lladdr,cb) {
 		var netkitObject = this;
 
 		var sock = netkitObject.newNetlinkSocket();
@@ -294,23 +290,18 @@ var routes = {
 				var newneigh_opts = {
 					type: rt.RTM_NEWNEIGH, // the command
 					flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
-					family: rt.AF_INET
-				};
-				nl.netlinkInfoCommand.call(netkitObject,getlink_command_opts, "eth0", sock, function(err,link_bufs) {
-					if(err)
-						console.error("** Error: " + util.inspect(err));
-					else {
-						var data = [];
+					family: rt.AF_INET,
+					inet4dest: inet4dest,
+					lladdr: lladdr
 
-						for(var l = 0; l < link_bufs.length; l++) {
-							var link = ipparse.parseAttributes(filters,null,link_bufs[l]);
-							if(typeof(link) !== 'undefined') {
-								data.push(link);
-							}
-						}
-						sock.close();
-						cb(data);
+				};
+				nl.netlinkNeighCommand.call(netkitObject,newneigh_opts, ifname, sock, function(err,bufs) {
+					if(err) {
+						cb(err);
+					} else {
+						cb();
 					}
+					sock.close();
 				});
 			}
 		});

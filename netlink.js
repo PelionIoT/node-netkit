@@ -2,6 +2,7 @@ var rt = require('./rtnetlink.js')
 var util = require('util');
 var bufferpack = require('./libs/bufferpack.js');
 var colors = require('./colors.js');
+var netutils = require('./netutils.js');
 
 // for documentation see: /usr/include/linux/netlink.h
 // 	__u32		nlmsg_len;	Length of message including header
@@ -115,7 +116,6 @@ nl = {
 
 	    sock.sendMsg(msgreq, function(err,bytes) {
 	    	if(err) {
-	    		console.error("** Error: " + util.inspect(err));
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
@@ -150,8 +150,8 @@ nl = {
 				nl_hdr._flags |= opts['flags'];
 			}
 			if(opts.hasOwnProperty("family")) {
-				nl_hdr.family = info['family'];
-				info_msg._family |= info['family'];
+				nl_hdr.family = opts['family'];
+				info_msg._family |= opts['family'];
 			}
 
 		} 
@@ -185,10 +185,9 @@ nl = {
 		nl_hdr._flags = nl.NLM_F_REQUEST;
 		nl_hdr._type = rt.RTM_GETLINK; // the command
 
-		// The info message command
-		//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
+		// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
 		var nd_msg = rt.buildNdmsg();
-		nd_msg._state = NUD_PERMANENT;
+		nd_msg._state = rt.NUD_PERMANENT;
 		nd_msg._ifindex = ifndex;
 
 		if(typeof(opts) !== 'undefined') {
@@ -199,26 +198,31 @@ nl = {
 				nl_hdr._flags |= opts['flags'];
 			}
 			if(opts.hasOwnProperty("family")) {
-				nl_hdr.family = info['family'];
-				nd_msg._family |= info['family'];
+				nl_hdr.family = opts['family'];
+				nd_msg._family |= opts['family'];
 			}
 		} 
 
+		console.dir(nl_hdr);
+
 		var bufs = [];
 
+		dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
+		bufs.push(nd_msg.pack());
+
 		// Build the rt attributes for the command
+		var inet4dest = opts['inet4dest'];
 		if(inet4dest) {
-			if(typeof inet6dest === 'string') {
-				var ans = this.toAddress(inet6dest,this.AF_INET6);
+			if(typeof inet4dest === 'string') {
+				var ans = this.toAddress(inet4dest,this.AF_INET);
 				if(util.isError(ans)) {
 					cb(ans);
 					return;
 				}
 				var destbuf = ans;
 			} else
-				var destbuf = inet6dest;
+				var destbuf = inet4dest;
 			var rt_attr = rt.buildRtattrBuf(rt.NDA_DST,destbuf.bytes);
-			console.dir(destbuf);
 			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 			dbg("rt_attr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);
@@ -227,9 +231,10 @@ nl = {
 			return;
 		}
 
+		var lladdr = opts['lladdr'];
 		if(lladdr) {
 			if(typeof lladdr === 'string') {
-				var macbuf = netutil.bufferifyMacString(lladdr,6); // we want 6 bytes no matter what
+				var macbuf = netutils.bufferifyMacString(lladdr,6); // we want 6 bytes no matter what
 				if(!macbuf) {
 					cb(new Error("bad lladdr"));
 					return;
@@ -245,9 +250,6 @@ nl = {
 			dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);
 		}
-
-		dbg("nd_msg---> " + asHexBuffer(info_msg.pack()));
-		bufs.push(info_msg.pack());
 
 		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 	}

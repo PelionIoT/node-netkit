@@ -203,8 +203,6 @@ nl = {
 			}
 		} 
 
-		console.dir(nl_hdr);
-
 		var bufs = [];
 
 		dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));

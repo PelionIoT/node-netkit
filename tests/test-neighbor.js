@@ -35,6 +35,6 @@ nk.ipv4Neighbor("delete","eth1","192.168.56.191","02:2a:8c:54:3f:cf", function(e
 	}
 });
 
-nk.ipv4Neighbor("show","eth1","192.168.56.191","02:2a:8c:54:3f:cf", function(bufs) {
+nk.ipv4Neighbor("show",null,null,null, function(bufs) {
 	console.dir(bufs);
 });

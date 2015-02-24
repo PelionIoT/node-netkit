@@ -560,7 +560,8 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		while(ret >= sizeof(struct nlmsghdr))
 		{
 			int nlmsghdr_length = nlhdr->nlmsg_len;
-			if((nlmsghdr_length - sizeof(struct nlmsghdr)) < 0 || nlmsghdr_length > ret) {
+			int msglen = nlmsghdr_length - sizeof(struct nlmsghdr);
+			if(msglen < 0 || nlmsghdr_length > ret) {
 				
 				ERROR_OUT("Truncated recvmsg()\n");
 				req->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
@@ -575,14 +576,19 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
+
 				if(nlhdr->nlmsg_type == NLMSG_ERROR) {
+					reqWrapper *replyBuf = req->reply_queue.addEmpty();
+					replyBuf->malloc(nlmsghdr_length);
+					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+
 					struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
-					if(err->error) {
-						reqWrapper *replyBuf = req->reply_queue.addEmpty();
+					if (msglen < sizeof(struct nlmsgerr)) {
+						req->err.setError(_net::OTHER_ERROR, "Netlink ERROR truncated");
 						replyBuf->iserr = true;
-						replyBuf->malloc(nlmsghdr_length);
-						memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+					} else if(err->error) {
 						req->err.setError(_net::OTHER_ERROR, strerror(-err->error));
+						replyBuf->iserr = true;
 					}
 				} else {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();

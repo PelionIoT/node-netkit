@@ -123,12 +123,14 @@ nl = {
 	    });
 	},
 
-	netlinkInfoCommand: function(opts, ifname, sock, cb) {
-		var ifndex = this.ifNameToIndex(ifname);
-		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
-			cb(ifndex); // call w/ error
-			return;
+	netlinkInfoCommand: function(opts, sock, cb) {
+		if(opts.hasOwnProperty('ifname')) {
+			var ifndex = this.ifNameToIndex(opt['ifname']);
+			if(util.isError(ifndex)) {
+				err("* Error: " + util.inspect(ifndex));
+				cb(ifndex); // call w/ error
+				return;
+			}
 		}
 
 		var len = 0; // updated at end
@@ -170,12 +172,15 @@ nl = {
 		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 	},
 
-	netlinkNeighCommand: function(opts, ifname, sock, cb) {
-		var ifndex = this.ifNameToIndex(ifname);
-		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
-			cb(ifndex); // call w/ error
-			return;
+	netlinkNeighCommand: function(opts,sock, cb) {
+
+		if(opts.hasOwnProperty('ifname')) {
+			var ifndex = this.ifNameToIndex(opts['ifname']);
+			if(util.isError(ifndex)) {
+				err("* Error: " + util.inspect(ifndex));
+				cb(ifndex); // call w/ error
+				return;
+			}
 		}
 
 		var len = 0; // updated at end
@@ -209,8 +214,8 @@ nl = {
 		bufs.push(nd_msg.pack());
 
 		// Build the rt attributes for the command
-		var inet4dest = opts['inet4dest'];
-		if(inet4dest) {
+		if(opts.hasOwnProperty('inet4dest')) {
+			var inet4dest = opts['inet4dest'];
 			if(typeof inet4dest === 'string') {
 				var ans = this.toAddress(inet4dest,this.AF_INET);
 				if(util.isError(ans)) {
@@ -224,13 +229,10 @@ nl = {
 			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 			dbg("rt_attr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);
-		} else {
-			cb(new Error("bad parameters."));
-			return;
 		}
 
-		var lladdr = opts['lladdr'];
-		if(lladdr) {
+		if(opts.hasOwnProperty('lladdr')) {
+			var lladdr = opts['lladdr'];
 			if(typeof lladdr === 'string') {
 				var macbuf = netutils.bufferifyMacString(lladdr,6); // we want 6 bytes no matter what
 				if(!macbuf) {

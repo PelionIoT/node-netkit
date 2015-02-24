@@ -28,12 +28,12 @@ nk.getLinks(lfilter, function(links){
 
 	child = exec('ip link set dev eth1 up', function(error, stdout,stderr){
 			var links = nk.getLinks(lfilter, function(links){
-			console.log('links....');
+			console.log('up links....');
 			console.dir(links);
 
 			child = exec(' ip link set dev eth1 down', function(error, stdout,stderr){
 				var links = nk.getLinks(lfilter, function(links){
-					console.log('links....');
+					console.log('down links....');
 					console.dir(links);
 				});
 			});
@@ -62,28 +62,36 @@ nk.getAddresses(afilter, function(addrs){
 });
 
 
-setTimeout(function(){
 	console.log('listening...')
 	nk.onNetworkChange("eth1", "all", function (data) {
 		console.log("changed...");
 		console.dir(data);
 	});
-}, 2000);
 
-// nk.onNetworkChange("eth1", "link", function (data) {
-// 	console.log("changed...");
-// 	console.dir(data);
-// });
+child = exec('ip addr add 10.10.20.17/32 dev eth1', function(error, stdout,stderr){
+	child = exec('ip addr del 10.10.20.17/32 dev eth1', function(error, stdout,stderr){});
+});
 
-// nk.onNetworkChange("eth1", "address", function (data) {
-// 	console.log("changed...");
-// 	console.dir(data);
-// });
 
-// nk.onNetworkChange("eth1", "route", function (data) {
-// 	console.log("changed...");
-// 	console.dir(data);
-// });
+nk.onNetworkChange("eth1", "link", function (data) {
+	console.log("changed...");
+	console.dir(data);
+});
+
+nk.onNetworkChange("eth1", "address", function (data) {
+	console.log("changed...");
+	console.dir(data);
+});
+
+nk.onNetworkChange("eth1", "route", function (data) {
+	console.log("changed...");
+	console.dir(data);
+});
+
+nk.onNetworkChange(null, "neigh", function (data) {
+	console.log("changed...");
+	console.dir(data);
+});
 
 // var google = "2607:f8b0:4000:80b::200e";
 // console.log(nk.hostnameFromAddress(google));

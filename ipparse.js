@@ -83,6 +83,32 @@ var ipparse = {
 		0x800: 	"prefix",		/* Prefix addresses		*/
 	},
 
+	neigh_flags: {
+		0x01:	"use",
+		0x08:	"proxy", 	/* == ATF_PUBL */
+		0x80:	"router", 
+
+		0x02:	"self", 
+		0x04:	"master", 
+	},
+
+	neigh_states: {
+		/*
+		 *	Neighbor Cache Entry States.
+		 */
+
+		0x01:	"incomplete",
+		0x02:	"reachable",
+		0x04:	"stale",
+		0x08:	"delay",
+		0x10:	"probe",
+		0x20:	"failed",
+
+		/* Dummy states */
+		0x40:	"noarp",
+		0x80:	"permanent"
+	},
+
 	parseAttributes: function(filters,links,buf) {
 		var at = rt.parseRtattributes(buf);
 		if(typeof(at['operation']) !== 'undefined') {
@@ -94,6 +120,9 @@ var ipparse = {
 
 			// Does filter apply?
 			var applies = true;
+			if(typeof(data) === 'undefined')
+				applies = false;
+
 			for(fkey in filters) {
 
 				if(typeof(data[fkey]) !== 'undefined') {
@@ -143,7 +172,7 @@ var ipparse = {
 		var data = {
 			ifname: links[linkno-1]['ifname'], // the interface name as labeled by the OS
 			ifnum: linkno, // the interface number, as per system call 
-			event:  { 	name: ch['operation'], 
+			event:  {	name: ch['operation'], 
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'], 
 						family: ipparse.getFamily(addr['family']), 
 						scope: ipparse.getScope(ch['payload']['_scope'])
@@ -164,6 +193,43 @@ var ipparse = {
 		};
 
 		return data;
+	},
+
+	packageInfoNeighbor: function(ch,links) {
+
+		var payload = ch['payload'];
+
+		var state = ipparse.getFlags(ipparse.neigh_states, payload['_state']);
+		if(state === 'noarp' )
+			return;
+
+		var cinfo = ch['cacheinfo'];
+		var oif = payload['_ifindex'];
+		var neigh = {};
+
+		neigh.ifname = links[oif-1]['ifname'];
+		neigh.ifnum = oif;
+
+		var dst = ch['dst'];
+		if(dst) {
+			var addr_ar =  rt.bufToArray(ch['dst'], 0, ch['dst'].length);
+			var addr = nativelib.fromAddress(addr_ar, payload['_family']);
+			neigh.destination = addr['address'];
+		}
+
+		var lladdr = ch['lladdr'];
+		if(lladdr) {
+			neigh.lladdr = ipparse.getBufferAsHexAddr(lladdr);
+		}
+
+		neigh.state = state;
+
+		var flags = payload['_flags'];
+		if(flags) {
+			neigh.flags = ipparse.getFlags(ipparse.neigh_flags,payload['_flags']);
+		}
+
+		return neigh;
 	},
 
 	getFamily: function(fam) {
@@ -232,7 +298,7 @@ var ipparse = {
 
 		var flags = ch['payload']['_flags'];
 		if(typeof(flags) !== 'undefined' && flags > 0) {
-			ret.flags = ipparse.getRouteFlags(flags);
+			ret.flags = ipparse.getFlags(ipparse.route_flags,flags);
 		}
 
 		return ret;
@@ -332,14 +398,15 @@ var ipparse = {
 		return flags_str;
 	},
 
-	getRouteFlags: function(flags) {
+	getFlags: function(flags,f) {
 		var flags_str = "";	
-		for (var k in this.route_flags){
-			if(this.route_flags.hasOwnProperty(k)){
-		 		if(flags & k) {
+
+		for (var k in flags){
+			if(flags.hasOwnProperty(k)){
+		 		if(f & k) {
 		 			if(flags_str.length)
 		 				flags_str += ",";
-		 			flags_str += this.route_flags[k];
+		 			flags_str += flags[k];
 		 		}
 	 		}
 		}

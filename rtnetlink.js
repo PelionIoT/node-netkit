@@ -161,6 +161,31 @@ var route_attributes = {
 	RTA_MFC_STATS: 17
 };
 
+var neigh_info_attr_name_map = [
+	"unspec",
+	"dst",
+	"lladdr",
+	"cacheinfo",
+	"probes",
+	"vlan",
+	"port",
+	"vni",
+	"ifindex",
+	"master",
+];
+
+var neigh_attributes = {
+	NDA_UNSPEC: 0,
+	NDA_DST: 1, 
+	NDA_LLADDR: 2,
+	NDA_CACHEINFO: 3,
+	NDA_PROBES: 4,
+	NDA_VLAN: 5,
+	NDA_PORT: 6,
+	NDA_VNI: 7,
+	NDA_IFINDEX: 8,
+	NDA_MASTER: 9,
+};
 
 var payload_sizes = [
 
@@ -174,11 +199,11 @@ var payload_sizes = [
 	12,	//RTM_NEWROUTE: 
 	12,	//RTM_DELROUTE: 
 	12,	//RTM_GETROUTE: 
+	12,	//RTM_NEWNEIGH: 
+	12,	//RTM_DELNEIGH: 
+	12,	//RTM_GETNEIGH: 
 
 	// not confirmed the rest
-	8,	//RTM_NEWNEIGH: 
-	8,	//RTM_DELNEIGH: 
-	8,	//RTM_GETNEIGH: 
 	8,	//RTM_NEWRULE: 
 	8,	//RTM_DELRULE: 
 	8,	//RTM_GETRULE: 
@@ -549,6 +574,10 @@ module.exports = {
 			    //console.log('ROUTE');
 				keys = route_info_attr_name_map
 				payload = bufferpack.unpack(rtmsg_fmt,data,index)
+			} else if(this.RTM_NEWNEIGH <= type && type <= this.RTM_GETNEIGH) {
+			    //console.log('NEIGH');
+				keys = neigh_info_attr_name_map
+				payload = bufferpack.unpack(ndmsg_fmt,data,index)
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
@@ -559,7 +588,7 @@ module.exports = {
 				// console.log('index = ' + index);
 				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 				var attr_type = data.readUInt16LE(index + 2);
-				// console.log('attr = ' + attr_type + ' len = ' + len);
+				//console.log('attr = ' + attr_type + ' len = ' + len);
 
 				index += 4; // index to the data
 				var value;

@@ -165,8 +165,8 @@ var boundGetLinks = ipcommands.getLinks;
 boundGetLinks.bind(this);
 var boundGetAddresses = ipcommands.getAddresses;
 boundGetAddresses.bind(this);
-var boundAddIPv4Neighbor = ipcommands.addIPv4Neighbor;
-boundAddIPv4Neighbor.bind(this);
+var boundIPv4Neighbor = ipcommands.neighbor;
+boundIPv4Neighbor.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test
@@ -198,7 +198,7 @@ var nk = {
 	getRoutes: boundGetRoutes,
 	getLinks: boundGetLinks,
 	getAddresses: boundGetAddresses,
-	addIPv4Neighbor: boundAddIPv4Neighbor,
+	ipv4Neighbor: boundIPv4Neighbor,
 
 	assignDbgCB: function(func) {
 		dbg = func;

@@ -88,7 +88,7 @@ nk.onNetworkChange("eth1", "route", function (data) {
 	console.dir(data);
 });
 
-nk.onNetworkChange(null, "neigh", function (data) {
+nk.onNetworkChange("eth1", "neigh", function (data) {
 	console.log("changed...");
 	console.dir(data);
 });

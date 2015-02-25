@@ -36,9 +36,9 @@ var ipcommand = {
 								| rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
 								| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
 
-								| rt.make_group(rt.RTNLGRP_NEIGH)
-							// | rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
-							// | rt.make_group(rt.RTNLGRP_IPV6_NETCONF)						
+								| rt.make_group(rt.RTN_GRP_NEIGH)
+								| rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
+								| rt.make_group(rt.RTNLGRP_IPV6_NETCONF)
 			}
 		} else if(event_type === 'link') {
 			sock_opts = {
@@ -56,7 +56,9 @@ var ipcommand = {
 			}
 		} else if(event_type === 'neigh') {
 			sock_opts = {
-				subscriptions: 	  rt.make_group(rt.RTNLGRP_NEIGH)
+				subscriptions: 	  rt.make_group(rt.RTN_GRP_NEIGH)
+								| rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
+								| rt.make_group(rt.RTNLGRP_IPV6_NETCONF)
 			}
 		} else {
 			console.error("event type = '" + event_type + "'' : Not supported");

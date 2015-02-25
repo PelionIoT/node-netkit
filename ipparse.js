@@ -210,23 +210,26 @@ var ipparse = {
 		neigh.ifname = links[oif-1]['ifname'];
 		neigh.ifnum = oif;
 
+		// cache info and probes currently left out.
+		neigh.event = {};
+
 		var dst = ch['dst'];
 		if(dst) {
 			var addr_ar =  rt.bufToArray(ch['dst'], 0, ch['dst'].length);
 			var addr = nativelib.fromAddress(addr_ar, payload['_family']);
-			neigh.destination = addr['address'];
+			neigh.event.destination = addr['address'];
 		}
 
 		var lladdr = ch['lladdr'];
 		if(lladdr) {
-			neigh.lladdr = ipparse.getBufferAsHexAddr(lladdr);
+			neigh.event.lladdr = ipparse.getBufferAsHexAddr(lladdr);
 		}
 
-		neigh.state = state;
+		neigh.event.state = state;
 
 		var flags = payload['_flags'];
 		if(flags) {
-			neigh.flags = ipparse.getFlags(ipparse.neigh_flags,payload['_flags']);
+			neigh.event.flags = ipparse.getFlags(ipparse.neigh_flags,payload['_flags']);
 		}
 
 		return neigh;

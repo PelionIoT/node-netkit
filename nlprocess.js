@@ -42,17 +42,16 @@ nlprocess = {
 
 		sock.create(sock_opts,function(err) {
 			if(err) {
-				cb("socket.create() Error: " + util.inspect(err));
+				cb(new Error("socket.create() Error: " + util.inspect(err)));
 				return;
 			} else {
 				nl.sendConnectorMsg(sock,function(err,bufs){
 					if(err) {
 						util.inspect(err);
 					} else {
-						console.dir(bufs);
 						sock.onRecv(function(err,bufs) {
 							if(err) {
-								cb("ERROR: ** Bad **");
+								cb(new Error("onRecv() Error: " + util.inspect(err)));
 							} else {
 								var result = 
 									nlprocess.processProcEvent(bufs[0]);
@@ -66,13 +65,15 @@ nlprocess = {
 		});
 	},
 
+
+	// See struct proc_event in /linux/include/uapi/linux/cn_proc.h
 	processProcEvent: function(buf) {
-		// Take out the nl header and cn hdr to get to the cn data
+		// Slice out the nl header and cn hdr to get to the cn data
 		buf = buf.slice(36, buf.length-1);
 		var w = buf.readUInt32LE(0,4);
 		var ev = {};
 
-		console.log('what=' + w);
+		//console.log('what=' + w);
 		//console.dir(buf);
 		switch(w) {
 			case nlprocess.PROC_EVENT_FORK:
@@ -110,7 +111,7 @@ nlprocess = {
 				return ev;
 				break;
 			default:
-				console.log("default");
+				//console.log("default");
 				return; 
 		}
 	},

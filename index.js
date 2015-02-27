@@ -27,6 +27,7 @@ var util = require('util');
 var net = require('net');
 
 var ipcommands = require('./ipcommand.js');
+var nlprocess = require('./nlprocess.js');
 
 // Extension object technique. Let's us build part of the native prototype in JS. 
 // The native library will put all properties of this object into it's prototype.
@@ -167,6 +168,8 @@ var boundGetAddresses = ipcommands.getAddresses;
 boundGetAddresses.bind(this);
 var boundIPv4Neighbor = ipcommands.neighbor;
 boundIPv4Neighbor.bind(this);
+var boundOnProcessChange = nlprocess.onProcessChange;
+boundOnProcessChange.bind(this);
 
 var nk = {
 	packTest: nativelib.packTest, // a test
@@ -199,6 +202,7 @@ var nk = {
 	getLinks: boundGetLinks,
 	getAddresses: boundGetAddresses,
 	ipv4Neighbor: boundIPv4Neighbor,
+	onProcessChange: boundOnProcessChange,
 
 	assignDbgCB: function(func) {
 		dbg = func;

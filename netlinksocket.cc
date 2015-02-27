@@ -439,7 +439,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 		int alloc_size = sizeof(struct iovec) * req->send_queue.remaining();
 		struct iovec *iov_array = (struct iovec *) malloc(alloc_size);
 		memset(iov_array,0,alloc_size);
-		int x = 0;
+		int x = 0, groups = 0;
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc>::iter iter;
 		req->send_queue.startIter(iter);
 		req->first_seq = req->self->seq;
@@ -450,6 +450,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 				// 	AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
 				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = req->self->seq;  // update sequence number
 				// other fields are handled in node.js...
+				groups = req->self->addr_local.nl_groups;
 				req->last_seq = req->self->seq;
 				req->self->seq++;
 				iov_array[x].iov_base = buf;
@@ -472,12 +473,12 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 			memset(&nladdr, 0, sizeof(nladdr));
 			nladdr.nl_family = AF_NETLINK;
 			nladdr.nl_pid = 0;
-			nladdr.nl_groups = 0;
+			nladdr.nl_groups = groups;
 
 			msg.msg_name = &nladdr;
 			msg.msg_namelen = sizeof(nladdr);
 			msg.msg_iov = iov_array;
-			msg.msg_iovlen = 1; // array length
+			msg.msg_iovlen = x; // array length
 
 			int ret = sendmsg(req->self->fd, &msg, 0);
 
@@ -509,7 +510,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	memset(&nladdr, 0, sizeof(nladdr));
 	nladdr.nl_family = AF_NETLINK;
 	nladdr.nl_pid = 0;
-	nladdr.nl_groups = 0;
+	nladdr.nl_groups = req->self->addr_local.nl_groups;
 
 	struct iovec *iov_array = (struct iovec *) malloc(msg.msg_iovlen); // does msghdr free iovec?
 	memset(iov_array,0,msg.msg_iovlen);

@@ -439,7 +439,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 		int alloc_size = sizeof(struct iovec) * req->send_queue.remaining();
 		struct iovec *iov_array = (struct iovec *) malloc(alloc_size);
 		memset(iov_array,0,alloc_size);
-		int x = 0;
+		int x = 0, groups = 0;
 		TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc>::iter iter;
 		req->send_queue.startIter(iter);
 		req->first_seq = req->self->seq;
@@ -450,6 +450,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 				// 	AS_GENERIC_NLM(buf)->hdr.nlmsg_flags |= NLM_F_ACK;
 				AS_GENERIC_NLM(buf)->hdr.nlmsg_seq = req->self->seq;  // update sequence number
 				// other fields are handled in node.js...
+				groups = req->self->addr_local.nl_groups;
 				req->last_seq = req->self->seq;
 				req->self->seq++;
 				iov_array[x].iov_base = buf;
@@ -472,12 +473,12 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 			memset(&nladdr, 0, sizeof(nladdr));
 			nladdr.nl_family = AF_NETLINK;
 			nladdr.nl_pid = 0;
-			nladdr.nl_groups = 0;
+			nladdr.nl_groups = groups;
 
 			msg.msg_name = &nladdr;
 			msg.msg_namelen = sizeof(nladdr);
 			msg.msg_iov = iov_array;
-			msg.msg_iovlen = 1; // array length
+			msg.msg_iovlen = x; // array length
 
 			int ret = sendmsg(req->self->fd, &msg, 0);
 
@@ -509,7 +510,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 	memset(&nladdr, 0, sizeof(nladdr));
 	nladdr.nl_family = AF_NETLINK;
 	nladdr.nl_pid = 0;
-	nladdr.nl_groups = 0;
+	nladdr.nl_groups = req->self->addr_local.nl_groups;
 
 	struct iovec *iov_array = (struct iovec *) malloc(msg.msg_iovlen); // does msghdr free iovec?
 	memset(iov_array,0,msg.msg_iovlen);
@@ -543,15 +544,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 
 	int ret = recvmsg(req->self->fd, &msg, 0);
 	free(iov_array);
-
 	if(ret == 0) {
 		// No data no error
 		return false;
 	} else if(ret < 0) {
-		if(mode == NetlinkTypes::SOCKET_NONBLOCKING && errno == EWOULDBLOCK)
+		if(errno == EWOULDBLOCK || errno == EAGAIN)
 			return false; // done receiving non-blocking socket
-		if (errno == EINTR || errno == EAGAIN )
-			return true;
 		ERROR_OUT("Error on recvmsg(): %d\n", ret);
 		req->err.setError(errno);
 		return false;
@@ -563,7 +561,8 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		while(ret >= sizeof(struct nlmsghdr))
 		{
 			int nlmsghdr_length = nlhdr->nlmsg_len;
-			if((nlmsghdr_length - sizeof(struct nlmsghdr)) < 0 || nlmsghdr_length > ret) {
+			int msglen = nlmsghdr_length - sizeof(struct nlmsghdr);
+			if(msglen < 0 || nlmsghdr_length > ret) {
 				
 				ERROR_OUT("Truncated recvmsg()\n");
 				req->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
@@ -578,11 +577,20 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
+
 				if(nlhdr->nlmsg_type == NLMSG_ERROR) {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();
-					replyBuf->iserr = true;
 					replyBuf->malloc(nlmsghdr_length);
 					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
+
+					struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
+					if (msglen < sizeof(struct nlmsgerr)) {
+						req->err.setError(_net::OTHER_ERROR, "Netlink ERROR truncated");
+						replyBuf->iserr = true;
+					} else if(err->error) {
+						req->err.setError(_net::OTHER_ERROR, strerror(-err->error));
+						replyBuf->iserr = true;
+					}
 				} else {
 					reqWrapper *replyBuf = req->reply_queue.addEmpty();
 					replyBuf->malloc(nlhdr->nlmsg_len);
@@ -593,7 +601,8 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
 
-		return false;
+		if(mode == NetlinkTypes::SOCKET_BLOCKING)
+			return true;
 	}
 }
 

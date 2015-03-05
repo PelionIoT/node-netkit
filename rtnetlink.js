@@ -4,7 +4,7 @@ var bufferpack = require('./libs/bufferpack.js');
 
 // for documentation see: /usr/include/linux/neighbor.h
 var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)";
- 
+
 // for documentation see: /usr/include/linux/rtnetlink.h:~175
 var rtmsg_fmt = "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 
@@ -54,7 +54,7 @@ var link_info_attr_name_map = [
 	"carrier",
 	"phys_port_id",
 	"carrier_changes"
-];	
+];
 
 var link_attributes = {
 		IFLA_UNSPEC:			0,
@@ -176,7 +176,7 @@ var neigh_info_attr_name_map = [
 
 var neigh_attributes = {
 	NDA_UNSPEC: 0,
-	NDA_DST: 1, 
+	NDA_DST: 1,
 	NDA_LLADDR: 2,
 	NDA_CACHEINFO: 3,
 	NDA_PROBES: 4,
@@ -189,62 +189,62 @@ var neigh_attributes = {
 
 var payload_sizes = [
 
-	16,	//RTM_NEWLINK: 
-	16,	//RTM_DELLINK: 
-	16,	//RTM_GETLINK: 
-	16,	//RTM_SETLINK: 
-	8,	//RTM_NEWADDR: 
-	8,	//RTM_DELADDR: 
-	8,	//RTM_GETADDR: 
-	12,	//RTM_NEWROUTE: 
-	12,	//RTM_DELROUTE: 
-	12,	//RTM_GETROUTE: 
-	12,	//RTM_NEWNEIGH: 
-	12,	//RTM_DELNEIGH: 
-	12,	//RTM_GETNEIGH: 
+	16,	//RTM_NEWLINK:
+	16,	//RTM_DELLINK:
+	16,	//RTM_GETLINK:
+	16,	//RTM_SETLINK:
+	8,	//RTM_NEWADDR:
+	8,	//RTM_DELADDR:
+	8,	//RTM_GETADDR:
+	12,	//RTM_NEWROUTE:
+	12,	//RTM_DELROUTE:
+	12,	//RTM_GETROUTE:
+	12,	//RTM_NEWNEIGH:
+	12,	//RTM_DELNEIGH:
+	12,	//RTM_GETNEIGH:
 
 	// not confirmed the rest
-	8,	//RTM_NEWRULE: 
-	8,	//RTM_DELRULE: 
-	8,	//RTM_GETRULE: 
-	8,	//RTM_NEWQDISC: 
-	8,	//RTM_DELQDISC: 
-	8,	//RTM_GETQDISC: 
-	8,	//RTM_NEWTCLASS: 
-	8,	//RTM_DELTCLASS: 
-	8,	//RTM_GETTCLASS: 
-	8,	//RTM_NEWTFILTER: 
-	8,	//RTM_DELTFILTER: 
-	8,	//RTM_GETTFILTER: 
-	8,	//RTM_NEWACTION: 
-	8,	//RTM_DELACTION: 
-	8,	//RTM_GETACTION: 
-	8,	//RTM_NEWPREFIX: 
-	8,	//RTM_GETMULTICAST: 
-	8,	//RTM_GETANYCAST: 
-	8,	//RTM_NEWNEIGHTBL: 
-	8,	//RTM_GETNEIGHTBL: 
-	8,	//RTM_SETNEIGHTBL: 
-	8,	//RTM_NEWNDUSEROPT: 
-	8,	//RTM_NEWADDRLABEL: 
-	8,	//RTM_DELADDRLABEL: 
-	8,	//RTM_GETADDRLABEL: 
-	8,	//RTM_GETDCB: 
-	8,	//RTM_SETDCB: 
-	8,	//RTM_NEWNETCONF: 
-	8,	//RTM_GETNETCONF: 
-	8,	//RTM_NEWMDB: 
-	8,	//RTM_DELMDB: 
-	8	//RTM_GETMDB: 
+	8,	//RTM_NEWRULE:
+	8,	//RTM_DELRULE:
+	8,	//RTM_GETRULE:
+	8,	//RTM_NEWQDISC:
+	8,	//RTM_DELQDISC:
+	8,	//RTM_GETQDISC:
+	8,	//RTM_NEWTCLASS:
+	8,	//RTM_DELTCLASS:
+	8,	//RTM_GETTCLASS:
+	8,	//RTM_NEWTFILTER:
+	8,	//RTM_DELTFILTER:
+	8,	//RTM_GETTFILTER:
+	8,	//RTM_NEWACTION:
+	8,	//RTM_DELACTION:
+	8,	//RTM_GETACTION:
+	8,	//RTM_NEWPREFIX:
+	8,	//RTM_GETMULTICAST:
+	8,	//RTM_GETANYCAST:
+	8,	//RTM_NEWNEIGHTBL:
+	8,	//RTM_GETNEIGHTBL:
+	8,	//RTM_SETNEIGHTBL:
+	8,	//RTM_NEWNDUSEROPT:
+	8,	//RTM_NEWADDRLABEL:
+	8,	//RTM_DELADDRLABEL:
+	8,	//RTM_GETADDRLABEL:
+	8,	//RTM_GETDCB:
+	8,	//RTM_SETDCB:
+	8,	//RTM_NEWNETCONF:
+	8,	//RTM_GETNETCONF:
+	8,	//RTM_NEWMDB:
+	8,	//RTM_DELMDB:
+	8	//RTM_GETMDB:
 ];
-	
+
 var rtm_types_name_map = [
 	"newLink",
 	"delLink",
 	"getLink",
 	"setLink",
 	"newAddress",
-	"delAddress", 
+	"delAddress",
 	"getAddress",
 	"undefined",
 	"newRoute",
@@ -281,7 +281,7 @@ var rtm_types_name_map = [
 	"undefined",
 	"undefined",
 	"undefined",
-	"RTM_GETMULTICAST", 
+	"RTM_GETMULTICAST",
 	"undefined",
 	"undefined",
 	"undefined",
@@ -303,7 +303,7 @@ var rtm_types_name_map = [
 	"undefined",
 	"RTM_GETDCB",
 	"RTM_SETDCB",
-	"RTM_NEWNETCONF", 
+	"RTM_NEWNETCONF",
 	"undefined",
 	"RTM_GETNETCONF",
 	"undefined",
@@ -422,7 +422,7 @@ module.exports = {
 	},
 
 		NLMSG_MULTI: 2,
-		NLMSG_DONE: 3, 
+		NLMSG_DONE: 3,
 
 		/** message types. see linux/rtnetlink.h */
 		RTM_BASE:       16,
@@ -481,7 +481,7 @@ module.exports = {
 		// fam,ifindex,state,flags,typ
 		var o = bufferpack.metaObject(ndmsg_fmt);
 		o._family = 0;
-		o._pad1 = 0; 
+		o._pad1 = 0;
 		o._pad2 = 0;
 		o._ifindex = 0;
 		o._state = 0;
@@ -496,7 +496,7 @@ module.exports = {
 		var o = bufferpack.metaObject(ifinfomsg_fmt);
 		o._family = 0;
 		o._if_pad = 0;
-		o._if_type = 0; 
+		o._if_type = 0;
 		o._if_index = 0;
 		o._if_flags = 0;
 		o._if_change = 0;
@@ -550,8 +550,8 @@ module.exports = {
 	parseRtattributes: function(data, opts) {
 		var ret = {};
 
-		if(data && !Buffer.isBuffer(data)) {
-			console.error("ERROR: ** Bad parameters to parseRtattributes() **");
+		if(!data || !Buffer.isBuffer(data)) {
+			console.error("ERROR: ** Bad parameters to parseRtattributes(" + data + ") **");
 		} else {
 			var total_len = data.readUInt32LE(0);
 			var type = data.readUInt16LE(4);
@@ -608,7 +608,7 @@ module.exports = {
 				index += (len + pad);
 			};
 			ret['payload'] = payload;
-			ret['operation'] = this.getRtmTypeName(type); 
+			ret['operation'] = this.getRtmTypeName(type);
 		}
 		return ret;
 	},

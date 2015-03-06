@@ -550,15 +550,19 @@ module.exports = {
 	parseRtattributes: function(data, opts) {
 		var ret = {};
 
-		if(!data || !Buffer.isBuffer(data)) {
-			console.error("ERROR: ** Bad parameters to parseRtattributes(" + data + ") **");
+		if(!data || !Buffer.isBuffer(data) || data.length < 16) {
+			return ret;
 		} else {
 			var total_len = data.readUInt32LE(0);
-			var type = data.readUInt16LE(4);
-			if(type == module.exports.NLMSG_DONE) {
+			if(total_len != data.length) {
 				return ret;
 			}
 
+			var type = data.readUInt16LE(4);
+			//console.error("type = " + type);
+			if(type === module.exports.NLMSG_DONE) {
+				return ret;
+			}
 			var index = 16; // start after the msghdr
 
 			var keys, payload;
@@ -578,6 +582,9 @@ module.exports = {
 			    //console.log('NEIGH');
 				keys = neigh_info_attr_name_map
 				payload = bufferpack.unpack(ndmsg_fmt,data,index)
+			}else {
+				console.error("ERROR: ** Unsupported message type to parseRtattributes(type=" + type + ") **");
+				return ret;
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
@@ -593,19 +600,22 @@ module.exports = {
 				index += 4; // index to the data
 				var value;
 
-				var key = keys[attr_type];
-				var regExNm = /name|label/;
-				if(regExNm.test(key)) {
-					ret[key] = data.toString('ascii',index,index + len-1);
-				} else {
-					ret[key] = data.slice(index, index + len);// bytes;
-				}
-				// console.log('added [' + key + '] = ' + ret[key])
+				if(0 <= attr_type && attr_type < keys.length)
+				{
+					var key = keys[attr_type];
+					var regExNm = /name|label/;
+					if(regExNm.test(key)) {
+						ret[key] = data.toString('ascii',index,index + len-1);
+					} else {
+						ret[key] = data.slice(index, index + len);// bytes;
+					}
+					// console.log('added [' + key + '] = ' + ret[key])
 
-				// get to next attribute padding to mod 4
-		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-		        // console.log("pad: " + pad);
-				index += (len + pad);
+					// get to next attribute padding to mod 4
+			        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+			        // console.log("pad: " + pad);
+					index += (len + pad);
+				}
 			};
 			ret['payload'] = payload;
 			ret['operation'] = this.getRtmTypeName(type);

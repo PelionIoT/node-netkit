@@ -3,11 +3,10 @@
 //
 // tuntap native interface
 
-
 //var build_opts = require('build_opts.js');
 
-var build_opts = { 
-	debug: 1 
+var build_opts = {
+	debug: 1
 };
 var colors = require('./colors.js');
 var bufferpack = require('./libs/bufferpack.js');
@@ -29,13 +28,13 @@ var net = require('net');
 var ipcommands = require('./ipcommand.js');
 var nlprocess = require('./nlprocess.js');
 
-// Extension object technique. Let's us build part of the native prototype in JS. 
+// Extension object technique. Let's us build part of the native prototype in JS.
 // The native library will put all properties of this object into it's prototype.
 var extendthis = {
 	// defind in native:
 	// fd: file descriptor of tunnel
 	// ifname: interface name
-	// flags: flags ofr 
+	// flags: flags ofr
 
 	stream: null,
 
@@ -43,7 +42,7 @@ var extendthis = {
 		dbg("--------EXTRA----------");
 		console.dir(this);
 	},
-	
+
 	open: function() {
 		dbg("open(): " + util.inspect(this));
 		var ret = this._open();
@@ -52,7 +51,7 @@ var extendthis = {
 			return false;
 		} else {
 			if(!this.stream) {
-	
+
 				this.stream = new TunInterfaceStream(this,{});
 
 				this._isReading = true;
@@ -79,7 +78,7 @@ var extendthis = {
 	// 		err("Socket for TUN device not created. Did you call open()?");
 	// 	}
 	// },
-	
+
 	// write: function() {
 	// 	if(this.socket) {
 	// 		return this.socket.apply(this.socket,arguments);
@@ -117,7 +116,7 @@ TunInterfaceStream.prototype._doRead = function(size) {
 //	console.dir(this);
 	this.IF._getData(function(buf,readsize,error){
 		if(buf && readsize > 0) {
-			self.push(buf.slice(0,readsize));			
+			self.push(buf.slice(0,readsize));
 		}
 		if(error && error.errno > 0) {
 			err("Error ocurred: " + JSON.stringify(error));
@@ -140,7 +139,7 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 			callback();
 		}, function(){
 			callback(err);
-		});		
+		});
 	} else {
 		if(Buffer.isBuffer(chunk)) {
 			dbg(util.inspect(chunk));
@@ -157,7 +156,7 @@ TunInterfaceStream.prototype._write = function(chunk,encoding,callback) {
 };
 
 
-// ip commands 
+// ip commands
 var boundOnNetworkChange = ipcommands.onNetworkChange;
 boundOnNetworkChange.bind(this);
 var boundGetRoutes = ipcommands.getRoutes;
@@ -179,14 +178,14 @@ var nk = {
 	errorFromErrno: function(errno) {
 		var ret = nativelib.errorFromErrno(errno); // returns a Error()
 		// do a reverse lookup to add 'code' in also - which is like the standard node.js errors
-		ret.code = this.ERR[ret.errno];  
+		ret.code = this.ERR[ret.errno];
 		return ret;
 	},
 	newNetlinkSocket: nativelib.newNetlinkSocket,
 	newTunInterfaceRaw: nativelib.newTunInterface,
 	newTapInterfaceRaw: function() {
 		return nativelib.newTunInterface({tap:true});
-	},	
+	},
 	assignAddress: nativelib.assignAddress,
 	assignRoute: nativelib.assignRoute,
 	initIfFlags: nativelib.initIfFlags,
@@ -331,7 +330,7 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	nd_msg._state = rt.NUD_PERMANENT;
 	nd_msg._flags = 0;
 	//var rt_msg = nk.rt.buildRtmsg();
-	
+
 //	bufs.push(nl_hdr.pack());
 	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
 	bufs.push(nd_msg.pack());
@@ -368,7 +367,7 @@ nk.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 			var macbuf = lladdr;
 		else {
 			cb(new Error("bad parameters."));
-			return;			
+			return;
 		}
 		var rt_attr = nk.rt.buildRtattrBuf(nk.rt.NDA_LLADDR,macbuf);
 		dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));

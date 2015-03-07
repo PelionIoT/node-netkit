@@ -8,7 +8,7 @@
 
 #include "netlinksocket.h"
 #include "error-common.h"
-   
+
 #include <sys/uio.h>
 
 Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
@@ -337,7 +337,7 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 
 /**
  * Listen for a message via the given socket. Reply callback will be called
- * if a reply is recieved(error or no error). Message listening will terminate 
+ * if a reply is recieved(error or no error). Message listening will terminate
  * when the calling scope is destroyed.
  * @method onRecv
  * @param replycb {Function} the reply callback. cb(err,bufs)
@@ -375,12 +375,12 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 	} else {
 		return ThrowException(Exception::TypeError(
 			String::New("onRecv() -> bad parameters. Callback required.")));
-	}	
+	}
 	return scope.Close(Undefined());
 }
 
 /**
- * Closes the 
+ * Closes the
  * @method stopRecv
  *
  */
@@ -404,7 +404,7 @@ Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
 		}
 	} else {
 		return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. sockMsgReq Object and callback required.")));
-	}	
+	}
 	return scope.Close(Undefined());
 }
 
@@ -488,8 +488,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 			} else if(!req->self->listening) {
 				// No uv_poll async listen configured, enter receive loop
 				int receiving = 1;
-				while(receiving) {					
-					receiving = do_recvmsg(req,NetlinkTypes::SOCKET_BLOCKING); //blocking read on req 
+				while(receiving) {
+					receiving = do_recvmsg(req,NetlinkTypes::SOCKET_BLOCKING); //blocking read on req
 				}
 			}
 		} else {
@@ -554,7 +554,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		req->err.setError(errno);
 		return false;
 	} else if (ret > sizeof(struct nlmsghdr)){
-		// parse the read for multiple netlink messages, otherwise only the first message 
+		// parse the read for multiple netlink messages, otherwise only the first message
 		// will get processed if there are multiple messages in the read.
 
 		struct nlmsghdr *nlhdr = (struct nlmsghdr *) req->recvBuffer;
@@ -563,7 +563,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			int nlmsghdr_length = nlhdr->nlmsg_len;
 			int msglen = nlmsghdr_length - sizeof(struct nlmsghdr);
 			if(msglen < 0 || nlmsghdr_length > ret) {
-				
+
 				ERROR_OUT("Truncated recvmsg()\n");
 				req->err.setError(_net::OTHER_ERROR,"Truncated recvmsg() on NETLINK socket.");
 				return false;
@@ -573,7 +573,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			// to what we sent
 			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
 					nlhdr->nlmsg_seq > req->last_seq) ) {
-				DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
+				// DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
@@ -633,13 +633,13 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
-	
+
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
 	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
 	Handle<Value> v8err;
 
-	 if(!job->self->listening) 
+	 if(!job->self->listening)
 		job->self->Unref();
 
 	Handle<Boolean> fals = Boolean::New(false);
@@ -691,7 +691,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 	}
 
-	 if(!job->self->listening) 
+	 if(!job->self->listening)
 		job->reqUnref(); // we are done with the request object, let the GC handle it
 }
 
@@ -700,12 +700,12 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 //	requestWrapper definitiions
 //
 // ------------------------------------------------------------------------------
-NetlinkSocket::reqWrapper::reqWrapper() 
+NetlinkSocket::reqWrapper::reqWrapper()
 	: buffer()
 	, rawMemory(NULL)
 	, ownMemory(false)
 	, len(0)
-	, iserr(false) 
+	, iserr(false)
 { }
 
 NetlinkSocket::reqWrapper::~reqWrapper() {
@@ -715,8 +715,8 @@ NetlinkSocket::reqWrapper::~reqWrapper() {
 }
 
 
-NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) {  
-	this->buffer = o.buffer;                    
+NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) {
+	this->buffer = o.buffer;
 	o.buffer.Clear();
 	if(this->rawMemory && this->ownMemory) free(this->rawMemory);
 	this->rawMemory = o.rawMemory; o.rawMemory = NULL;
@@ -726,10 +726,10 @@ NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) 
 	return *this;
 }
 
-void NetlinkSocket::reqWrapper::AttachBuffer(Local<Object> b) { 
+void NetlinkSocket::reqWrapper::AttachBuffer(Local<Object> b) {
 	// must be called in v8 thread
 	// keep the Buffer persistent until the write is done...
-	buffer = Persistent<Object>::New(b); 
+	buffer = Persistent<Object>::New(b);
 	if(rawMemory && ownMemory) free(rawMemory); rawMemory = NULL; ownMemory = false;
 	rawMemory = node::Buffer::Data(b);
 	len = node::Buffer::Length(b);

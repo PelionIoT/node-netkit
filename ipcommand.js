@@ -23,8 +23,8 @@ var ipcommand = {
 		var sock_opts;
 		if(!event_type || event_type === 'all') {
 			sock_opts = {
-				subscriptions: 	 
-							
+				subscriptions:
+
 								  rt.make_group(rt.RTNLGRP_LINK)
 
 								| rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
@@ -62,7 +62,7 @@ var ipcommand = {
 			}
 		} else {
 			console.error("event type = '" + event_type + "'' : Not supported");
-			return;	
+			return;
 		}
 
 		sock.create(sock_opts,function(err) {
@@ -159,7 +159,7 @@ var ipcommand = {
 			}
 		} else {
 			console.error("event type = '" + operation + "'' : Not supported");
-			return;	
+			return;
 		}
 
 		var sock = netkitObject.newNetlinkSocket();
@@ -196,7 +196,7 @@ var ipcommand = {
 			type: 	rt.RTM_GETROUTE,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
-		ipcommand.sendInquiry(netkitObject,filters,getroute_command_opts,cb); 
+		ipcommand.sendInquiry(netkitObject,filters,getroute_command_opts,cb);
 	},
 
 	getAddresses: function(filter_spec,cb) {
@@ -210,7 +210,7 @@ var ipcommand = {
 			type: 	rt.RTM_GETROUTE,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
-		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,cb); 
+		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,cb);
 	},
 
 	getLinks: function(filter_spec,cb) {
@@ -220,7 +220,7 @@ var ipcommand = {
 		}
 
 		var netkitObject = this;
-		ipcommand.sendInquiry(netkitObject,filters,null,cb); 
+		ipcommand.sendInquiry(netkitObject,filters,null,cb);
 	},
 
 

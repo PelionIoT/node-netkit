@@ -16,30 +16,31 @@ exports.testBogusInput = function(test){
 };
 
 exports.testMessageTypes = function(test){
-	test.deepEqual(
-		rt.parseRtattributes(Buffer([0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
-		{},
-		"zero length link message should result in empty object" );
+	test.doesNotThrow(function() {
+		test.deepEqual(
+			rt.parseRtattributes(Buffer([0,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
+			{},
+			"zero length link message should result in empty object" );
 
-	test.deepEqual(
-		rt.parseRtattributes(Buffer([255,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
-		{},
-		"full message size but no attributes should result in empty object" );
+		test.deepEqual(
+			rt.parseRtattributes(Buffer([255,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
+			{},
+			"full message size but no attributes should result in empty object" );
 
-	test.deepEqual(
-		rt.parseRtattributes(Buffer([22,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
-		{ payload: undefined, operation: 'newLink' },
-		"full message size but no attributes should result in empty link object" );
+		test.deepEqual(
+			rt.parseRtattributes(Buffer([22,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
+			{ payload: undefined, operation: 'newLink' },
+			"full message size but no attributes should result in empty link object" );
 
-	test.deepEqual(
-		rt.parseRtattributes(Buffer([22,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
-		{},
-		"bad type result in empty object" );
+		test.deepEqual(
+			rt.parseRtattributes(Buffer([22,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
+			{},
+			"bad type result in empty object" );
 
-	test.deepEqual(
-		rt.parseRtattributes(Buffer([22,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0])),
-		{},
-		"bad type result in empty object" );
-
+		test.deepEqual(
+			rt.parseRtattributes(Buffer([22,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0])),
+			{},
+			"bad type result in empty object" );
+	});
     test.done();
 };

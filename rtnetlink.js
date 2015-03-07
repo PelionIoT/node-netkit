@@ -583,7 +583,7 @@ module.exports = {
 				keys = neigh_info_attr_name_map
 				payload = bufferpack.unpack(ndmsg_fmt,data,index)
 			}else {
-				console.error("ERROR: ** Unsupported message type to parseRtattributes(type=" + type + ") **");
+				console.warn("WARNING: ** Unsupported message type to parseRtattributes(type=" + type + ") **");
 				return ret;
 			}
 

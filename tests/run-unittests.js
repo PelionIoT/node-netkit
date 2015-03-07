@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#!/usr/bin/env nodejs
+
 try {
     var reporter = require('nodeunit').reporters.default;
 }
@@ -12,5 +13,6 @@ catch(e) {
     process.exit();
 }
 
-process.chdir(__dirname);
-reporter.run(['./unit/test-rtnetlink.js']);
+process.chdir(__dirname + '/../');
+reporter.run(['./tests/unit/test-rtnetlink.js']);
+reporter.run(['./tests/unit/test-ipparse.js']);

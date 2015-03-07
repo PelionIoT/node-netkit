@@ -125,7 +125,6 @@ var ipparse = {
 			} else if( Object.prototype.toString.call( filters ) === '[object Array]' ) {
 				filters_array = filters;
 			} else if(Object.prototype.toString.call( filters ) !== '[object]'){
-				console.log("array");
 				filters_array.push(filters);
 			}
 

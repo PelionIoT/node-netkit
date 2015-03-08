@@ -118,6 +118,8 @@ var ipparse = {
 			//console.log("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 			var data = boundApply(at,links);
+			if(data === undefined)
+				return data;
 
 			var filters_array = [];
 			if(typeof( filters ) === 'undefined'){

@@ -109,7 +109,7 @@ var ipparse = {
 	},
 
 	parseAttributes: function(filters,links,buf) {
-		// console.log("data --> " + buf.toJSON());
+		//console.log("data --> " + buf.toJSON());
 		// console.log("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
 		if(typeof(at['operation']) !== 'undefined') {
@@ -118,8 +118,9 @@ var ipparse = {
 			//console.log("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 			var data = boundApply(at,links);
-			if(data === undefined)
-				return data;
+			 if(data === undefined) {
+			 	return data;
+			 }
 
 			var filters_array = [];
 			if(typeof( filters ) === 'undefined'){
@@ -130,7 +131,7 @@ var ipparse = {
 				filters_array.push(filters);
 			}
 
-			// Assume
+			// Assume no matches will happen
 			var applies = false;
 
 			if(filters_array.length == 0) {

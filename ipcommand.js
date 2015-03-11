@@ -1,17 +1,7 @@
-var rt = require('./rtnetlink.js');
-var nl = require('./netlink.js')
+var rt = require('./nl/rtnetlink.js');
+var nl = require('./nl/netlink.js')
 var util = require('util');
 var ipparse = require('./ipparse.js');
-
-var nativelib = null;
-try {
-	nativelib = require('./build/Release/netkit.node');
-} catch(e) {
-	if(e.code == 'MODULE_NOT_FOUND')
-		nativelib = require('./build/Debug/netkit.node');
-	else
-		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
-}
 
 var ipcommand = {
 

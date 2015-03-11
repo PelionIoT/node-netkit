@@ -1,14 +1,20 @@
-var rt = require('./rtnetlink.js')
+var cmn = require('../common.js');
+var rt = require('../nl/rtnetlink.js')
+
 var util = require('util');
-var bufferpack = require('./libs/bufferpack.js');
-var colors = require('./colors.js');
-var netutils = require('./netutils.js');
+
+var asHexBuffer = cmn.asHexBuffer;
+var dbg = cmn.dbg;
+var err = cmn.err;
+var netutils = cmn.netutils;
+var bufferpack = cmn.bufferpack;
+
 
 // for documentation see: /usr/include/linux/netlink.h
 // 	__u32		nlmsg_len;	Length of message including header
 //	__u16		nlmsg_type;	Message content
 //	__u16		nlmsg_flags; Additional flags
-//	__u32		nlmsg_seq;	 Sequence number 
+//	__u32		nlmsg_seq;	 Sequence number
 //	__u32		nlmsg_pid;	Sending process port ID
 var nlmsghdr_fmt = "<I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
@@ -20,32 +26,16 @@ var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 // __u32 seq;
 // __u32 ack;
 
-// __u16 len;		 Length of the following data 
+// __u16 len;		 Length of the following data
 // __u16 flags;
 // __u8 data[0];
-var cn_msg_fmt = "<I(_idx)I(_val)I(_seq)I(_ack)H(_len)H(_flags)"; 
-
-var asHexBuffer = function(b) {
-	return b.toString('hex');
-}
-
-var dbg = function() {
-	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
-}
-
-var err = function() {
-	console.log(colors.redFG('err: ') + colors.redFG.apply(undefined,arguments));
-}
-
-var asHexBuffer = function(b) {
-	return b.toString('hex');
-}
+var cn_msg_fmt = "<I(_idx)I(_val)I(_seq)I(_ack)H(_len)H(_flags)";
 
 nl = {
 
     // netlink message flags
 	// See: linux/netlink.h
-	
+
 	NLM_F_REQUEST:		0x0001,	/* It is request message. 	*/
 	NLM_F_MULTI:		0x0002,	/* Multipart message, terminated by NLMSG_DONE */
 	NLM_F_ACK:   		0x0004,	/* Reply with ack, with zero or error code */
@@ -76,7 +66,7 @@ nl = {
 	NETLINK_SELINUX:	7,	/* SELinux event notifications */
 	NETLINK_ISCSI:		8,	/* Open-iSCSI */
 	NETLINK_AUDIT:		9,	/* auditing */
-	NETLINK_FIB_LOOKUP:	10,	
+	NETLINK_FIB_LOOKUP:	10,
 	NETLINK_CONNECTOR:	11,
 	NETLINK_NETFILTER:	12,	/* netfilter subsystem */
 	NETLINK_IP6_FW:		13,
@@ -217,7 +207,7 @@ nl = {
 				info_msg._family |= opts['family'];
 			}
 
-		} 
+		}
 
 		var bufs = [];
 
@@ -266,7 +256,7 @@ nl = {
 				nl_hdr.family = opts['family'];
 				nd_msg._family |= opts['family'];
 			}
-		} 
+		}
 
 		var bufs = [];
 
@@ -304,7 +294,7 @@ nl = {
 				var macbuf = lladdr;
 			else {
 				cb(new Error("bad parameters."));
-				return;			
+				return;
 			}
 			var rt_attr = rt.buildRtattrBuf(rt.NDA_LLADDR,macbuf);
 			dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));

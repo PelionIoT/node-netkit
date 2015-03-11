@@ -19,12 +19,12 @@
         [
           "OS=='linux'", {
       "sources": [
-        "tuninterface.cc",
-        "network.cc",
-        "network-common.cc",
-        "netlinksocket.cc",
-        "interface_funcs.cc",
-        "error-common.cc"
+        "src/tuninterface.cc",
+        "src/network.cc",
+        "src/network-common.cc",
+        "src/netlinksocket.cc",
+        "src/interface_funcs.cc",
+        "src/error-common.cc"
       ],
 
       "include_dirs": [

@@ -1,4 +1,4 @@
-var nk = require('../index.js');
+var nk = require('../../index.js');
 var exec  = require('child_process').exec, child;
 
 var rfilter = { ifname: 'eth0', table: 'main' };
@@ -41,7 +41,7 @@ nk.getLinks(lfilter, function(links){
 	});
 });
 
-var afilter = { ifname: 'eth1' }; //, table: 'main' };
+var afilter = [{ ifname: 'eth1' },{ ifname: 'eth2' }]; //, table: 'main' };
 nk.getAddresses(afilter, function(addrs){
 	console.log('before addresses....')
 	console.dir(addrs);
@@ -88,7 +88,7 @@ nk.onNetworkChange("eth1", "route", function (data) {
 	console.dir(data);
 });
 
-nk.onNetworkChange("eth1", "neigh", function (data) {
+nk.onNetworkChange("eth2", "neigh", function (data) {
 	console.log("changed...");
 	console.dir(data);
 });

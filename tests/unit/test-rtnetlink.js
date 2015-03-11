@@ -1,4 +1,4 @@
-var rt = require('../../rtnetlink.js');
+var rt = require('../../nl/rtnetlink.js');
 
 exports.testBogusInput = function(test){
 	test.doesNotThrow(function() {

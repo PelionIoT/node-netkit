@@ -1,15 +1,5 @@
-var nl = require('./netlink.js')
-var bufferpack = require('./libs/bufferpack.js');
-
-var nativelib = null;
-try {
-	nativelib = require('./build/Release/netkit.node');
-} catch(e) {
-	if(e.code == 'MODULE_NOT_FOUND')
-		nativelib = require('./build/Debug/netkit.node');
-	else
-		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
-}
+var nl = require('./nl/netlink.js')
+var nativelib = require('./common.js').nativelib;
 
 nlprocess = {
 
@@ -53,7 +43,7 @@ nlprocess = {
 							if(err) {
 								cb(new Error("onRecv() Error: " + util.inspect(err)));
 							} else {
-								var result = 
+								var result =
 									nlprocess.processProcEvent(bufs[0]);
 								if(typeof(result) !== 'undefined')
 									cb(null, result);
@@ -112,7 +102,7 @@ nlprocess = {
 				break;
 			default:
 				//console.log("default");
-				return; 
+				return;
 		}
 	},
 };

@@ -1,4 +1,4 @@
-var nk = require('../index.js');
+var nk = require('../../index.js');
 var exec  = require('child_process').exec, child;
 var util = require('util');
 

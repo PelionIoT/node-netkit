@@ -1,14 +1,5 @@
-var rt = require('./rtnetlink.js');
-
-var nativelib = null;
-try {
-	nativelib = require('./build/Release/netkit.node');
-} catch(e) {
-	if(e.code == 'MODULE_NOT_FOUND')
-		nativelib = require('./build/Debug/netkit.node');
-	else
-		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
-}
+var rt = require('./nl/rtnetlink.js');
+var nativelib = require('./common.js').nativelib;
 
 var ipparse = {
 
@@ -131,6 +122,7 @@ var ipparse = {
 				filters_array.push(filters);
 			}
 
+			//console.dir(filters_array);
 			// Assume no matches will happen
 			var applies = false;
 
@@ -140,6 +132,7 @@ var ipparse = {
 				for(var f in filters_array) {
 					var object_match = true;
 					for(fkey in filters_array[f]) {
+						//console.log("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
 						if(typeof(data[fkey]) !== 'undefined') {
 							if(data.hasOwnProperty(fkey) && (data[fkey] !== filters_array[f][fkey])) {
 								object_match = false;
@@ -147,12 +140,14 @@ var ipparse = {
 							}
 						} else {
 							var ev = data['event'];
+							//console.log("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
 							if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
 								object_match = false;
 								break;
 							}
 						}
 					}
+					//console.log("object_match = " + object_match + " applies = " + applies);
 					applies |= object_match;
 				}
 			}

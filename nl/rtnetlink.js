@@ -1,5 +1,5 @@
 
-var bufferpack = require('./libs/bufferpack.js');
+var bufferpack = require('../libs/bufferpack.js');
 
 
 // for documentation see: /usr/include/linux/neighbor.h

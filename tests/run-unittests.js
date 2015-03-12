@@ -16,3 +16,4 @@ catch(e) {
 process.chdir(__dirname + '/../');
 reporter.run(['./tests/unit/test-rtnetlink.js']);
 reporter.run(['./tests/unit/test-ipparse.js']);
+reporter.run(['./tests/unit/test-nlprocess.js']);

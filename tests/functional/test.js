@@ -64,7 +64,7 @@ if(tun0.create()) {
 					[  // ipv6 routes: dest
 						{
 						  dest: "2003::/16",        // ip -6 route add 2003::/16 dev tun_test
-						  via_if: "tun_test",       // via the interface 'tun_test'
+						  via_if: tun0.ifname,       // via the interface 'tun_test'
 //						  via_network: "2001::/16",
 						  metric: 2400,
 						  flags: netkit.FLAGS.RT_MODIFIED | netkit.FLAGS.RT_DYNAMIC  // netkit.FLAGS.RT_GATEWAY |

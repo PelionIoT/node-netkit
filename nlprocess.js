@@ -36,7 +36,7 @@ nlprocess = {
 			} else {
 				nl.sendConnectorMsg(sock,function(err,bufs){
 					if(err) {
-						util.inspect(err);
+						cb( new Error("sendConnectorMsg() Error: " + util.inspect(err)));
 					} else {
 						sock.onRecv(function(err,bufs) {
 							if(err) {

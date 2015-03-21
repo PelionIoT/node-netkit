@@ -312,7 +312,7 @@ var rtm_types_name_map = [
 	"RTM_GETMDB"
 	];
 
-module.exports = {
+rt = {
 		AF_INET6: 10,
 		AF_INET: 2,
 
@@ -549,6 +549,7 @@ module.exports = {
 
 	parseRtattributes: function(data, opts) {
 		var ret = {};
+		//console.dir(data);
 
 		if(!data || !Buffer.isBuffer(data) || data.length < 16) {
 			return ret;
@@ -591,35 +592,45 @@ module.exports = {
 			index += payload_sizes[type - 16];
 
 			// console.log('start index = ' + index);
-			while(index < total_len) {
-				// console.log('index = ' + index);
-				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
-				var attr_type = data.readUInt16LE(index + 2);
-				//console.log('attr = ' + attr_type + ' len = ' + len);
+			ret = rt.parseAttrs(data, index, total_len, keys);
 
-				index += 4; // index to the data
-				var value;
-
-				if(0 <= attr_type && attr_type < keys.length)
-				{
-					var key = keys[attr_type];
-					var regExNm = /name|label/;
-					if(regExNm.test(key)) {
-						ret[key] = data.toString('ascii',index,index + len-1);
-					} else {
-						ret[key] = data.slice(index, index + len);// bytes;
-					}
-					// console.log('added [' + key + '] = ' + ret[key])
-
-					// get to next attribute padding to mod 4
-			        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-			        // console.log("pad: " + pad);
-					index += (len + pad);
-				}
-			};
 			ret['payload'] = payload;
 			ret['operation'] = this.getRtmTypeName(type);
 		}
+		return ret;
+	},
+
+	parseAttrs: function(data, attr_start, total_len, attr_map) {
+		var ret = {};
+		var index = attr_start;
+
+		while(index < total_len) {
+			console.log('index = ' + index);
+			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
+			var attr_type = data.readUInt16LE(index + 2);
+			console.log('attr = ' + attr_type + ' len = ' + len);
+
+			index += 4; // index to the data
+			var value;
+
+			if(0 <= attr_type && attr_type < attr_map.length)
+			{
+				var key = attr_map[attr_type];
+				var regExNm = /name|label/;
+				if(regExNm.test(key)) {
+					ret[key] = data.toString('ascii',index,index + len-1);
+				} else {
+					ret[key] = data.slice(index, index + len);// bytes;
+				}
+				// console.log('added [' + key + '] = ' + ret[key])
+
+				// get to next attribute padding to mod 4
+		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+		        // console.log("pad: " + pad);
+				index += (len + pad);
+			}
+		};
+
 		return ret;
 	},
 
@@ -634,3 +645,5 @@ module.exports = {
 		return bytes;
 	}
 };
+
+module.exports = rt;

@@ -1,5 +1,5 @@
 var cmn = require('../common.js');
-var rt = require('../nl/rtnetlink.js')
+var rtnetlink = require('../nl/rtnetlink.js')
 
 var util = require('util');
 
@@ -32,6 +32,8 @@ var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 var cn_msg_fmt = "<I(_idx)I(_val)I(_seq)I(_ack)H(_len)H(_flags)";
 
 nl = {
+
+	rt: rtnetlink,
 
     // netlink message flags
 	// See: linux/netlink.h

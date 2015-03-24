@@ -173,6 +173,157 @@ var ipcommand = {
 		});
 	},
 
+	address: function(operation,family,ifname,addr,label,cb) {
+		// console.log("operation = " + operation);
+
+		var netkitObject = this;
+		var opts;
+		var sock_opts = {};
+
+		var fam = rt.AF_INET
+
+		if(typeof(family) != 'undefined'){
+			if(family === 'inet') { fam = rt.AF_INET; }
+			else if(family === 'inet6') { fam = rt.AF_INET6; }
+			else {
+				cb(new Error("Error: address " + operation + " unrecognized family " + family));
+			}
+		}
+
+		if(typeof(ifname) === 'undefined' && operation !== 'show'){
+			cb(new Error("Error: address " + operation + " ifname is required"));
+			return;
+		}
+
+		var filters = {};
+		if(family) filters['family'] = family;
+		if(addr) filters['address'] = addr;
+		if(label) filters['label'] = label;
+		if(ifname) filters['ifname'] = ifname;
+
+		// console.dir(filters);
+
+		var sock = netkitObject.newNetlinkSocket();
+		sock.create(sock_opts,function(err) {
+			if(err) {
+				console.log("socket.create() Error: " + util.inspect(err));
+				cb(err);
+				return;
+			}
+		});
+
+		if(!operation || operation === 'show') {
+			var opts = {
+				type: 	rt.RTM_GETADDR,
+				flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH,
+				family: fam,
+				addr: addr,
+				ifname: ifname,
+				label: label
+			};
+			ipcommand.sendInquiry(netkitObject,filters,opts,cb);
+			return;
+		} else if(operation === 'add') {
+			if(typeof(addr) != 'undefined'){
+				cb(new Error("Error: address " + operation + " addr required"));
+			}
+
+			opts = {
+				type: rt.RTM_NEWADDR, // the command
+				flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
+				family: fam,
+				addr: addr,
+				ifname: ifname,
+				label: label
+			}
+		} else if(operation === 'change') {
+			if(typeof(addr) != 'undefined'){
+				cb(new Error("Error: address " + operation + " addr required"));
+			}
+
+			opts = {
+				type: rt.RTM_NEWADDR, // the command
+				flags: nl.NLM_F_REQUEST|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
+				family: fam,
+				addr: addr,
+				ifname: ifname,
+				label: label
+			}
+		} else if(operation === 'delete') {
+			if(typeof(addr) === 'undefined' && typeof(label) === 'undefined'){
+				cb(new Error("Error: address " + operation + " addr or label required"));
+			}
+
+			opts = {
+				type: rt.RTM_DELADDR, // the command
+				flags: nl.NLM_F_REQUEST,
+				family: fam,
+				addr: addr,
+				ifname: ifname,
+				label: label
+			}
+		} else if(operation === 'flush') {
+
+			var netkitObject = this;
+			var getaddr_command_opts = {
+				type: 	rt.RTM_GETADDR,
+				flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
+			};
+
+			opts = {
+				type: rt.RTM_DELADDR, // the command
+				flags: nl.NLM_F_REQUEST,
+				family: fam,
+				ifname: ifname,
+				label: null
+			};
+
+			ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,function(err, bufs){
+				if(err) {
+					console.log("* Error" + util.inspect(err));
+					cb(err);
+				} else {
+					// console.log("bufs --> ");
+					// console.dir(bufs);
+
+					for(var i = 0; i < bufs.length; i++) {
+
+						opts.addr = bufs[i]['event']['address'];
+						console.log("bufs.length = " + bufs.length + " i = " + i);
+						// console.dir(opts);
+						nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
+							if(err) {
+								cb(err);
+								return;
+							} else {
+								cb(null,bufs);
+								console.log("success");
+							}
+						});
+					}
+					sock.close();
+					return;
+				}
+			});
+
+
+		} else {
+			console.error("event type = '" + operation + "'' : Not supported");
+			return;
+		}
+
+		if(operation !== 'flush') {
+			nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
+				if(err) {
+					cb(err);
+				} else {
+					cb(null,bufs);
+				}
+				sock.close();
+			});
+		}
+	},
+
 	getRoutes: function(filter_spec,cb) {
 		var filters = {};
 		if(filter_spec !== null){
@@ -231,9 +382,10 @@ var ipcommand = {
 				};
 
 				nl.netlinkInfoCommand.call(nkObject,getlink_command_opts, sock, function(err,bufs) {
-					if(err)
+					if(err) {
 						console.error("** Error: " + util.inspect(err));
-					else {
+						cb(err);
+					} else {
 						// get the attributes of all the links first for later reference
 						var links = [];
 						for(var i = 0; i < bufs.length; i++) {
@@ -250,13 +402,13 @@ var ipcommand = {
 									ldata.push(link);
 								}
 							}
-							cb(ldata);
+							cb(null, ldata);
 						} else {
 							nl.netlinkInfoCommand.call(nkObject, command, sock, function(err,c_bufs) {
-								if(err)
+								if(err) {
 									console.error("** Error: " + util.inspect(err));
-								else {
-									//console.dir(c_bufs);
+									cb(err);
+								} else {
 									var cdata = [];
 									for(var n = 0; n < c_bufs.length; n++) {
 										var cObject = ipparse.parseAttributes(filters,links,c_bufs[n]);
@@ -264,7 +416,9 @@ var ipcommand = {
 											cdata.push(cObject);
 										}
 									}
-									cb(cdata);
+									//console.log("cdata ---> ");
+									//console.dir(cdata);
+									cb(null, cdata);
 								}
 							});
 						}

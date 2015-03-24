@@ -115,6 +115,13 @@ nf = {
 		},
 	},
 
+	addNfAttribute: function(buf, attr, val) {
+		switch(attr){
+			case nf.NFT_TABLE_ATTR_NAME:
+				break;
+		}
+	},
+
 	nfgenmsg_fmt: "<B(_family)B(_version)H(_resid)",
 	buildNfgenmsg: function(params) {
 		var o = bufferpack.metaObject(params);

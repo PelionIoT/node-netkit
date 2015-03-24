@@ -173,13 +173,14 @@ nl = {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
+	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},
 
 	netlinkInfoCommand: function(opts, sock, cb) {
 		if(opts.hasOwnProperty('ifname')) {
-			var ifndex = this.ifNameToIndex(opt['ifname']);
+			var ifndex = this.ifNameToIndex(opts['ifname']);
 			if(util.isError(ifndex)) {
 				err("* Error: " + util.inspect(ifndex));
 				cb(ifndex); // call w/ error
@@ -224,6 +225,100 @@ nl = {
 
 		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 	},
+
+	netlinkAddrCommand: function(opts, sock, cb) {
+
+		console.dir(opts);
+
+		var ifndex;
+		if(opts.hasOwnProperty('ifname')) {
+			ifndex = this.ifNameToIndex(opts['ifname']);
+			if(util.isError(ifndex)) {
+				err("* Error: " + util.inspect(ifndex));
+				cb(ifndex); // call w/ error
+				return;
+			}
+		}
+
+		// console.log('ifndex = ' + ifndex);
+
+		var nl_hdr = nl.buildHdr();
+
+		// command defaults
+		nl_hdr._flags = nl.NLM_F_REQUEST;
+		nl_hdr._type = rt.RTM_GETLINK; // the command
+
+		// The info message command
+		//<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)
+		var family;
+		var addr_msg = rt.buildIfaddressmsg();
+		addr_msg._index = ifndex;
+
+		if(typeof(opts) !== 'undefined') {
+			if(opts.hasOwnProperty('type')) {
+				nl_hdr._type = opts['type'];
+			}
+			if(opts.hasOwnProperty('flags')) {
+				nl_hdr._flags |= opts['flags'];
+			}
+			if(opts.hasOwnProperty("family")) {
+				family =  opts['family'];
+				addr_msg._family |= family;
+			}
+		}
+
+		var bufs = [];
+		console.dir(addr_msg);
+
+
+		// Build the rt attributes for the command
+		if(opts.hasOwnProperty('label')) {
+			var label = opts['label'];
+			if(label) {
+				var rt_attr = rt.buildRtattrBuf(rt.NDA_LABEL,Buffer(label));
+				console.dir(rt_attr);
+				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
+				bufs.push(rt_attr);
+			}
+		}
+
+		if(opts.hasOwnProperty('addr')) {
+			var addr = opts['addr'];
+			var destbuf;
+			if(typeof addr === 'string') {
+				var ans = this.toAddress(addr, family);
+				if(util.isError(ans)) {
+					cb(ans);
+					return;
+				}
+				destbuf = ans;
+				addr_msg._prefix_len = ans['mask'] ? ans['mask'] : 0;
+			} else {
+				cb(new Error("Error: netlinkAddrCommand() ip address is not a string"))
+			}
+
+			console.dir(addr_msg);
+			dbg("addr_msg---> " + asHexBuffer(addr_msg.pack()));
+			bufs.push(addr_msg.pack());
+
+			console.dir(destbuf);
+
+			var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_DST,destbuf.bytes);
+			console.dir(rt_attr);
+			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
+			dbg("rt_attr---> " + asHexBuffer(rt_attr));
+			bufs.push(rt_attr);
+
+			rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_SRC,destbuf.bytes);
+			console.dir(rt_attr);
+			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
+			dbg("rt_attr---> " + asHexBuffer(rt_attr));
+			bufs.push(rt_attr);
+		}
+
+		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
+	},
+
 
 	netlinkNeighCommand: function(opts,sock, cb) {
 
@@ -298,7 +393,7 @@ nl = {
 				cb(new Error("bad parameters."));
 				return;
 			}
-			var rt_attr = rt.buildRtattrBuf(rt.NDA_LLADDR,macbuf);
+			var rt_attr = rt.buildRtattrBuf(rt.neigh_attributes.NDA_LLADDR,macbuf);
 			dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);
 		}

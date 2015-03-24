@@ -122,6 +122,7 @@ var ipparse = {
 				filters_array.push(filters);
 			}
 
+			//console.dir(data);
 			//console.dir(filters_array);
 			// Assume no matches will happen
 			var applies = false;
@@ -188,7 +189,8 @@ var ipparse = {
 			event:  {	name: ch['operation'],
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'],
 						family: ipparse.getFamily(addr['family']),
-						scope: ipparse.getScope(ch['payload']['_scope'])
+						scope: ipparse.getScope(ch['payload']['_scope']),
+						label: ch['label']
 					}
 		};
 

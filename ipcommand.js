@@ -224,7 +224,7 @@ var ipcommand = {
 			ipcommand.sendInquiry(netkitObject,filters,opts,cb);
 			return;
 		} else if(operation === 'add') {
-			if(typeof(addr) != 'undefined'){
+			if(typeof(addr) === 'undefined'){
 				cb(new Error("Error: address " + operation + " addr required"));
 			}
 
@@ -237,7 +237,7 @@ var ipcommand = {
 				label: label
 			}
 		} else if(operation === 'change') {
-			if(typeof(addr) != 'undefined'){
+			if(typeof(addr) === 'undefined'){
 				cb(new Error("Error: address " + operation + " addr required"));
 			}
 
@@ -286,18 +286,17 @@ var ipcommand = {
 					// console.log("bufs --> ");
 					// console.dir(bufs);
 
-					for(var i = 0; i < bufs.length; i++) {
+					var keep_going = true;
+					for(var i = 0; i < bufs.length && keep_going; i++) {
 
 						opts.addr = bufs[i]['event']['address'];
-						console.log("bufs.length = " + bufs.length + " i = " + i);
+
+						//console.log("bufs.length = " + bufs.length + " i = " + i);
 						// console.dir(opts);
 						nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 							if(err) {
-								cb(err);
-								return;
 							} else {
 								cb(null,bufs);
-								console.log("success");
 							}
 						});
 					}

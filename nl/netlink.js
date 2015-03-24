@@ -227,8 +227,7 @@ nl = {
 	},
 
 	netlinkAddrCommand: function(opts, sock, cb) {
-
-		console.dir(opts);
+		// console.dir(opts);
 
 		var ifndex;
 		if(opts.hasOwnProperty('ifname')) {
@@ -253,6 +252,7 @@ nl = {
 		var family;
 		var addr_msg = rt.buildIfaddressmsg();
 		addr_msg._index = ifndex;
+		addr_msg._flags = 0x80;
 
 		if(typeof(opts) !== 'undefined') {
 			if(opts.hasOwnProperty('type')) {
@@ -266,17 +266,13 @@ nl = {
 				addr_msg._family |= family;
 			}
 		}
-
 		var bufs = [];
-		console.dir(addr_msg);
-
 
 		// Build the rt attributes for the command
 		if(opts.hasOwnProperty('label')) {
 			var label = opts['label'];
 			if(label) {
 				var rt_attr = rt.buildRtattrBuf(rt.NDA_LABEL,Buffer(label));
-				console.dir(rt_attr);
 				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
 				bufs.push(rt_attr);
 			}
@@ -297,20 +293,15 @@ nl = {
 				cb(new Error("Error: netlinkAddrCommand() ip address is not a string"))
 			}
 
-			console.dir(addr_msg);
 			dbg("addr_msg---> " + asHexBuffer(addr_msg.pack()));
 			bufs.push(addr_msg.pack());
 
-			console.dir(destbuf);
-
 			var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_DST,destbuf.bytes);
-			console.dir(rt_attr);
 			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 			dbg("rt_attr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);
 
 			rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_SRC,destbuf.bytes);
-			console.dir(rt_attr);
 			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 			dbg("rt_attr---> " + asHexBuffer(rt_attr));
 			bufs.push(rt_attr);

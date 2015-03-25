@@ -227,7 +227,7 @@ nl = {
 	},
 
 	netlinkAddrCommand: function(opts, sock, cb) {
-		// console.dir(opts);
+		console.dir(opts);
 
 		var ifndex;
 		if(opts.hasOwnProperty('ifname')) {
@@ -272,13 +272,14 @@ nl = {
 		if(opts.hasOwnProperty('label')) {
 			var label = opts['label'];
 			if(label) {
-				var rt_attr = rt.buildRtattrBuf(rt.NDA_LABEL,Buffer(label));
+				var rt_attr = rt.buildRtattrBuf(rt.addr_attributes.IFA_LABEL, Buffer(label));
 				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
 				bufs.push(rt_attr);
 			}
 		}
 
-		if(opts.hasOwnProperty('addr')) {
+
+		if(opts.hasOwnProperty('addr') && opts['addr'] !== null) {
 			var addr = opts['addr'];
 			var destbuf;
 			if(typeof addr === 'string') {

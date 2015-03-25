@@ -182,16 +182,17 @@ var ipcommand = {
 
 		var fam = rt.AF_INET
 
-		if(typeof(family) != 'undefined'){
+		if(family !== null){
 			if(family === 'inet') { fam = rt.AF_INET; }
 			else if(family === 'inet6') { fam = rt.AF_INET6; }
 			else {
 				cb(new Error("Error: address " + operation + " unrecognized family " + family));
+				return;
 			}
 		}
 
-		if(typeof(ifname) === 'undefined' && operation !== 'show'){
-			cb(new Error("Error: address " + operation + " ifname is required"));
+		if(ifname === null && operation !== 'show'){
+			cb(new Error("Error: address " + operation + " parameter ifname is required"));
 			return;
 		}
 
@@ -213,6 +214,10 @@ var ipcommand = {
 		});
 
 		if(!operation || operation === 'show') {
+			if(ifname === null){
+				cb(new Error("Error: address " + operation + " ifname parameter required"));
+				return;
+			}
 			var opts = {
 				type: 	rt.RTM_GETADDR,
 				flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH,
@@ -224,8 +229,9 @@ var ipcommand = {
 			ipcommand.sendInquiry(netkitObject,filters,opts,cb);
 			return;
 		} else if(operation === 'add') {
-			if(typeof(addr) === 'undefined'){
+			if(addr === null){
 				cb(new Error("Error: address " + operation + " addr required"));
+				return;
 			}
 
 			opts = {
@@ -237,8 +243,9 @@ var ipcommand = {
 				label: label
 			}
 		} else if(operation === 'change') {
-			if(typeof(addr) === 'undefined'){
-				cb(new Error("Error: address " + operation + " addr required"));
+			if(addr === null){
+				cb(new Error("Error: address " + operation + " addr parameter required"));
+				return;
 			}
 
 			opts = {
@@ -250,8 +257,9 @@ var ipcommand = {
 				label: label
 			}
 		} else if(operation === 'delete') {
-			if(typeof(addr) === 'undefined' && typeof(label) === 'undefined'){
-				cb(new Error("Error: address " + operation + " addr or label required"));
+			if(addr === null && label === null){
+				cb(new Error("Error: address " + operation + " addr or label parameters required"));
+				return;
 			}
 
 			opts = {
@@ -301,7 +309,7 @@ var ipcommand = {
 						});
 					}
 					sock.close();
-					return;
+					cb(null);
 				}
 			});
 
@@ -347,7 +355,7 @@ var ipcommand = {
 
 		var netkitObject = this;
 		var getaddr_command_opts = {
-			type: 	rt.RTM_GETROUTE,
+			type: 	rt.RTM_GETADDR,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
 		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,cb);

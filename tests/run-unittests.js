@@ -14,7 +14,12 @@ catch(e) {
 }
 
 process.chdir(__dirname + '/../');
+
+//run unit tests
 reporter.run(['./tests/unit/test-rtnetlink.js']);
 reporter.run(['./tests/unit/test-ipparse.js']);
 reporter.run(['./tests/unit/test-nlprocess.js']);
+
+//run functional tests that use nodeunit
 reporter.run(['./tests/unit/test-addr.js'])
+

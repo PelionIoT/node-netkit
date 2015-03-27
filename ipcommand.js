@@ -290,6 +290,7 @@ var ipcommand = {
 				if(err) {
 					console.log("* Error" + util.inspect(err));
 					cb(err);
+					return;
 				} else {
 					// console.log("bufs --> ");
 					// console.dir(bufs);
@@ -305,11 +306,13 @@ var ipcommand = {
 							if(err) {
 							} else {
 								cb(null,bufs);
+								return;
 							}
 						});
 					}
 					sock.close();
 					cb(null);
+					return;
 				}
 			});
 
@@ -323,8 +326,12 @@ var ipcommand = {
 			nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 				if(err) {
 					cb(err);
+					return;
 				} else {
+					//console.log("bufs--->");
+					//console.dir(bufs);
 					cb(null,bufs);
+					return;
 				}
 				sock.close();
 			});

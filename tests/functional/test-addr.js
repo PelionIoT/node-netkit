@@ -1,6 +1,5 @@
 var nk = require('../../index.js');
 var util = require('util');
-var exec  = require('child_process').exec, child;
 
 var filter = [{ ifname: 'eth2' }]; //, table: 'main' };
 nk.getAddresses(filter, function(err,addrs){
@@ -84,3 +83,17 @@ nk.getAddresses(filter, function(err,addrs){
 	});
 });
 
+
+
+// nk.ipAddress("flush","inet","eth2",null,null,function(err,bufs){
+// 	if(err) {
+// 		console.log("netlinkAddrCommand() Error: " + util.inspect(err));
+// 		return;
+// 	} else {
+
+// 		console.log("CALLBACK!!!!!");
+// 		for(ip in bufs) {
+// 			console.dir(bufs[ip]);
+// 		}
+// 	}
+// });

@@ -165,7 +165,7 @@ nl = {
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
 		dbg("Sending---> " + asHexBuffer(all));
-		console.log('all len = ' + all.length);
+		//console.log('all len = ' + all.length);
 
 	    var msgreq = sock.createMsgReq();
 
@@ -230,7 +230,7 @@ nl = {
 	},
 
 	netlinkAddrCommand: function(opts, sock, cb) {
-		console.dir(opts);
+		//console.dir(opts);
 
 		var ifndex;
 		if(opts.hasOwnProperty('ifname')) {
@@ -272,14 +272,6 @@ nl = {
 		var bufs = [];
 
 		// Build the rt attributes for the command
-		if(opts.hasOwnProperty('label')) {
-			var label = opts['label'];
-			if(label) {
-				var rt_attr = rt.buildRtattrBuf(rt.addr_attributes.IFA_LABEL, Buffer(label));
-				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
-				bufs.push(rt_attr);
-			}
-		}
 
 
 		if(opts.hasOwnProperty('addr') && opts['addr'] !== null) {
@@ -299,6 +291,15 @@ nl = {
 
 			dbg("addr_msg---> " + asHexBuffer(addr_msg.pack()));
 			bufs.push(addr_msg.pack());
+
+			if(opts.hasOwnProperty('label')) {
+				var label = opts['label'];
+				if(label) {
+					var rt_attr = rt.buildRtattrBuf(rt.addr_attributes.IFA_LABEL, Buffer(label));
+					dbg("rt_attr label---> " + asHexBuffer(rt_attr));
+					bufs.push(rt_attr);
+				}
+			}
 
 			var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_DST,destbuf.bytes);
 			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));

@@ -292,8 +292,8 @@ var ipcommand = {
 					cb(err);
 					return;
 				} else {
-					// console.log("bufs --> ");
-					// console.dir(bufs);
+					//console.log("bufs --> ");
+					//console.dir(bufs);
 
 					var keep_going = true;
 					for(var i = 0; i < bufs.length && keep_going; i++) {
@@ -305,8 +305,8 @@ var ipcommand = {
 						nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 							if(err) {
 							} else {
-								cb(null,bufs);
-								return;
+								//cb(null,bufs);
+								//return;
 							}
 						});
 					}

@@ -531,7 +531,7 @@ rt = {
 	        bufs.unshift(rtabuf);
 //     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
 	        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-	        console.log("pad: " + pad);
+//	        console.log("pad: " + pad);
 	        if(pad) {
 	        	var padbuf = new Buffer(pad);
 	        	padbuf.fill(0);

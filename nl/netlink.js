@@ -242,7 +242,7 @@ nl = {
 			}
 		}
 
-		// console.log('ifndex = ' + ifndex);
+		//console.log('ifndex = ' + ifndex);
 
 		var nl_hdr = nl.buildHdr();
 
@@ -252,34 +252,50 @@ nl = {
 
 		// The info message command
 		//<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)
-		var family;
+		var family = this.AF_UNSPEC;
 		var addr_msg = rt.buildIfaddressmsg();
 		addr_msg._index = ifndex;
 		addr_msg._flags = 0x80;
 
 		if(typeof(opts) !== 'undefined') {
 			if(opts.hasOwnProperty('type')) {
-				nl_hdr._type = opts['type'];
+				var type = opts['type'];
+				if(type)
+					nl_hdr._type = type;
 			}
 			if(opts.hasOwnProperty('flags')) {
-				nl_hdr._flags |= opts['flags'];
+				var flags =  opts['flags'];
+				if(flags)
+					nl_hdr._flags |= flags;
 			}
 			if(opts.hasOwnProperty("family")) {
-				family =  opts['family'];
-				addr_msg._family |= family;
+				var fam =  opts['family'];
+				if(fam) {
+					addr_msg._family |= fam;
+					family = fam;
+				}
 			}
 		}
 		var bufs = [];
 
 		// Build the rt attributes for the command
-
-
 		if(opts.hasOwnProperty('addr') && opts['addr'] !== null) {
 			var addr = opts['addr'];
 			var destbuf;
 			if(typeof addr === 'string') {
+				if(family === this.AF_UNSPEC) {
+					var f = cmn.isaddress(addr)
+					if(util.isError(f)) {
+						err("* Error: " + util.inspect(f));
+						cb(ans);
+						return;
+					}
+					family = (f === 'inet6') ? this.AF_INET6 : this.AF_INET;
+				}
+
 				var ans = this.toAddress(addr, family);
 				if(util.isError(ans)) {
+					err("* Error: " + util.inspect(ans));
 					cb(ans);
 					return;
 				}

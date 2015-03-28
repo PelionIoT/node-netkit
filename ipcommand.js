@@ -181,7 +181,6 @@ var ipcommand = {
 		var sock_opts = {};
 
 		var fam = rt.AF_INET
-
 		if(family !== null){
 			if(family === 'inet') { fam = rt.AF_INET; }
 			else if(family === 'inet6') { fam = rt.AF_INET6; }
@@ -189,7 +188,7 @@ var ipcommand = {
 				cb(new Error("Error: address " + operation + " unrecognized family " + family));
 				return;
 			}
-		}
+		} else { fam = rt.AF_UNSPEC; }
 
 		if(ifname === null && operation !== 'show'){
 			cb(new Error("Error: address " + operation + " parameter ifname is required"));
@@ -301,9 +300,10 @@ var ipcommand = {
 						opts.addr = bufs[i]['event']['address'];
 
 						//console.log("bufs.length = " + bufs.length + " i = " + i);
-						// console.dir(opts);
+						//console.dir(opts);
 						nl.netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 							if(err) {
+								//console.log("err: " + util.inspect(err));
 							} else {
 								//cb(null,bufs);
 								//return;

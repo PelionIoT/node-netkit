@@ -62,9 +62,39 @@ var eth2_10_10_20_21_label =
 	       scope: 'global',
 	       label: 'eth2:bob' } };
 
+var eth2_aaaa_a =
+	 { ifname: 'eth2',
+	    ifnum: 4,
+	    event:
+	     { name: 'newAddress',
+	       address: 'aaaa::a/64',
+	       family: 'inet6',
+	       scope: 'global' } };
+
+var eth2_aaaa_b =
+	 { ifname: 'eth2',
+	    ifnum: 4,
+	    event:
+	     { name: 'newAddress',
+	       address: 'aaaa::b/64',
+	       family: 'inet6',
+	       scope: 'global' } };
+
+var eth2_aaaa_c =
+	 { ifname: 'eth2',
+	    ifnum: 4,
+	    event:
+	     { name: 'newAddress',
+	       address: 'aaaa::c/64',
+	       family: 'inet6',
+	       scope: 'global' } };
+
+
+
 exports.testAddrFlush = function(test) {
+		// flush everything on eth2
 		test.doesNotThrow(function() {
-			nk.ipAddress("flush","inet","eth2",null,null,function(err,bufs){
+			nk.ipAddress("flush",null,"eth2",null,null,function(err,bufs){
 			 	if(err) throw new Error("testAddrFlush() Error: " + util.inspect(err));
 			 	test.done();
 			});
@@ -285,6 +315,38 @@ exports.group = {
 		});
 	},
 
+	testAddrAddThreeIpv6: function(test){
+		test.expect(2);
+
+		test.doesNotThrow(function() {
+			nk.ipAddress("add","inet6","eth2","aaaa::a/64","eth2:bob",function(err,bufs){
+				if(err) throw new Error("testAddrAddThreeIpv6() Error: " + util.inspect(err));
+
+				nk.ipAddress("add","inet6","eth2","aaaa::b/64","eth2:bob",function(err,bufs){
+					if(err) throw new Error("testAddrAddThreeIpv6() Error: " + util.inspect(err));
+
+					nk.ipAddress("add","inet6","eth2","aaaa::c/64","eth2:bob",function(err,bufs){
+						if(err) throw new Error("testAddrAddThreeIpv6() Error: " + util.inspect(err));
+
+					 	test.ok(true);
+					    test.done();
+					});
+				});
+			} );
+		});
+	},
+
+	testAddrShowThreeIpv6: function(test){
+		test.expect(2);
+
+		test.doesNotThrow(function() {
+			nk.ipAddress("show","inet6","eth2",null,null,function(err,bufs){
+				if(err) throw new Error("testAddrShowThreeIpv6() Error: " + util.inspect(err));
+				test.deepEqual(bufs, [eth2_aaaa_c, eth2_aaaa_b, eth2_aaaa_a]);
+			    test.done();
+			} );
+		});
+	},
 
 };
 

@@ -85,7 +85,7 @@ nk.getAddresses(filter, function(err,addrs){
 
 
 
-// nk.ipAddress("flush","inet","eth2",null,null,function(err,bufs){
+// nk.ipAddress("flush","inet6","eth2",null ,null,function(err,bufs){
 // 	if(err) {
 // 		console.log("netlinkAddrCommand() Error: " + util.inspect(err));
 // 		return;

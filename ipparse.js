@@ -182,6 +182,7 @@ var ipparse = {
 		var addr_ar =  rt.bufToArray(ch['address'], 0, ch['address'].length);
 		var addr = nativelib.fromAddress(addr_ar, ch['payload']['_family']);
 		var linkno = ch['payload']['_index'];
+		var lbl = ch['label'];
 
 		var data = {
 			ifname: links[linkno-1]['ifname'], // the interface name as labeled by the OS
@@ -190,9 +191,9 @@ var ipparse = {
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'],
 						family: ipparse.getFamily(addr['family']),
 						scope: ipparse.getScope(ch['payload']['_scope']),
-						label: ch['label']
 					}
 		};
+		if(lbl) data['event']['label'] = lbl; // no label for ipv6 for some reason
 
 		return data;
 	},

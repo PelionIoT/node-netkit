@@ -7,18 +7,26 @@ var cmn = require('../common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
 var dbg = cmn.dbg;
+var err = cmn.err;
 var netutils = cmn.netutils;
 
-exports.addrlabel = function(operation, prefix,label,cb) {
+addrlbl_attributes = {
+	IFA_ADDRESS: 1,
+	IFA_LABEL: 2,
+};
+
+
+exports.addrlabel = function(operation, family, ifname, prefix, label, cb) {
 	// console.log("operation = " + operation);
 
 	var netkitObject = this;
 	var opts;
 	var sock_opts = {};
+	var filters = {};
 
-	if(addr) filters['address'] = addr;
+	if(prefix) filters['address'] = prefix;
 	if(label) filters['label'] = label;
-	var family = 'inet6';
+	if(family) filters['family'] = family;
 
 	// console.dir(filters);
 
@@ -39,37 +47,37 @@ exports.addrlabel = function(operation, prefix,label,cb) {
 		var opts = {
 			type: 	rt.RTM_GETADDRLABEL,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH,
-			family: fam,
+			family: family,
 			ifname: ifname,
 			label: label
 		};
 		ipcommand.sendInquiry(netkitObject,filters,opts,cb);
 		return;
 	} else if(operation === 'add') {
-		if(addr === null){
-			cb(new Error("Error: address " + operation + " addr required"));
+		if(prefix === null){
+			cb(new Error("Error: address " + operation + " prefix required"));
 			return;
 		}
 
 		opts = {
-			type: rt.RTM_NEWADDR, // the command
+			type: rt.RTM_NEWADDRLABEL, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
-			family: fam,
-			addr: addr,
+			family: family,
+			prefix: prefix,
 			ifname: ifname,
 			label: label
 		}
 	} else if(operation === 'delete') {
-		if(addr === null && label === null){
-			cb(new Error("Error: address " + operation + " addr or label parameters required"));
+		if(prefix === null && label === null){
+			cb(new Error("Error: address " + operation + " prefix or label parameters required"));
 			return;
 		}
 
 		opts = {
 			type: rt.RTM_DELADDR, // the command
 			flags: nl.NLM_F_REQUEST,
-			family: fam,
-			addr: addr,
+			family: family,
+			prefix: prefix,
 			ifname: ifname,
 			label: label
 		}
@@ -84,7 +92,7 @@ exports.addrlabel = function(operation, prefix,label,cb) {
 		opts = {
 			type: rt.RTM_DELADDR, // the command
 			flags: nl.NLM_F_REQUEST,
-			family: fam,
+			family: family,
 			ifname: ifname,
 			label: null
 		};
@@ -101,11 +109,11 @@ exports.addrlabel = function(operation, prefix,label,cb) {
 				var keep_going = true;
 				for(var i = 0; i < bufs.length && keep_going; i++) {
 
-					opts.addr = bufs[i]['event']['address'];
+					opts.prefix = bufs[i]['event']['address'];
 
 					//console.log("bufs.length = " + bufs.length + " i = " + i);
 					//console.dir(opts);
-					nl.netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
+					netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
 						if(err) {
 							//console.log("err: " + util.inspect(err));
 						} else {
@@ -127,7 +135,7 @@ exports.addrlabel = function(operation, prefix,label,cb) {
 	}
 
 	if(operation !== 'flush') {
-		nl.netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
+		netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
 			if(err) {
 				cb(err);
 				return;
@@ -166,9 +174,8 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	// The info message command
 	//<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)
 	var family = this.AF_UNSPEC;
-	var addr_msg = rt.buildIfaddressmsg();
-	addr_msg._index = ifndex;
-	addr_msg._flags = 0x80;
+	var addrlabl_msg = rt.buildIfAddrlblMsg();
+	addrlabl_msg._index = ifndex;
 
 	if(typeof(opts) !== 'undefined') {
 		if(opts.hasOwnProperty('type')) {
@@ -184,7 +191,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 		if(opts.hasOwnProperty("family")) {
 			var fam =  opts['family'];
 			if(fam) {
-				addr_msg._family |= fam;
+				addrlabl_msg._family |= fam;
 				family = fam;
 			}
 		}
@@ -192,12 +199,12 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	var bufs = [];
 
 	// Build the rt attributes for the command
-	if(opts.hasOwnProperty('addr') && opts['addr'] !== null) {
-		var addr = opts['addr'];
+	if(opts.hasOwnProperty('prefix') && opts['prefix'] !== null) {
+		var prefix = opts['prefix'];
 		var destbuf;
-		if(typeof addr === 'string') {
+		if(typeof prefix === 'string') {
 			if(family === this.AF_UNSPEC) {
-				var f = cmn.isaddress(addr)
+				var f = cmn.isaddress(prefix)
 				if(util.isError(f)) {
 					err("* Error: " + util.inspect(f));
 					cb(ans);
@@ -206,36 +213,31 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 				family = (f === 'inet6') ? this.AF_INET6 : this.AF_INET;
 			}
 
-			var ans = this.toAddress(addr, family);
+			var ans = this.toAddress(prefix, family);
 			if(util.isError(ans)) {
 				err("* Error: " + util.inspect(ans));
 				cb(ans);
 				return;
 			}
 			destbuf = ans;
-			addr_msg._prefix_len = ans['mask'] ? ans['mask'] : 0;
+			addrlabl_msg._prefix = ans['mask'] ? ans['mask'] : 0;
 		} else {
 			cb(new Error("Error: netlinkAddrCommand() ip address is not a string"))
 		}
 
-		dbg("addr_msg---> " + asHexBuffer(addr_msg.pack()));
-		bufs.push(addr_msg.pack());
+		dbg("addrlabl_msg---> " + asHexBuffer(addrlabl_msg.pack()));
+		bufs.push(addrlabl_msg.pack());
 
 		if(opts.hasOwnProperty('label')) {
 			var label = opts['label'];
 			if(label) {
-				var rt_attr = rt.buildRtattrBuf(rt.addr_attributes.IFA_LABEL, Buffer(label));
+				var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_LABEL, Buffer(label));
 				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
 				bufs.push(rt_attr);
 			}
 		}
 
-		var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_DST,destbuf.bytes);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
-		bufs.push(rt_attr);
-
-		rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_SRC,destbuf.bytes);
+		var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_ADDRESS,destbuf.bytes);
 		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
 		dbg("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
@@ -244,3 +246,25 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 };
 
+buildIfAddrlblMsg = function(params) {
+
+	// struct ifaddrlblmsg {
+	// 	__u8		ifal_family;		/* Address family */
+	// 	__u8		__ifal_reserved;	/* Reserved */
+	// 	__u8		ifal_prefixlen;		 Prefix length
+	// 	__u8		ifal_flags;		/* Flags */
+	// 	__u32		ifal_index;		/* Link index */
+	// 	__u32		ifal_seq;		/* sequence number */
+	// };
+	var ifaddrlblmsg_fmt = "<B(_family)B(_reserved)B(_prefix_len)B(_flags)B(_index)I(_sequence)";
+
+	//<B(_family)B(_reserved)B(_prefix_len)B(_flags)B(_index)I(_sequence)
+	var o = bufferpack.metaObject(ifaddrlblmsg_fmt);
+	o._family = 0;
+	o._reserved = 0;
+	o._prefix_len = 0;
+	o._flags = 0;
+	o._index = 0;
+	o._sequence = 0;
+	return o;
+};

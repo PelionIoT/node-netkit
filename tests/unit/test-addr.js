@@ -234,6 +234,18 @@ exports.group = {
 		});
 	},
 
+	testAddrShowOneWithLabelFromThree: function(test){
+		test.expect(2);
+
+		test.doesNotThrow(function() {
+			nk.ipAddress("show","inet","eth2",null,"eth2:bob",function(err,bufs){
+				if(err) throw new Error("testAddrShowThreeOneWithLabel() Error: " + util.inspect(err));
+				test.deepEqual(bufs, [eth2_10_10_20_20_label]);
+			    test.done();
+			} );
+		});
+	},
+
 	testFlushOneOfThreeByLabel: function(test){
 		test.doesNotThrow(function() {
 			nk.ipAddress("flush","inet","eth2",null,"eth2:bob",function(err,bufs){

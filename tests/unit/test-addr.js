@@ -94,9 +94,12 @@ var eth2_aaaa_c =
 exports.testAddrFlush = function(test) {
 		// flush everything on eth2
 		test.doesNotThrow(function() {
-			nk.ipAddress("flush",null,"eth2",null,null,function(err,bufs){
+			nk.ipAddress("flush","inet","eth2",null,null,function(err,bufs){
 			 	if(err) throw new Error("testAddrFlush() Error: " + util.inspect(err));
-			 	test.done();
+				nk.ipAddress("flush","inet6","eth2",null,null,function(err,bufs){
+				 	if(err) throw new Error("testAddrFlush() Error: " + util.inspect(err));
+				 	test.done();
+				});
 			});
 		});
 };

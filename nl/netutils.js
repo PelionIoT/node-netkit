@@ -15,7 +15,7 @@ module.exports = {
 		if(m && m.length > 6) { // 6 is the minimum length of a MAC
 			var ret = new Buffer(size);
 			for(var n=0;n<size;n++) {
-				console.log(" --> " + m[n+1]);
+				//console.log(" --> " + m[n+1]);
 				if(m[n+1])
 					ret.writeUInt8(parseInt(m[n+1],16),n);
 				else
@@ -26,5 +26,5 @@ module.exports = {
 			return null;
 		}
 	}
-	
+
 };

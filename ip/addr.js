@@ -2,16 +2,16 @@
 var rt = require('../nl/rtnetlink.js');
 var nl = require('../nl/netlink.js')
 var util = require('util');
-var ipparse = require('../ipparse.js');
-var ipcommand = require('../ipcommand.js');
-var cmn = require('../common.js');
+var ipparse = require('../ip/ipparse.js');
+var ipcommand = require('../ip/ipcommand.js');
+var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
 var dbg = cmn.dbg;
 var netutils = cmn.netutils;
 
 
-exports.address = function(operation,family,ifname,addr,label,cb) {
+module.exports.address = function(operation,family,ifname,addr,label,cb) {
 	// console.log("operation = " + operation);
 
 	var netkitObject = this;

@@ -1,4 +1,4 @@
-var np = require('../../nlprocess.js');
+var np = require('../../proc/nlprocess.js');
 
 exports.testBogusBuffer = function(test){
 	test.doesNotThrow(function() {

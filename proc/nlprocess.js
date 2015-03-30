@@ -1,4 +1,4 @@
-var nl = require('./nl/netlink.js')
+var nl = require('../nl/netlink.js')
 
 nlprocess = {
 

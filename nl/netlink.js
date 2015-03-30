@@ -1,5 +1,5 @@
-var cmn = require('../common.js');
-var rtnetlink = require('../nl/rtnetlink.js')
+var cmn = require('../libs/common.js');
+var rtnetlink = require('./rtnetlink.js')
 
 var util = require('util');
 

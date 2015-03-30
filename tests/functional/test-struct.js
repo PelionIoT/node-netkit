@@ -2,7 +2,7 @@
 var netkit = require('../../index.js');
 
 var bufferpack = require('../../libs/bufferpack.js');
-var rtnetlink = require('../../rtnetlink.js');
+var rtnetlink = require('../../nl/rtnetlink.js');
 
 var util = require('util');
 

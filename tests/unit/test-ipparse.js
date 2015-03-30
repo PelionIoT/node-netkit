@@ -1,4 +1,4 @@
-var rt = require('../../ipparse.js');
+var rt = require('../../ip/ipparse.js');
 
 var fs = require('fs');
 var links = JSON.parse(fs.readFileSync('./tests/unit/links.json', 'utf8'));

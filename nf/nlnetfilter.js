@@ -1,5 +1,5 @@
-var nf = require('./nl/nfnetlink.js')
-var nl = require('./nl/netlink.js');
+var nf = require('../nl/nfnetlink.js')
+var nl = require('../nl/netlink.js');
 var util = require('util');
 
 nlnetfilter = {

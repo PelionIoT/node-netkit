@@ -1,5 +1,5 @@
-var rt = require('./nl/rtnetlink.js');
-var nativelib = require('./common.js').nativelib;
+var rt = require('../nl/rtnetlink.js');
+var nativelib = require('../libs/common.js').nativelib;
 
 var ipparse = {
 

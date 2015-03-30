@@ -1,5 +1,5 @@
 var nl = require('../nl/netlink.js');
-var cmn = require('../common.js');
+var cmn = require('../libs/common.js');
 var rt = nl.rt;
 var bufferpack = cmn.bufferpack;
 

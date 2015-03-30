@@ -1,14 +1,14 @@
-var colors = require('./libs/colors.js');
+var colors = require('./colors.js');
 
 module.exports = {
 
 	nativelib: function() {
 		var nativelib = null;
 		try {
-			nativelib = require('./build/Release/netkit.node');
+			nativelib = require('../build/Release/netkit.node');
 		} catch(e) {
 			if(e.code == 'MODULE_NOT_FOUND')
-				nativelib = require('./build/Debug/netkit.node');
+				nativelib = require('../build/Debug/netkit.node');
 			else
 				console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
 		}
@@ -28,11 +28,11 @@ module.exports = {
 	},
 
 	bufferpack: function() {
-		return require('./libs/bufferpack.js');
+		return require('./bufferpack.js');
 	}(),
 
 	netutils: function() {
-		return require('./nl/netutils.js');
+		return require('../nl/netutils.js');
 	}(),
 
 	isaddress: function(str) {

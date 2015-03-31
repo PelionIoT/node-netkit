@@ -1430,10 +1430,16 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
-			ifr.ifr_flags |=  flags;
-		    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
-//		    	perror("SIOCSIFFLAGS");
+		    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
 		    	err.setError(errno);
+//		    	perror("SIOCSIFFLAGS");
+		    }
+		    if(!err.hasErr()) {
+		    	ifr.ifr_flags |=  flags;
+		    	if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+//		    	perror("SIOCSIFFLAGS");
+		    		err.setError(errno);
+		    	}
 		    }
 		}
 
@@ -1478,16 +1484,24 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 		_net::err_ev err;
 		Handle<Value> v8err;
 
-		short int flags = args[1]->Int32Value();
+		short int flags = (short int) args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
-			ifr.ifr_flags &= !flags;
-		    if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+		    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
 		    	err.setError(errno);
 //		    	perror("SIOCSIFFLAGS");
+		    }
+		    if(!err.hasErr()) {
+		    	DBG_OUT("Have flags: %x\n", ifr.ifr_flags);
+				ifr.ifr_flags = ifr.ifr_flags & ~flags;
+		    	DBG_OUT("Setting to flags: %x\n", ifr.ifr_flags);
+				if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
+			    	err.setError(errno);
+	//		    	perror("SIOCSIFFLAGS");
+			    }
 		    }
 		}
 

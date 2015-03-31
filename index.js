@@ -29,6 +29,10 @@ var net = require('net');
 var ipcommands = require('./ipcommand.js');
 var nlprocess = require('./nlprocess.js');
 
+
+var dbg = console.error;
+var err = console.error;
+
 // Extension object technique. Let's us build part of the native prototype in JS. 
 // The native library will put all properties of this object into it's prototype.
 var extendthis = {
@@ -291,6 +295,7 @@ nk.sk = {
 	SOCK_NONBLOCK:	0x40000000
 
 };
+
 
 
 /**

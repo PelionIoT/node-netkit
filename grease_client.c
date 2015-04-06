@@ -99,12 +99,16 @@ int grease_printf(const logMeta *m, const char *format, ... ) {
 	va_start (args, format);
 	RawLogLen len = (RawLogLen) vsnprintf (_grease_logstr_buffer,GREASE_C_MACRO_MAX_MESSAGE,format, args);
 	va_end (args);
+#ifndef GREASE_DISABLE
 	if(grease_log != NULL)
 		return grease_log(m,_grease_logstr_buffer, len);
 	else {
+#endif
 		vfprintf(stderr, _grease_logstr_buffer, args );
 		return GREASE_OK;
+#ifndef GREASE_DISABLE
 	}
+#endif
 }
 
 
@@ -192,14 +196,14 @@ grease_plhdr_callback(struct dl_phdr_info *info, size_t size, void *data)
     found = strstr(info->dlpi_name,GREASE_LOG_SO_NAME);
 //    printf("so: %s\n", info->dlpi_name);
     if(found) {
-    	printf("Found greaseLog.node in running process\n");
+    	_GREASE_DBG_PRINTF("Found greaseLog.node in running process\n");
     	// we know the path of the grease node module .so file, so
     	// open it for our own use...
     	void *lib = dlopen(info->dlpi_name, RTLD_LAZY);
     	if(lib) {
         	void *r = dlsym(lib,"grease_logLocal");
             if(r) {
-            	printf("Found symbol for grease_logLocal\n");
+            	_GREASE_DBG_PRINTF("Found symbol for grease_logLocal\n");
             	local_log = r;
             	found_module = 1;
             } else {
@@ -228,12 +232,13 @@ int check_grease_symbols() {
 
 int grease_initLogger() {
 	if(check_grease_symbols()) {
-		printf("------- Found symbols.\n");
+//		printf("------- Found symbols.\n");
 		grease_log = local_log;
 		return GREASE_OK;
 	} else {
 		// TODO setup Sink connection
-		grease_log = grease_logToSink;
+//		grease_log = grease_logToSink;
+		grease_log = NULL;
 	}
 	return GREASE_OK;
 }

@@ -31,6 +31,13 @@ extern "C" {
 
 #define GREASE_LOG_SO_NAME "greaseLog.node"
 
+// for internal debugging
+#ifdef GREASE_DEBUG_MODE
+#define _GREASE_DBG_PRINTF(s,...) fprintf(stderr,s, ##__VA_ARGS__)
+#else
+#define _GREASE_DBG_PRINTF(s,...) {}
+#endif
+
 typedef uint64_t FilterHash;   // format: [N1N2] where N1 is [Tag id] and N2 is [Origin Id]
 typedef uint32_t FilterId;     // filter id is always > 0
 typedef uint32_t TargetId;     // id is always > 0

@@ -5,7 +5,7 @@
 
 
 //var build_opts = require('build_opts.js');
-var log = require('../greaseLog/index.js');
+//var log = require('../greaseLog/index.js');
 
 
 var build_opts = { 

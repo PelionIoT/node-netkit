@@ -40,7 +40,8 @@
           "-Wall",
           "-std=c++11",
           "-D_POSIX_C_SOURCE=200809L",
-          "-DERRCMN_DEBUG_BUILD=1"
+          "-DERRCMN_DEBUG_BUILD=1",
+          "-DGREASE_DISABLE"
           ],
 ##        'conditions': [
 ##          ['target_arch=="x64"', {

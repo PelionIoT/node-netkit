@@ -153,6 +153,14 @@ namespace _net {
 	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix);
 }
 
+
+#ifdef GREASE_LOGGING
+#define NET_FPRINTF_ERR GLOG_ERROR
+#else
+#define NET_FPRINTF_ERR(S,...) fprintf(stderr, S, ##__VA_ARGS__ )
+#endif
+
+
 #define ERR_EV_PRINTF_SETERROR( errev , s , ...) {\
 	char b[255];\
 		snprintf(b,255,s,##__VA_ARGS__);\
@@ -162,7 +170,7 @@ namespace _net {
 // confused? here: https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html
 #define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s "\n", ##__VA_ARGS__ );
 //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) { char *__S=_net::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _net::free_error_str(__S); }
+#define ERROR_PERROR(s,E,...) { char *__S=_net::get_error_str(E); NET_FPRINTF_ERR("**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _net::free_error_str(__S); }
 
 #define WARN_OUT(s,...) fprintf(stderr, "**WARN** " s "\n", ##__VA_ARGS__ );
 

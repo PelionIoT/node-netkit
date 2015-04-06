@@ -24,7 +24,8 @@
         "network-common.cc",
         "netlinksocket.cc",
         "interface_funcs.cc",
-        "error-common.cc"
+        "error-common.cc",
+        "grease_client.c",
       ],
 
       "include_dirs": [

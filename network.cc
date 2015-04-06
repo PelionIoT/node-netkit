@@ -39,9 +39,24 @@
 #include <netinet6/ipv6_route.h>	/* glibc does not have this */
 #endif
 
+#include "grease_client.h"
+
 #include "network-common.h"
 #include "netlinksocket.h"
 #include "error-common.h"
+
+#ifdef DBG_OUT
+#undef DBG_OUT
+#endif
+
+#define DBG_OUT GLOG_DEBUG
+
+#ifdef ERROR_OUT
+#undef ERROR_OUT
+#endif
+
+#define ERROR_OUT GLOG_ERROR
+
 
 using namespace node;
 using namespace v8;
@@ -1534,6 +1549,7 @@ void InitAll(Handle<Object> exports, Handle<Object> module) {
 //	NodeClientWrapper::Init();
 //	exports->Set(String::NewSymbol("cloneRepo"), FunctionTemplate::New(CreateClient)->GetFunction());
 
+	INIT_GLOG;
 
 //	TunInterface::Init();
 	exports->Set(String::NewSymbol("InitNativeTun"), FunctionTemplate::New(TunInterface::Init)->GetFunction());

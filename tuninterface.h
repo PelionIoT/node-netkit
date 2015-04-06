@@ -13,6 +13,7 @@
 #include <uv.h>
 #include <node_buffer.h>
 #include "node_pointer.h"
+#include "grease_client.h"
 #include "network-common.h"
 
 using namespace node;
@@ -32,6 +33,19 @@ using namespace v8;
 #include <string.h>
 #include <stdlib.h>
 #include <uv.h>
+
+
+#ifdef DBG_OUT
+#undef DBG_OUT
+#endif
+
+#define DBG_OUT GLOG_DEBUG
+
+#ifdef ERROR_OUT
+#undef ERROR_OUT
+#endif
+
+#define ERROR_OUT GLOG_ERROR
 
 // should be bigger than the normal MTU
 #define TUN_IF_READ_DEFAULT_CHUNK_SIZE  2000

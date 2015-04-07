@@ -31,11 +31,6 @@ nf = {
 	NFNL_SUBSYS_NFT_COMPAT:			11,
 	NFNL_SUBSYS_COUNT:				12,
 
-	NFT_TABLE_ATTR_NAME: 	0,
-	NFT_TABLE_ATTR_FAMILY: 	1,
-	NFT_TABLE_ATTR_FLAGS: 	2,
-	NFT_TABLE_ATTR_USE: 	3,
-
 	NFT_MSG_NEWTABLE: 		0,
 	NFT_MSG_GETTABLE: 		1,
 	NFT_MSG_DELTABLE: 		2,
@@ -73,15 +68,17 @@ nf = {
 			NFT_RULE_ATTR_COMPAT_FLAGS: 5,
 			NFT_RULE_ATTR_POSITION: 	6,
 			NFT_RULE_ATTR_USERDATA: 	7,
-			NFT_RULE_ATTR_MAX: 			8
+			NFT_RULE_ATTR_MAX: 			8,
+			NFT_RULE_TYPE: 				['n32','s','s','n/64','n/32','n/32','n/64','o']
 		},
 
 		table: {
-			NFT_TABLE_ATTR_NAME: 		0,
-			NFT_TABLE_ATTR_FAMILY: 		2,
-			NFT_TABLE_ATTR_FLAGS: 		3,
-			NFT_TABLE_ATTR_USE: 		4,
-			NFT_TABLE_ATTR_MAX: 		5
+			NFT_TABLE_ATTR_FAMILY: 		0,
+			NFT_TABLE_ATTR_NAME: 		1,
+			NFT_TABLE_ATTR_FLAGS: 		2,
+			NFT_TABLE_ATTR_USE: 		3,
+			NFT_TABLE_ATTR_MAX: 		4,
+			NFT_TABLE_TYPE: 			['n/32','s','n/32','n/32']
 		},
 
 		chain: {
@@ -96,7 +93,8 @@ nf = {
 			NFT_CHAIN_ATTR_PACKETS: 	8,
 			NFT_CHAIN_ATTR_HANDLE: 		9,
 			NFT_CHAIN_ATTR_TYPE: 		10,
-			NFT_CHAIN_ATTR_MAX: 		11
+			NFT_CHAIN_ATTR_MAX: 		11,
+			NFT_CHAIN_TYPE: 			['s/32','n/32','s','n/32','n/32','n/32','n/32','n/64','n/64','n/64','s']
 		},
 
 		set: {
@@ -111,15 +109,101 @@ nf = {
 			NFT_SET_ATTR_ID: 			8,
 			NFT_SET_ATTR_POLICY: 		9,
 			NFT_SET_ATTR_DESC_SIZE: 	10,
-			NFT_SET_ATTR_MAX: 			11
+			NFT_SET_ATTR_MAX: 			11,
+			NFT_SET_TYPE: 				['s','s','n/32','n/32','n/32','n/32','n/32','n/32','n/32','n/32','n/32']
 		},
 	},
 
-	addNfAttribute: function(buf, attr, val) {
-		switch(attr){
-			case nf.NFT_TABLE_ATTR_NAME:
-				break;
+	attrType: function(obj) {
+	  return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+	},
+
+	addNfAttribute: function(bufs, attr, val, cb) {
+		//console.log('attrType = ' + nf.attrType(attr));
+		//console.log('attr = ' + attr);
+		if(nf.attrType(attr) != 'string') {
+			cb(new Error("attribute is not of type string"),null);
+			return;
 		}
+
+		var attr_t = attr.split('_')[1].toLowerCase();
+		//console.log('attr_t = ' + attr_t);
+		if(attr_t === 'undefined' || !nf.attrs.hasOwnProperty(attr_t)) {
+			cb(new Error("netfilter attribute not defined"),null);
+			return;
+		}
+
+		var attr_subtype = nf.attrs[attr_t];
+		//console.dir(attr_subtype);
+		if(!attr_subtype.hasOwnProperty(attr)) {
+			cb(new Error("netfilter " + attr_t + " attribute not defined"),null);
+			return;
+		}
+
+		var attr_subtype_val = attr_subtype[attr];
+		var attr_subtype_name = "NFT_" + attr_t.toUpperCase() + "_TYPE";
+		var spec = attr_subtype[attr_subtype_name][attr_subtype_val];
+
+		console.log('spec = ' + spec);
+
+		var slash = spec.indexOf('/');
+		var attr_subtype_type;
+		var attr_subtype_len = -1;
+
+		console.log("slash = " + slash);
+		if(slash === -1) {
+			attr_subtype_type = spec;
+		} else {
+			attr_subtype_type = spec.slice(0, slash - 1);
+			attr_subtype_len = parseInt(spec.slice(slash + 1));
+		}
+
+		console.log("attr_subtype_type = " + attr_subtype_type);
+		console.log("attr_subtype_len = " + attr_subtype_len);
+		if((attr_subtype_len === -1 && attr_subtype_type !== 's' ) || attr_subtype_len === NaN) {
+			cb(new Error("attribute type or length parse error"),null);
+			return;
+		}
+
+		if(attr_subtype_type === 's') {
+			if(nf.attrType(attr) !== 'string') {
+				cb(new Error("attribute type " + attr + " does not match value: " + val),null);
+				return;
+			}
+
+			console.dir(val);
+
+			var b;
+			if(attr_subtype_len > 0) {
+				if(val.length >  attr_subtype_len) {
+					cb(new Error("attribute value string is longer than " + attr_subtype_len),null);
+					return;
+				}
+
+				b = Buffer(attr_subtype_len);
+				b.write(val, 0 , attr_subtype_len);
+			} else {
+				b = Buffer(val + '\0');
+			}
+
+			console.dir(b);
+			bufs.push(rt.buildRtattrBuf(attr_subtype_val, b));
+
+		} else if(attr_subtype_type === 'n') {
+			if(nf.attrType(attr) !== 'number') {
+				cb(new Error("attribute type " + attr + " does not match value: " + val),null);
+				return;
+			}
+
+			var b = Buffer(attr_subtype_len);
+			b.writeUIntBE(val,0,attr_subtype_len);
+			bufs.push(rt.buildRtattrBuf(attr_subtype_type, b));
+
+		} else {
+			cb(new Error("attribute type " + attr + " does not match value: " + val),null);
+			return;
+		}
+
 	},
 
 	nfgenmsg_fmt: "<B(_family)B(_version)H(_resid)",
@@ -135,8 +219,9 @@ nf = {
 		return bufferpack.unpack(nf.nfgenmsg_fmt, data, pos);
 	},
 
-	sendNetfilterCommand: function(opts, sock, attrs,  cb) {
+	sendNetfilterCommand: function(opts, sock, cb) {
 		var bufs = [];
+		var attrs;
 
 		var nl_hdr = nl.buildHdr();
 		nl_hdr._type = (nf.NFNL_SUBSYS_NFTABLES << 8);
@@ -149,28 +234,61 @@ nf = {
 			if(opts.hasOwnProperty("cmd")) {
 				nl_hdr._type |= opts['cmd'];
 			} else {
-				cb(new Error("Error: no cmd option specified"), null);
+				cb(new Error("no cmd option specified"));
+				return;
 			}
 
 			if(opts.hasOwnProperty("type")) {
 				console.log('type=' + opts['type']);
 				nl_hdr._flags |= opts['type'];
 			} else {
-				cb(new Error("Error: no type option specified"), null);
+				cb(new Error("no type option specified"));
+				return;
 			}
 
 			if(opts.hasOwnProperty("family")) {
 				nf_hdr._family = opts['family'];
 			} else {
-				cb(new Error("Error: no family option specified"), null);
+				cb(new Error("no family option specified"));
+				return;
 			}
 
+			bufs.push(nf_hdr.pack());
+
+			if(opts.hasOwnProperty("attrs")) {
+				var ats = opts['attrs'];
+				ats.forEach(function(at) {
+					var curvalue;
+					var curtype;
+					if(at.hasOwnProperty("type")) {
+						curtype = at['type'];
+					} else {
+						cb(new Error("no type in supplied attribute: " + JSON.stringify(at)));
+						return;
+					}
+
+					if(at.hasOwnProperty("value")) {
+						curvalue = at['value'];
+					} else {
+						cb(new Error("no value in supplied attribute: " + JSON.stringify(at)));
+						return;
+					}
+
+					nf.addNfAttribute(bufs,curtype,curvalue,function(err) {
+						if(err) {
+							cb(err);
+							return;
+						}
+					});
+				});
+
+			}
+
+			nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
+
 		} else {
-			cb(new Error("Error: no options specified"), null);
+			cb(new Error("no options specified"));
 		}
-		bufs.push(nf_hdr.pack());
-		if(typeof(attrs) != 'undefined') bufs.push(attrs);
-		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 	},
 };
 

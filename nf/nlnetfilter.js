@@ -21,13 +21,14 @@ nlnetfilter = {
 				var opts = {
 					cmd: nf.NFT_MSG_GETTABLE,
 					family: nf.NFPROTO_IPV4,
-					type: nl.NLM_F_ROOT | nl.NLM_F_MATCH
+					type: nl.NLM_F_ACK,
+					attrs: [{ type: "NFT_TABLE_ATTR_NAME", value: name }]
 				};
 
 				var attrs = Buffer(0);
 				//nf.addAttribute()
 
-				nf.sendNetfilterCommand(opts, sock, attrs, function(err,bufs){
+				nf.sendNetfilterCommand(opts, sock, function(err,bufs){
 					if(err) {
 						cb( new Error("sendNetfilterCommand() Error: " + util.inspect(err)));
 					} else {

@@ -154,7 +154,7 @@ nl = {
 
 	sendNetlinkCommand: function(sock, nl_hdr, bufs,cb) {
 
-		dbg("nl_hdr.type ---> " + nl_hdr._type);
+		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
 
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)

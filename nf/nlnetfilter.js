@@ -4,7 +4,7 @@ var util = require('util');
 
 nlnetfilter = {
 
-	fwTable: function(action, family, name, cb) {
+	netfilterSend: function(sock, opts, parse_attrs, cb) {
 		var netkitObject = this;
 		var sock = netkitObject.newNetlinkSocket();
 
@@ -18,38 +18,28 @@ nlnetfilter = {
 				return;
 			} else {
 
-				var opts = {
-					cmd: nf.NFT_MSG_GETTABLE,
-					family: nf.NFPROTO_IPV4,
-					type: nl.NLM_F_ACK,
-					attrs: [{ type: "NFT_TABLE_ATTR_NAME", value: name }]
-				};
-
-				var attrs = Buffer(0);
-				//nf.addAttribute()
-
 				nf.sendNetfilterCommand(opts, sock, function(err,bufs){
 					if(err) {
-						cb( new Error("sendNetfilterCommand() Error: " + util.inspect(err)));
+						cb(err);
+						return;
 					} else {
-						var data = bufs[0];
-						var total_len = data.readUInt32LE(0);
-						console.dir(data);
-						console.log('total_len = ' + total_len);
-						if(total_len != data.length) {
-							cb( new Error("sendNetfilterCommand() Error: buffer len = " + data.length + " != nlhdr len = " + total_len));
-						}
-
-						// (data, attr_start, total_len, attr_map)
-						var nfgenmsg = nf.unpackNfgenmsg(data, 16);
-						var result = nl.rt.parseAttrs(data, 20, total_len, nf.nft_table_attributes);
-						result['genmsg'] = nfgenmsg;
-						cb(null, result);
+						cb(null, nlnetfilter.generateNetfilterResponse(bufs,parse_attrs));
 					}
 				});
 			}
 		});
 	},
+
+
+	generateNetfilterResponse: function(bufs, parseAttributes) {
+		var data = bufs[0];
+		var total_len = data.readUInt32LE(0);
+		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
+		var result = nl.rt.parseAttrs(data, 20, total_len, parseAttributes);
+		result['genmsg'] = nfgenmsg;
+		return result;
+	}
+
 };
 
 module.exports = nlnetfilter;

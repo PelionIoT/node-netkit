@@ -7,14 +7,6 @@ var bufferpack = cmn.bufferpack;
 
 nf = {
 
-	nft_table_attributes:
-	[
-		"unspec",
-		"name",
-		"flags",
-		"use",
-	],
-
 	NFNETLINK_V0: 					0,
 
 	NFNL_SUBSYS_NONE: 				0,
@@ -144,13 +136,13 @@ nf = {
 		var attr_subtype_name = "NFT_" + attr_t.toUpperCase() + "_TYPE";
 		var spec = attr_subtype[attr_subtype_name][attr_subtype_val];
 
-		console.log('spec = ' + spec);
+		//console.log('spec = ' + spec);
 
 		var slash = spec.indexOf('/');
 		var attr_subtype_type;
 		var attr_subtype_len = -1;
 
-		console.log("slash = " + slash);
+		//console.log("slash = " + slash);
 		if(slash === -1) {
 			attr_subtype_type = spec;
 		} else {
@@ -158,8 +150,8 @@ nf = {
 			attr_subtype_len = parseInt(spec.slice(slash + 1));
 		}
 
-		console.log("attr_subtype_type = " + attr_subtype_type);
-		console.log("attr_subtype_len = " + attr_subtype_len);
+		//console.log("attr_subtype_type = " + attr_subtype_type);
+		//console.log("attr_subtype_len = " + attr_subtype_len);
 		if((attr_subtype_len === -1 && attr_subtype_type !== 's' ) || attr_subtype_len === NaN) {
 			cb(new Error("attribute type or length parse error"),null);
 			return;
@@ -219,7 +211,24 @@ nf = {
 		return bufferpack.unpack(nf.nfgenmsg_fmt, data, pos);
 	},
 
-	sendNetfilterCommand: function(opts, sock, cb) {
+	addBatchMessages: function(msgreq, batch) {
+
+		var bufs = [];
+
+		var nl_hdr = nl.buildHdr();
+		nl_hdr._type = batch;
+		nl_hdr._flags = nl.NLM_F_REQUEST;
+
+		var nf_hdr = nf.buildNfgenmsg(this.nfgenmsg_fmt);
+		nf_hdr._version = nf.NFNETLINK_V0;
+		nf_hdr._resid = nf.NFNL_SUBSYS_NFTABLES;
+
+		bufs.push(nf_hdr.pack());
+		nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
+	},
+
+	addCommandMessage: function(msgreq, opts, cb) {
+
 		var bufs = [];
 		var attrs;
 
@@ -234,23 +243,20 @@ nf = {
 			if(opts.hasOwnProperty("cmd")) {
 				nl_hdr._type |= opts['cmd'];
 			} else {
-				cb(new Error("no cmd option specified"));
-				return;
+				return cb(new Error("no cmd option specified"));
 			}
 
 			if(opts.hasOwnProperty("type")) {
-				console.log('type=' + opts['type']);
+				//console.log('type=' + opts['type']);
 				nl_hdr._flags |= opts['type'];
 			} else {
-				cb(new Error("no type option specified"));
-				return;
+				return cb(new Error("no type option specified"));
 			}
 
 			if(opts.hasOwnProperty("family")) {
 				nf_hdr._family = opts['family'];
 			} else {
-				cb(new Error("no family option specified"));
-				return;
+				return cb(new Error("no family option specified"));
 			}
 
 			bufs.push(nf_hdr.pack());
@@ -263,32 +269,45 @@ nf = {
 					if(at.hasOwnProperty("type")) {
 						curtype = at['type'];
 					} else {
-						cb(new Error("no type in supplied attribute: " + JSON.stringify(at)));
-						return;
+						return cb(new Error("no type in supplied attribute: " + JSON.stringify(at)));
 					}
 
 					if(at.hasOwnProperty("value")) {
 						curvalue = at['value'];
 					} else {
-						cb(new Error("no value in supplied attribute: " + JSON.stringify(at)));
-						return;
+						return cb(new Error("no value in supplied attribute: " + JSON.stringify(at)));
 					}
 
 					nf.addNfAttribute(bufs,curtype,curvalue,function(err) {
 						if(err) {
-							cb(err);
-							return;
+							return cb(err);
 						}
 					});
 				});
 
 			}
-
-			nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
-
 		} else {
 			cb(new Error("no options specified"));
 		}
+
+		nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
+		cb(null);
+	},
+
+	sendNetfilterCommand: function(opts, sock, cb) {
+
+	    var msgreq = sock.createMsgReq();
+
+	    nf.addBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
+	    nf.addCommandMessage(msgreq, opts, function(err){
+	    	if(err) {
+	    		return cb(err,null);
+	    	} else {
+
+			    nf.addBatchMessages(msgreq, nl.NLMSG_MAX_TYPE);
+				nl.sendNetlinkRaw(sock, msgreq, cb);
+	    	}
+	    });
 	},
 };
 

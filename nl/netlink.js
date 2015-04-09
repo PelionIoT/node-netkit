@@ -34,6 +34,9 @@ nl = {
 
 	rt: rtnetlink,
 
+	AF_UNSPEC: 0,
+
+
     // netlink message flags
 	// See: linux/netlink.h
 
@@ -54,6 +57,9 @@ nl = {
     NLM_F_EXCL:	    0x200,	/* Do not touch, if it exists	*/
     NLM_F_CREATE:	0x400,	/* Create, if it does not exist	*/
     NLM_F_APPEND:	0x800,	/* Add to end of list		*/
+
+	NLMSG_MIN_TYPE:		0x10,	/* < 0x10: reserved control messages */
+	NLMSG_MAX_TYPE:		0x11,	/* < 0x11: reserved control messages */
 
 
     /* Netlink protocols */
@@ -97,7 +103,7 @@ nl = {
     NETLINK_UNCONNECTED: 0,
     NETLINK_CONNECTED: 1,
 
-    	/*
+    /*
 	 * Process Events connector unique ids -- used for message routing
 	 */
 	CN_IDX_PROC:		0x1,
@@ -180,6 +186,34 @@ nl = {
 	    });
 	},
 
+	sendNetlinkRaw: function(sock, msgreq, cb) {
+		//dbg("Sending---> " + asHexBuffer(buf));
+		//console.log('all len = ' + all.length);
+
+	    sock.sendMsg(msgreq, function(err,bytes) {
+	    	if(err) {
+	    		cb(err);
+	    	} else {
+	    		cb(err,bytes);
+	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
+	    	}
+	    });
+	},
+
+	addNetlinkMessageToReq: function(msgreq, nl_hdr, bufs) {
+-		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
+
+		var len = 0;
+		for (var n=0;n<bufs.length;n++)
+			len += bufs[n].length;
+		nl_hdr._len = nl_hdr._length + len;
+		bufs.unshift(nl_hdr.pack());
+		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
+
+		dbg("Adding---> " + asHexBuffer(all));
+
+	    msgreq.addMsg(all);
+	},
 
 	sendConnectorMsg: function(sock,cb) {
 		var bufs = [];

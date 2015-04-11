@@ -1,15 +1,4 @@
-var nl = require('./netlink.js')
-var bufferpack = require('./libs/bufferpack.js');
-
-var nativelib = null;
-try {
-	nativelib = require('./build/Release/netkit.node');
-} catch(e) {
-	if(e.code == 'MODULE_NOT_FOUND')
-		nativelib = require('./build/Debug/netkit.node');
-	else
-		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
-}
+var nl = require('../nl/netlink.js')
 
 nlprocess = {
 
@@ -47,13 +36,13 @@ nlprocess = {
 			} else {
 				nl.sendConnectorMsg(sock,function(err,bufs){
 					if(err) {
-						util.inspect(err);
+						cb( new Error("sendConnectorMsg() Error: " + util.inspect(err)));
 					} else {
 						sock.onRecv(function(err,bufs) {
 							if(err) {
 								cb(new Error("onRecv() Error: " + util.inspect(err)));
 							} else {
-								var result = 
+								var result =
 									nlprocess.processProcEvent(bufs[0]);
 								if(typeof(result) !== 'undefined')
 									cb(null, result);
@@ -68,13 +57,17 @@ nlprocess = {
 
 	// See struct proc_event in /linux/include/uapi/linux/cn_proc.h
 	processProcEvent: function(buf) {
+		if(!(buf instanceof Buffer)) return;
+		//console.log('buf-->' + buf.toJSON());
+
 		// Slice out the nl header and cn hdr to get to the cn data
 		buf = buf.slice(36, buf.length-1);
-		var w = buf.readUInt32LE(0,4);
-		var ev = {};
 
-		//console.log('what=' + w);
-		//console.dir(buf);
+		// whats left has to be the exact size of a proc_event struct 40 bytes
+		if(buf.length < 39) return;
+		var w = buf.readUInt32LE(0,4);
+
+		var ev = {};
 		switch(w) {
 			case nlprocess.PROC_EVENT_FORK:
 				ev.event = "fork";
@@ -112,7 +105,7 @@ nlprocess = {
 				break;
 			default:
 				//console.log("default");
-				return; 
+				return;
 		}
 	},
 };

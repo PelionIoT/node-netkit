@@ -3,7 +3,7 @@
  */
 
 
-var netkit = require('../index.js');
+var netkit = require('../../index.js');
 
 var util = require('util');
 
@@ -16,14 +16,14 @@ netkit.setIfFlags("tap0",netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING,function
 		setTimeout(function() {
 			// after 3 seconds do this:
 			netkit.assignRoute({
-			add_route6: 
+			add_route6:
 		   		[  // ipv6 routes: dest
-					{ 
+					{
 					  dest: "aaaa::/64",        // ip -6 route add 2003::/16 dev tun_test
-//					  via_if: "tap0",       // via the interface 'tun_test'
-					  via_network: "bbbb::100", 
+					  via_if: "tap0",       // via the interface 'tun_test'
+					  via_network: "bbbb::100",
 //						  metric: 2400,
-					  //flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'  
+					  //flags: netkit.FLAGS.RT_GATEWAY // | netkit.FLAGS.RT_HOST  // netkit.FLAGS.RT_DYNAMIC aka 'dyn', netkit.FLAGS.RT_MODIFIED aka 'mod'
 					}
 				]
 			},function(err){

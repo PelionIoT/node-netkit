@@ -1,14 +1,14 @@
 
-var netkit = require('../index.js');
+var netkit = require('../../index.js');
 
-var bufferpack = require('../libs/bufferpack.js');
-var rtnetlink = require('../rtnetlink.js');
+var bufferpack = require('../../libs/bufferpack.js');
+var rtnetlink = require('../../nl/rtnetlink.js');
 
 var util = require('util');
 
 var values = [1, 2, 0x123abc, 'atest', 'somethingelse'];
 
-var format = '<B(first)b(second)xxL(third)5s(other)xxxS(something)'; // the 'x''s are needed for C/C++ byte alignment. 
+var format = '<B(first)b(second)xxL(third)5s(other)xxxS(something)'; // the 'x''s are needed for C/C++ byte alignment.
 // http://www.c-faq.com/struct/align.html
 
 var packed = bufferpack.pack(format, values);
@@ -37,7 +37,7 @@ netkit.packTest(packed2);
 var packed3 = obj.pack();
 
 var obj = rtnetlink.buildHdr();
-//var netlinkhdr = 
+//var netlinkhdr =
 console.dir(obj);
 obj._seq = 0xabcd0123;  // test endianess
 obj._pid = 0x67899876;  // test endianess

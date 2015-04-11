@@ -3,7 +3,7 @@
  */
 
 
-var network = require('./index.js');
+var network = require('../../index.js');
 
 var tun0 = network.newTunInterfaceRaw();
 
@@ -21,7 +21,7 @@ if(tun0.create()) {
 					addr: "fe80::1",        // assign a single IP
 //					mask: "0:0:0:FC00:0:0:0:0"
 					add_addr: [ "aaaa::1/48" ] // assign multiple IPs. Also hand just a string: "aaaa::1"
-	
+
 				}
 			});
 

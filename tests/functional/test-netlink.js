@@ -1,4 +1,4 @@
-var netkit = require('../index.js');
+var netkit = require('../../index.js');
 
 var util = require('util');
 

@@ -1,14 +1,19 @@
-var rt = require('./rtnetlink.js')
+var cmn = require('../libs/common.js');
+var rtnetlink = require('./rtnetlink.js')
+
 var util = require('util');
-var bufferpack = require('./libs/bufferpack.js');
-var colors = require('./colors.js');
-var netutils = require('./netutils.js');
+
+var asHexBuffer = cmn.asHexBuffer;
+var dbg = cmn.dbg;
+var err = cmn.err;
+var bufferpack = cmn.bufferpack;
+
 
 // for documentation see: /usr/include/linux/netlink.h
 // 	__u32		nlmsg_len;	Length of message including header
 //	__u16		nlmsg_type;	Message content
 //	__u16		nlmsg_flags; Additional flags
-//	__u32		nlmsg_seq;	 Sequence number 
+//	__u32		nlmsg_seq;	 Sequence number
 //	__u32		nlmsg_pid;	Sending process port ID
 var nlmsghdr_fmt = "<I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
@@ -20,32 +25,18 @@ var error_nlmsghdr_fmt = "<i(_error)I(_len)H(_type)H(_flags)I(_seq)I(_pid)";
 // __u32 seq;
 // __u32 ack;
 
-// __u16 len;		 Length of the following data 
+// __u16 len;		 Length of the following data
 // __u16 flags;
 // __u8 data[0];
-var cn_msg_fmt = "<I(_idx)I(_val)I(_seq)I(_ack)H(_len)H(_flags)"; 
-
-var asHexBuffer = function(b) {
-	return b.toString('hex');
-}
-
-var dbg = function() {
-	console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
-}
-
-var err = function() {
-	console.log(colors.redFG('err: ') + colors.redFG.apply(undefined,arguments));
-}
-
-var asHexBuffer = function(b) {
-	return b.toString('hex');
-}
+var cn_msg_fmt = "<I(_idx)I(_val)I(_seq)I(_ack)H(_len)H(_flags)";
 
 nl = {
 
+	rt: rtnetlink,
+
     // netlink message flags
 	// See: linux/netlink.h
-	
+
 	NLM_F_REQUEST:		0x0001,	/* It is request message. 	*/
 	NLM_F_MULTI:		0x0002,	/* Multipart message, terminated by NLMSG_DONE */
 	NLM_F_ACK:   		0x0004,	/* Reply with ack, with zero or error code */
@@ -76,7 +67,7 @@ nl = {
 	NETLINK_SELINUX:	7,	/* SELinux event notifications */
 	NETLINK_ISCSI:		8,	/* Open-iSCSI */
 	NETLINK_AUDIT:		9,	/* auditing */
-	NETLINK_FIB_LOOKUP:	10,	
+	NETLINK_FIB_LOOKUP:	10,
 	NETLINK_CONNECTOR:	11,
 	NETLINK_NETFILTER:	12,	/* netfilter subsystem */
 	NETLINK_IP6_FW:		13,
@@ -162,6 +153,9 @@ nl = {
 	},
 
 	sendNetlinkCommand: function(sock, nl_hdr, bufs,cb) {
+
+		dbg("nl_hdr.type ---> " + nl_hdr._type);
+
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)
 			len += bufs[n].length;
@@ -170,7 +164,7 @@ nl = {
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
 		dbg("Sending---> " + asHexBuffer(all));
-		console.log('all len = ' + all.length);
+		//console.log('all len = ' + all.length);
 
 	    var msgreq = sock.createMsgReq();
 
@@ -181,138 +175,11 @@ nl = {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
+	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},
 
-	netlinkInfoCommand: function(opts, sock, cb) {
-		if(opts.hasOwnProperty('ifname')) {
-			var ifndex = this.ifNameToIndex(opt['ifname']);
-			if(util.isError(ifndex)) {
-				err("* Error: " + util.inspect(ifndex));
-				cb(ifndex); // call w/ error
-				return;
-			}
-		}
-
-		var nl_hdr = nl.buildHdr();
-
-		// command defaults
-		nl_hdr._flags = nl.NLM_F_REQUEST;
-		nl_hdr._type = rt.RTM_GETLINK; // the command
-
-		// The info message command
-		//<B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)
-		var info_msg = rt.buildInfomsg();
-
-		if(typeof(opts) !== 'undefined') {
-			if(opts.hasOwnProperty('type')) {
-				nl_hdr._type = opts['type'];
-			}
-			if(opts.hasOwnProperty('flags')) {
-				nl_hdr._flags |= opts['flags'];
-			}
-			if(opts.hasOwnProperty("family")) {
-				nl_hdr.family = opts['family'];
-				info_msg._family |= opts['family'];
-			}
-
-		} 
-
-		var bufs = [];
-
-		dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
-		bufs.push(info_msg.pack());
-
-	 	var attr_data = Buffer(4);
-	 	attr_data.writeUInt32LE(rt.RTEXT_FILTER_VF, 0);
-		var rt_attr = rt.buildRtattrBuf(rt.IFLA_EXT_MASK, attr_data);
-		dbg("rt_attr---> "  + asHexBuffer(rt_attr));
-		bufs.push(rt_attr);
-
-		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
-	},
-
-	netlinkNeighCommand: function(opts,sock, cb) {
-
-		if(opts.hasOwnProperty('ifname')) {
-			var ifndex = this.ifNameToIndex(opts['ifname']);
-			if(util.isError(ifndex)) {
-				err("* Error: " + util.inspect(ifndex));
-				cb(ifndex); // call w/ error
-				return;
-			}
-		}
-
-		var nl_hdr = nl.buildHdr();
-
-		// command defaults
-		nl_hdr._flags = nl.NLM_F_REQUEST;
-		nl_hdr._type = rt.RTM_GETLINK; // the command
-
-		// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
-		var nd_msg = rt.buildNdmsg();
-		nd_msg._state = rt.NUD_PERMANENT;
-		nd_msg._ifindex = ifndex;
-
-		if(typeof(opts) !== 'undefined') {
-			if(opts.hasOwnProperty('type')) {
-				nl_hdr._type = opts['type'];
-			}
-			if(opts.hasOwnProperty('flags')) {
-				nl_hdr._flags |= opts['flags'];
-			}
-			if(opts.hasOwnProperty("family")) {
-				nl_hdr.family = opts['family'];
-				nd_msg._family |= opts['family'];
-			}
-		} 
-
-		var bufs = [];
-
-		dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
-		bufs.push(nd_msg.pack());
-
-		// Build the rt attributes for the command
-		if(opts.hasOwnProperty('inet4dest')) {
-			var inet4dest = opts['inet4dest'];
-			if(typeof inet4dest === 'string') {
-				var ans = this.toAddress(inet4dest,this.AF_INET);
-				if(util.isError(ans)) {
-					cb(ans);
-					return;
-				}
-				var destbuf = ans;
-			} else
-				var destbuf = inet4dest;
-			var rt_attr = rt.buildRtattrBuf(rt.NDA_DST,destbuf.bytes);
-			dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-			dbg("rt_attr---> " + asHexBuffer(rt_attr));
-			bufs.push(rt_attr);
-		}
-
-		if(opts.hasOwnProperty('lladdr')) {
-			var lladdr = opts['lladdr'];
-			if(typeof lladdr === 'string') {
-				var macbuf = netutils.bufferifyMacString(lladdr,6); // we want 6 bytes no matter what
-				if(!macbuf) {
-					cb(new Error("bad lladdr"));
-					return;
-				}
-			}
-			else if(Buffer.isBuffer(macbuf))
-				var macbuf = lladdr;
-			else {
-				cb(new Error("bad parameters."));
-				return;			
-			}
-			var rt_attr = rt.buildRtattrBuf(rt.NDA_LLADDR,macbuf);
-			dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
-			bufs.push(rt_attr);
-		}
-
-		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
-	},
 
 	sendConnectorMsg: function(sock,cb) {
 		var bufs = [];

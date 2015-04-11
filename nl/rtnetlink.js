@@ -1,5 +1,5 @@
 
-var bufferpack = require('./libs/bufferpack.js');
+var bufferpack = require('../libs/bufferpack.js');
 
 
 // for documentation see: /usr/include/linux/neighbor.h
@@ -17,302 +17,303 @@ var rtattr_fmt = "<H(_len)H(_type)";
 
 var nda_cacheinfo_fmt = "H(_confirmed)H(_used)H(_updated)H(_refcnt)";
 
-var link_info_attr_name_map = [
-	"unspec",
-	"address",
-	"broadcast",
-	"ifname",
-	"mtu",
-	"link",
-	"qdisc",
-	"stats",
-	"cost",
-	"priority",
-	"master",
-	"wireless",
-	"protinfo",
-	"txqlen",
-	"map",
-	"weight",
-	"operstate",
-	"linkmode",
-	"linkinfo",
-	"net_ns_pid",
-	"ifalias",
-	"num_vf",
-	"vfinfo_list",
-	"stats64",
-	"vf_ports",
-	"port_self",
-	"af_spec",
-	"group",
-	"net_ns_fd",
-	"ext_mask",
-	"promiscuity",
-	"num_tx_queues",
-	"num_rx_queues",
-	"carrier",
-	"phys_port_id",
-	"carrier_changes"
-];
+rt = {
 
-var link_attributes = {
-		IFLA_UNSPEC:			0,
-		IFLA_ADDRESS:			1,
-		IFLA_BROADCAST:			2,
-		IFLA_IFNAME:			3,
-		IFLA_MTU:				4,
-		IFLA_LINK:				5,
-		IFLA_QDISC:				6,
-		IFLA_STATS:				7,
-		IFLA_COST:				8,
-		IFLA_PRIORITY:			9,
-		IFLA_MASTER:			10,
-		IFLA_WIRELESS:			11,
-		IFLA_PROTINFO:			12,
-		IFLA_TXQLEN:			13,
-		IFLA_MAP:				14,
-		IFLA_WEIGHT:			15,
-		IFLA_OPERSTATE:			16,
-		IFLA_LINKMODE:			17,
-		IFLA_LINKINFO:			18,
-		IFLA_NET_NS_PID:		19,
-		IFLA_IFALIAS:			20,
-		IFLA_NUM_VF:			21,
-		IFLA_VFINFO_LIST:		22,
-		IFLA_STATS64:			23,
-		IFLA_VF_PORTS:			24,
-		IFLA_PORT_SELF:			25,
-		IFLA_AF_SPEC:			26,
-		IFLA_GROUP:				27,
-		IFLA_NET_NS_FD:			28,
-		IFLA_EXT_MASK:			29,
-		IFLA_PROMISCUITY:		30,
-		IFLA_NUM_TX_QUEUES:		31,
-		IFLA_NUM_RX_QUEUES:		32,
-		IFLA_CARRIER:			33,
-		IFLA_PHYS_PORT_ID:		34,
-		IFLA_CARRIER_CHANGES:	35
-};
+	link_info_attr_name_map: [
+		"unspec",
+		"address",
+		"broadcast",
+		"ifname",
+		"mtu",
+		"link",
+		"qdisc",
+		"stats",
+		"cost",
+		"priority",
+		"master",
+		"wireless",
+		"protinfo",
+		"txqlen",
+		"map",
+		"weight",
+		"operstate",
+		"linkmode",
+		"linkinfo",
+		"net_ns_pid",
+		"ifalias",
+		"num_vf",
+		"vfinfo_list",
+		"stats64",
+		"vf_ports",
+		"port_self",
+		"af_spec",
+		"group",
+		"net_ns_fd",
+		"ext_mask",
+		"promiscuity",
+		"num_tx_queues",
+		"num_rx_queues",
+		"carrier",
+		"phys_port_id",
+		"carrier_changes"
+	],
 
-var addr_info_attr_name_map = [
-	"unspec",
-	"address",
-	"local",
-	"label",
-	"broadcast",
-	"anycast",
-	"cacheinfo",
-	"multicast",
-	"flags"
-];
+	link_attributes: {
+			IFLA_UNSPEC:			0,
+			IFLA_ADDRESS:			1,
+			IFLA_BROADCAST:			2,
+			IFLA_IFNAME:			3,
+			IFLA_MTU:				4,
+			IFLA_LINK:				5,
+			IFLA_QDISC:				6,
+			IFLA_STATS:				7,
+			IFLA_COST:				8,
+			IFLA_PRIORITY:			9,
+			IFLA_MASTER:			10,
+			IFLA_WIRELESS:			11,
+			IFLA_PROTINFO:			12,
+			IFLA_TXQLEN:			13,
+			IFLA_MAP:				14,
+			IFLA_WEIGHT:			15,
+			IFLA_OPERSTATE:			16,
+			IFLA_LINKMODE:			17,
+			IFLA_LINKINFO:			18,
+			IFLA_NET_NS_PID:		19,
+			IFLA_IFALIAS:			20,
+			IFLA_NUM_VF:			21,
+			IFLA_VFINFO_LIST:		22,
+			IFLA_STATS64:			23,
+			IFLA_VF_PORTS:			24,
+			IFLA_PORT_SELF:			25,
+			IFLA_AF_SPEC:			26,
+			IFLA_GROUP:				27,
+			IFLA_NET_NS_FD:			28,
+			IFLA_EXT_MASK:			29,
+			IFLA_PROMISCUITY:		30,
+			IFLA_NUM_TX_QUEUES:		31,
+			IFLA_NUM_RX_QUEUES:		32,
+			IFLA_CARRIER:			33,
+			IFLA_PHYS_PORT_ID:		34,
+			IFLA_CARRIER_CHANGES:	35
+	},
 
-var addr_attributes = {
-	IFA_UNSPEC: 0,
-	IFA_ADDRESS: 1,
-	IFA_LOCAL: 2,
-	IFA_LABEL: 3,
-	IFA_BROADCAST: 4,
-	IFA_ANYCAST: 5,
-	IFA_CACHEINFO: 6,
-	IFA_MULTICAST: 7,
-	IFA_FLAGS: 8
-};
+	addr_info_attr_name_map: [
+		"unspec",
+		"address",
+		"local",
+		"label",
+		"broadcast",
+		"anycast",
+		"cacheinfo",
+		"multicast",
+		"flags"
+	],
 
-var route_info_attr_name_map = [
-	"unspec",
-	"dst",
-	"src",
-	"iif",
-	"oif",
-	"gateway",
-	"priority",
-	"prefsrc",
-	"metrics",
-	"multipath",
-	"protoinfo",
-	"flow",
-	"cacheinfo",
-	"session",
-	"mp_algo",
-	"table",
-	"mark",
-	"mfc_stats"
-];
+	addr_attributes: {
+		IFA_UNSPEC: 0,
+		IFA_ADDRESS: 1,
+		IFA_LOCAL: 2,
+		IFA_LABEL: 3,
+		IFA_BROADCAST: 4,
+		IFA_ANYCAST: 5,
+		IFA_CACHEINFO: 6,
+		IFA_MULTICAST: 7,
+		IFA_FLAGS: 8
+	},
 
-var route_attributes = {
-	RTA_UNSPEC: 0,
-	RTA_DST: 1,
-	RTA_SRC: 2,
-	RTA_IIF: 3,
-	RTA_OIF: 4,
-	RTA_GATEWAY: 5,
-	RTA_PRIORITY: 6,
-	RTA_PREFSRC: 7,
-	RTA_METRICS: 8,
-	RTA_MULTIPATH: 9,
-	RTA_PROTOINFO: 10, /* no longer used */
-	RTA_FLOW: 11,
-	RTA_CACHEINFO: 12,
-	RTA_SESSION: 13, /* no longer used */
-	RTA_MP_ALGO: 14, /* no longer used */
-	RTA_TABLE: 15,
-	RTA_MARK: 16,
-	RTA_MFC_STATS: 17
-};
+	route_info_attr_name_map: [
+		"unspec",
+		"dst",
+		"src",
+		"iif",
+		"oif",
+		"gateway",
+		"priority",
+		"prefsrc",
+		"metrics",
+		"multipath",
+		"protoinfo",
+		"flow",
+		"cacheinfo",
+		"session",
+		"mp_algo",
+		"table",
+		"mark",
+		"mfc_stats"
+	],
 
-var neigh_info_attr_name_map = [
-	"unspec",
-	"dst",
-	"lladdr",
-	"cacheinfo",
-	"probes",
-	"vlan",
-	"port",
-	"vni",
-	"ifindex",
-	"master",
-];
+	route_attributes: {
+		RTA_UNSPEC: 0,
+		RTA_DST: 1,
+		RTA_SRC: 2,
+		RTA_IIF: 3,
+		RTA_OIF: 4,
+		RTA_GATEWAY: 5,
+		RTA_PRIORITY: 6,
+		RTA_PREFSRC: 7,
+		RTA_METRICS: 8,
+		RTA_MULTIPATH: 9,
+		RTA_PROTOINFO: 10, /* no longer used */
+		RTA_FLOW: 11,
+		RTA_CACHEINFO: 12,
+		RTA_SESSION: 13, /* no longer used */
+		RTA_MP_ALGO: 14, /* no longer used */
+		RTA_TABLE: 15,
+		RTA_MARK: 16,
+		RTA_MFC_STATS: 17
+	},
 
-var neigh_attributes = {
-	NDA_UNSPEC: 0,
-	NDA_DST: 1,
-	NDA_LLADDR: 2,
-	NDA_CACHEINFO: 3,
-	NDA_PROBES: 4,
-	NDA_VLAN: 5,
-	NDA_PORT: 6,
-	NDA_VNI: 7,
-	NDA_IFINDEX: 8,
-	NDA_MASTER: 9,
-};
+	neigh_info_attr_name_map: [
+		"unspec",
+		"dst",
+		"lladdr",
+		"cacheinfo",
+		"probes",
+		"vlan",
+		"port",
+		"vni",
+		"ifindex",
+		"master",
+	],
 
-var payload_sizes = [
+	neigh_attributes: {
+		NDA_UNSPEC: 0,
+		NDA_DST: 1,
+		NDA_LLADDR: 2,
+		NDA_CACHEINFO: 3,
+		NDA_PROBES: 4,
+		NDA_VLAN: 5,
+		NDA_PORT: 6,
+		NDA_VNI: 7,
+		NDA_IFINDEX: 8,
+		NDA_MASTER: 9,
+	},
 
-	16,	//RTM_NEWLINK:
-	16,	//RTM_DELLINK:
-	16,	//RTM_GETLINK:
-	16,	//RTM_SETLINK:
-	8,	//RTM_NEWADDR:
-	8,	//RTM_DELADDR:
-	8,	//RTM_GETADDR:
-	12,	//RTM_NEWROUTE:
-	12,	//RTM_DELROUTE:
-	12,	//RTM_GETROUTE:
-	12,	//RTM_NEWNEIGH:
-	12,	//RTM_DELNEIGH:
-	12,	//RTM_GETNEIGH:
+	payload_sizes: [
 
-	// not confirmed the rest
-	8,	//RTM_NEWRULE:
-	8,	//RTM_DELRULE:
-	8,	//RTM_GETRULE:
-	8,	//RTM_NEWQDISC:
-	8,	//RTM_DELQDISC:
-	8,	//RTM_GETQDISC:
-	8,	//RTM_NEWTCLASS:
-	8,	//RTM_DELTCLASS:
-	8,	//RTM_GETTCLASS:
-	8,	//RTM_NEWTFILTER:
-	8,	//RTM_DELTFILTER:
-	8,	//RTM_GETTFILTER:
-	8,	//RTM_NEWACTION:
-	8,	//RTM_DELACTION:
-	8,	//RTM_GETACTION:
-	8,	//RTM_NEWPREFIX:
-	8,	//RTM_GETMULTICAST:
-	8,	//RTM_GETANYCAST:
-	8,	//RTM_NEWNEIGHTBL:
-	8,	//RTM_GETNEIGHTBL:
-	8,	//RTM_SETNEIGHTBL:
-	8,	//RTM_NEWNDUSEROPT:
-	8,	//RTM_NEWADDRLABEL:
-	8,	//RTM_DELADDRLABEL:
-	8,	//RTM_GETADDRLABEL:
-	8,	//RTM_GETDCB:
-	8,	//RTM_SETDCB:
-	8,	//RTM_NEWNETCONF:
-	8,	//RTM_GETNETCONF:
-	8,	//RTM_NEWMDB:
-	8,	//RTM_DELMDB:
-	8	//RTM_GETMDB:
-];
+		16,	//RTM_NEWLINK:
+		16,	//RTM_DELLINK:
+		16,	//RTM_GETLINK:
+		16,	//RTM_SETLINK:
+		8,	//RTM_NEWADDR:
+		8,	//RTM_DELADDR:
+		8,	//RTM_GETADDR:
+		12,	//RTM_NEWROUTE:
+		12,	//RTM_DELROUTE:
+		12,	//RTM_GETROUTE:
+		12,	//RTM_NEWNEIGH:
+		12,	//RTM_DELNEIGH:
+		12,	//RTM_GETNEIGH:
 
-var rtm_types_name_map = [
-	"newLink",
-	"delLink",
-	"getLink",
-	"setLink",
-	"newAddress",
-	"delAddress",
-	"getAddress",
-	"undefined",
-	"newRoute",
-	"delRoute",
-	"getRoute",
-	"undefined",
-	"newNeighbor",
-	"delNeighbor",
-	"getNeighbor",
-	"undefined",
-	"newRule",
-	"delRule",
-	"getRule",
-	"undefined",
-	"RTM_NEWQDISC",
-	"RTM_DELQDISC",
-	"RTM_GETQDISC",
-	"undefined",
-	"RTM_NEWTCLASS",
-	"RTM_DELTCLASS",
-	"RTM_GETTCLASS",
-	"undefined",
-	"RTM_NEWTFILTER",
-	"RTM_DELTFILTER",
-	"RTM_GETTFILTER",
-	"undefined",
-	"RTM_NEWACTION",
-	"RTM_DELACTION",
-	"RTM_GETACTION",
-	"undefined",
-	"RTM_NEWPREFIX",
-	"undefined",
-	"undefined",
-	"undefined",
-	"undefined",
-	"undefined",
-	"RTM_GETMULTICAST",
-	"undefined",
-	"undefined",
-	"undefined",
-	"RTM_GETANYCAST",
-	"undefined",
-	"RTM_NEWNEIGHTBL",
-	"undefined",
-	"RTM_GETNEIGHTBL",
-	"RTM_SETNEIGHTBL",
-	"RTM_NEWNDUSEROPT",
-	"undefined",
-	"undefined",
-	"undefined",
-	"RTM_NEWADDRLABEL",
-	"RTM_DELADDRLABEL",
-	"RTM_GETADDRLABEL",
-	"undefined",
-	"undefined",
-	"undefined",
-	"RTM_GETDCB",
-	"RTM_SETDCB",
-	"RTM_NEWNETCONF",
-	"undefined",
-	"RTM_GETNETCONF",
-	"undefined",
-	"RTM_NEWMDB",
-	"RTM_DELMDB",
-	"RTM_GETMDB"
-	];
+		// not confirmed the rest
+		8,	//RTM_NEWRULE:
+		8,	//RTM_DELRULE:
+		8,	//RTM_GETRULE:
+		8,	//RTM_NEWQDISC:
+		8,	//RTM_DELQDISC:
+		8,	//RTM_GETQDISC:
+		8,	//RTM_NEWTCLASS:
+		8,	//RTM_DELTCLASS:
+		8,	//RTM_GETTCLASS:
+		8,	//RTM_NEWTFILTER:
+		8,	//RTM_DELTFILTER:
+		8,	//RTM_GETTFILTER:
+		8,	//RTM_NEWACTION:
+		8,	//RTM_DELACTION:
+		8,	//RTM_GETACTION:
+		8,	//RTM_NEWPREFIX:
+		8,	//RTM_GETMULTICAST:
+		8,	//RTM_GETANYCAST:
+		8,	//RTM_NEWNEIGHTBL:
+		8,	//RTM_GETNEIGHTBL:
+		8,	//RTM_SETNEIGHTBL:
+		8,	//RTM_NEWNDUSEROPT:
+		8,	//RTM_NEWADDRLABEL:
+		8,	//RTM_DELADDRLABEL:
+		8,	//RTM_GETADDRLABEL:
+		8,	//RTM_GETDCB:
+		8,	//RTM_SETDCB:
+		8,	//RTM_NEWNETCONF:
+		8,	//RTM_GETNETCONF:
+		8,	//RTM_NEWMDB:
+		8,	//RTM_DELMDB:
+		8	//RTM_GETMDB:
+	],
 
-module.exports = {
+	rtm_types_name_map: [
+		"newLink",
+		"delLink",
+		"getLink",
+		"setLink",
+		"newAddress",
+		"delAddress",
+		"getAddress",
+		"undefined",
+		"newRoute",
+		"delRoute",
+		"getRoute",
+		"undefined",
+		"newNeighbor",
+		"delNeighbor",
+		"getNeighbor",
+		"undefined",
+		"newRule",
+		"delRule",
+		"getRule",
+		"undefined",
+		"RTM_NEWQDISC",
+		"RTM_DELQDISC",
+		"RTM_GETQDISC",
+		"undefined",
+		"RTM_NEWTCLASS",
+		"RTM_DELTCLASS",
+		"RTM_GETTCLASS",
+		"undefined",
+		"RTM_NEWTFILTER",
+		"RTM_DELTFILTER",
+		"RTM_GETTFILTER",
+		"undefined",
+		"RTM_NEWACTION",
+		"RTM_DELACTION",
+		"RTM_GETACTION",
+		"undefined",
+		"RTM_NEWPREFIX",
+		"undefined",
+		"undefined",
+		"undefined",
+		"undefined",
+		"undefined",
+		"RTM_GETMULTICAST",
+		"undefined",
+		"undefined",
+		"undefined",
+		"RTM_GETANYCAST",
+		"undefined",
+		"RTM_NEWNEIGHTBL",
+		"undefined",
+		"RTM_GETNEIGHTBL",
+		"RTM_SETNEIGHTBL",
+		"RTM_NEWNDUSEROPT",
+		"undefined",
+		"undefined",
+		"undefined",
+		"RTM_NEWADDRLABEL",
+		"RTM_DELADDRLABEL",
+		"RTM_GETADDRLABEL",
+		"undefined",
+		"undefined",
+		"undefined",
+		"RTM_GETDCB",
+		"RTM_SETDCB",
+		"RTM_NEWNETCONF",
+		"undefined",
+		"RTM_GETNETCONF",
+		"undefined",
+		"RTM_NEWMDB",
+		"RTM_DELMDB",
+		"RTM_GETMDB"
+		],
+
 		AF_INET6: 10,
 		AF_INET: 2,
 
@@ -340,17 +341,6 @@ module.exports = {
 		NUD_PERMANENT:  0x80,
 		NUD_NONE:       0x00,
 
-
-		NDA_UNSPEC:     0,
-		NDA_DST:        1,
-		NDA_LLADDR:     2,
-		NDA_CACHEINFO:  3,
-		NDA_PROBES:     4,
-		NDA_VLAN:       5,
-		NDA_PORT:       6,
-		NDA_VNI:        7,
-		NDA_IFINDEX:    8,
-		__NDA_MAX:      9,
 
 		/* inteface types */
 		ARPHRD_ETHER:	2,
@@ -473,7 +463,7 @@ module.exports = {
 		RTM_GETMDB: 86,
 
 	getRtmTypeName: function(type) {
-		return rtm_types_name_map[type - this.RTM_BASE];
+		return rt.rtm_types_name_map[type - this.RTM_BASE];
 	},
 
    	// <B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)
@@ -513,6 +503,11 @@ module.exports = {
 // ifaddrmsg = "<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)"
 	buildIfaddressmsg: function() {
 		var o = bufferpack.metaObject(ifaddrmsg_fmt,true);
+		o._family = 0;
+		o._prefix_len = 0;
+		o._flags = 0;
+		o._scope = 0;
+		o._if_index = 0;
 		return o;
 	},
 
@@ -536,7 +531,7 @@ module.exports = {
 	        bufs.unshift(rtabuf);
 //     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
 	        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-	        console.log("pad: " + pad);
+//	        console.log("pad: " + pad);
 	        if(pad) {
 	        	var padbuf = new Buffer(pad);
 	        	padbuf.fill(0);
@@ -549,51 +544,73 @@ module.exports = {
 
 	parseRtattributes: function(data, opts) {
 		var ret = {};
+		//console.dir(data);
 
-		if(!data || !Buffer.isBuffer(data)) {
-			console.error("ERROR: ** Bad parameters to parseRtattributes(" + data + ") **");
+		if(!data || !Buffer.isBuffer(data) || data.length < 16) {
+			return ret;
 		} else {
 			var total_len = data.readUInt32LE(0);
-			var type = data.readUInt16LE(4);
-			if(type == module.exports.NLMSG_DONE) {
+			if(total_len != data.length) {
 				return ret;
 			}
 
+			var type = data.readUInt16LE(4);
+			//console.error("type = " + type);
+			if(type === module.exports.NLMSG_DONE) {
+				return ret;
+			}
 			var index = 16; // start after the msghdr
 
 			var keys, payload;
 			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
 			    //console.log('LINK');
-				keys = link_info_attr_name_map;
+				keys = rt.link_info_attr_name_map;
 				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
 			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
 			    //console.log('ADDR');
-				keys = addr_info_attr_name_map;
+				keys = rt.addr_info_attr_name_map;
 				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
 			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
 			    //console.log('ROUTE');
-				keys = route_info_attr_name_map
+				keys = rt.route_info_attr_name_map
 				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			} else if(this.RTM_NEWNEIGH <= type && type <= this.RTM_GETNEIGH) {
 			    //console.log('NEIGH');
-				keys = neigh_info_attr_name_map
+				keys = rt.neigh_info_attr_name_map
 				payload = bufferpack.unpack(ndmsg_fmt,data,index)
+			}else {
+				console.warn("WARNING: ** Received unsupported message type from netlink socket(type=" + type + ") **");
+				return ret;
 			}
 
 			// skip the header,header payload padding that rounds the message up to multiple of 16
-			index += payload_sizes[type - 16];
+			index += rt.payload_sizes[type - 16];
 
 			// console.log('start index = ' + index);
-			while(index < total_len) {
-				// console.log('index = ' + index);
-				var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
-				var attr_type = data.readUInt16LE(index + 2);
-				//console.log('attr = ' + attr_type + ' len = ' + len);
+			ret = rt.parseAttrs(data, index, total_len, keys);
 
-				index += 4; // index to the data
-				var value;
+			ret['payload'] = payload;
+			ret['operation'] = this.getRtmTypeName(type);
+		}
+		return ret;
+	},
 
-				var key = keys[attr_type];
+	parseAttrs: function(data, attr_start, total_len, attr_map) {
+		var ret = {};
+		var index = attr_start;
+
+		while(index < total_len) {
+			//console.log('index = ' + index);
+			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
+			var attr_type = data.readUInt16LE(index + 2);
+			//console.log('attr = ' + attr_type + ' len = ' + len);
+
+			index += 4; // index to the data
+			var value;
+
+			if(0 <= attr_type && attr_type < attr_map.length)
+			{
+				var key = attr_map[attr_type];
 				var regExNm = /name|label/;
 				if(regExNm.test(key)) {
 					ret[key] = data.toString('ascii',index,index + len-1);
@@ -606,10 +623,9 @@ module.exports = {
 		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
 		        // console.log("pad: " + pad);
 				index += (len + pad);
-			};
-			ret['payload'] = payload;
-			ret['operation'] = this.getRtmTypeName(type);
-		}
+			}
+		};
+
 		return ret;
 	},
 
@@ -624,3 +640,5 @@ module.exports = {
 		return bytes;
 	}
 };
+
+module.exports = rt;

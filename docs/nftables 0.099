@@ -1,0 +1,429 @@
+: Release of nftables 0.099
+From:	 	Patrick McHardy <kaber@trash.net>
+To:	 	netfilter-devel@vger.kernel.org
+Subject:	 	[ANNOUNCE]: Release of nftables 0.099
+Date:	 	Mon, 20 Jan 2014 13:11:33 +0000
+Message-ID:	 	<20140120131132.GA32427@macbook.localnet>
+Cc:	 	netfilter@vger.kernel.org, announce@lists.netfilter.org,	netdev@vger.kernel.org, coreteam@netfilter.org
+Archive-link:	 	Article, Thread
+The Netfilter project presents:
+
+        nftables 0.099
+
+With the release of Linux 3.13 and almost 5 years after the last nftables
+release, the time has come to finally get this code out to our users.
+
+Since this is the first regular release intended for users, I'm including
+a bit of extra information.
+
+Overview
+========
+
+nf_tables is the new firewalling infrastructure in the Linux kernel,
+intended to replace ip_tables, ip6_tables, arp_tables and ebtables
+in the long term. nftables is the corresponsing userspace frontend,
+replacing their respective userspace utilities.
+
+nftables features native support for sets and dictionaries of arbitrary
+types, support for many different protocols, meta data types, connection
+tracking, NAT, logging, atomic incremental and full ruleset updates,
+a netlink API with notification support, a format grammar, a compatiblity
+layer for iptables/ip6tables and more.
+
+While the internal architecture is fundamentally different from
+ip_tables etc, many of the well proven concepts like tables and chains
+have been retained. The syntax differs significantly from iptables
+and friends, most notable, the options style parsing has been replaced
+by a formal grammar and a set of keywords. For anyone familiar with
+BPF the syntax should be quite easy to learn.
+
+Architecture
+============
+
+As mentioned previously, the architecture differs significantly from
+the existing packet filtering mechanisms. While ip_tables etc. include
+special modules for each and every protocol they support, for each meta
+data type etc and each each of these modules implement a set of usually
+similar operations on this data, nftables contains a small evaluation
+engine (sometimes called a virtual machine) with extensions to support
+getting packet payload data, meta data, ... and performing operations
+with this data, altering flow control and so on.
+
+The userspace frontend performs parsing of the ruleset and compiles it
+into instructions for the virtual machine. F.i. while an iptables tcp
+dport match would instruct the xt_tcpudp module to compare the TCP port
+number, nftables userspace emits instructions to load 2 bytes at the
+position network header + 2 into a so called register and a second
+instruction to compare that register to a given value. IOW, the kernel
+doesn't require knowledge of particular protocols, support for them
+can in most cases be added completely in the nftables frontend.
+
+Data gathered from the packet (or elsewhere) can not only be used for
+matches (called relational expressions in nftables), but for dynamically
+parameterizing other extensions. F.i. the following expression would
+select the DNAT destination address based on the source address of the
+packet:
+
+... dnat ip saddr map {
+	192.168.0.0/24 : 10.0.0.1,
+	192.168.1.0/24 : 10.0.0.2,
+	* : 10.0.0.3
+    }
+
+while the following expression would store the input interface index
+in the upper 8 bits of the packet mark to be used in the POSTROUTING
+hook where it is not available anymore:
+
+... mark set iif
+
+Similar to ip_tables, rules are organized in address family specific
+tables and chains. The kernel doesn't include any pre-defined tables
+anymore, they can be created at will from userspace. Special features
+of tables like the NAT table and mangle table are available as so
+called "chain types", which instruct nftables to perform operations
+like setting up NAT mappings or rerouting packets after remarking.
+A set of predefined tables corresponding to the tables existing in
+ip_tables etc is contained in nftables.
+
+Dictionaries, as shown in the previous dnat example, can not only
+be used for parameterizing different extensions, but also to alter
+control flow, allowing to build match trees with efficient branching:
+
+... iif vmap {
+	eth0 : jump from_lan,
+	eth1 : jump from_dmz,
+	eth2 : jump from_wan,
+	*    : drop,
+    }
+
+Status
+======
+
+There are still a few rough edges, but we believe the code is ready
+to be used for testing and personal usage. It is not ready for
+production use, but we should be getting there quickly. Userspace
+may occasionally produce an unexpected error for uncommon cases,
+the kernel side is expected to be pretty much solid. Any bugs
+reported will be fixed quickly.
+
+While trying to avoid it when possible, until the 0.1 release we may
+still change the grammar or other things in incompatible ways. This
+should result in only small impact though, most of the grammar is
+expected to stay as it is.
+
+Naming
+======
+
+nftables releases have names. The last release v0.01-alpha1 was named
+schäublefilter, honoring the minister of the interieur of Germany,
+Wolfgang Schäuble, and his attempts to introduce legislation to allow
+the state to crack computers.
+
+Owing to the fact that his term is over since over four years and that
+in retrospective his attempts really seem only alpha, the new release
+is named keith-alexander-filter, in celebration of not being backdoored
+by the NSA so far.
+
+Resources
+=========
+
+The nftables code can be obtained from:
+
+* http://netfilter.org/projects/nftables/downloads.html
+* ftp://ftp.netfilter.org/pub/nftables
+* git://git.netfilter.org/nftables
+
+To build the code, you libnftnl and libmnl are required:
+
+* http://netfilter.org/projects/libnftnl/index.html
+* http://netfilter.org/projects/libmnl/index.html
+
+The iptables compatibility layer is available at:
+
+* git://git.netfilter.org/iptables-nftables
+
+The code should appear on the website and FTP shortly.
+
+Further reading
+===============
+
+While documentation is still scarce at the moment, the next release
+will include a full command reference and further documentation.
+
+The project page on netfilter.org contains some further pointers:
+
+  http://netfilter.org/projects/nftables/index.html
+
+Eric Leblond has written a short howto:
+
+  https://home.regit.org/netfilter-en/nftables-quick-howto/
+
+and has given a presentation on nftables:
+
+  https://home.regit.org/wp-content/uploads/2013/09/2013_ke...
+
+My first presentation on nftables during NFWS 2008 in Paris:
+
+  http://people.netfilter.org/kaber/nfws2008/nftables.odp
+
+And there's a Wiki-page with some further information on the basic
+building blocks, the syntax ...:
+
+  http://people.netfilter.org/wiki-nftables/index.php/Main_...
+
+Thanks
+======
+
+A lot of people have started contributing to nftables during the past
+1.5 years and helped to get both the kernel and userspace components in
+shape for merging and release. Pablo revived the project after I stopped
+working on it for quite a while, Eric Leblond, Tomasz Burstyka, Arturo
+Borrero, Alvaro Neira and Giuseppe Longo all made important contributions
+to nftables and the surrounding infrastructure.
+
+
+On behalf of the Netfilter Core Team,
+Happy bytecode execution :)
+
+
+Ana Rey (1):
+      nft: scanner: fixed problem with ipv6 address
+
+Arturo Borrero (2):
+      nftables: delete debian/ directory
+      mnl: fix inconsistent name usage in nft_*_nlmsg_build_hdr calls
+
+Arturo Borrero Gonzalez (2):
+      src: fix return code
+      files: replace interpreter during installation
+
+Eric Leblond (23):
+      rule: add flag to display rule handle as comment
+      doc: fix inversion of operator and object.
+      rule: list elements in set in any case
+      cli: add quit command
+      cli: reset terminal when CTRL+d is pressed
+      rule: display hook info
+      src: fix counter restoration
+      src: Add support for insertion inside rule list
+      src: Add icmpv6 support
+      nat: add mandatory family attribute
+      Suppress non working examples.
+      Update chain creation format.
+      display family in table listing
+      netlink: fix IPv6 prefix computation
+      src: Add support for IPv6 NAT
+      mnl: fix typo in comment
+      netlink: suppress useless variable
+      netlink: only flush asked table/chain
+      netlink: fix nft flush operation
+      expression: fix indent
+      jump: fix logic in netlink linearize
+      verdict: fix delinearize in case of jump
+      netlink: only display wanted chain in listing
+
+Florian Westphal (3):
+      log: s/threshold/queue-threshold/
+      meta: iif/oifname should be host byte order
+      statement: avoid huge rodata array
+
+Kevin Fenzi (1):
+      nftables: drop hard coded install using root user owner and group
+
+Pablo Neira (1):
+      expression: fix output of verdict maps
+
+Pablo Neira Ayuso (63):
+      tests: fix test, commands now comes before the family and table name
+      rule: allow to list of existing tables
+      rule: fix nft list chain
+      netlink: return error if chain not found
+      main: fix error checking in nft_parse
+      tests: family-ipv4: update test to use current syntax
+      tests: expr-ct: update examples to use the current syntax
+      src: fix crash if nft -f wrong_file is passed
+      tests: family-ipv6: update to use the current syntax
+      payload: accept ethertype in hexadecimal
+      tests: family-bridge: update to use the current syntax
+      tests: feat-adjancent-load-merging: remove ip protocol from rule
+      meta: accept uid/gid in numerical
+      tests: expr-meta: update examples to use the current syntax
+      tests: obj-chain: update examples to use the current syntax
+      tests: dictionary: update examples to use the current syntax
+      tests: set: update examples to use the current syntax
+      tests: obj-table: update examples to use the current syntax
+      cli: complete basic functionality of the interactive mode
+      datatype: concat expression only releases dynamically allocated datatype
+      evaluate: fix range and comparison evaluation
+      src: get it sync with current include/linux/netfilter/nf_tables.h
+      rule: family field in struct handle is unsigned
+      meta: use if_nametoindex and if_indextoname
+      meta: replace rtnl_tc_handle2str and rtnl_tc_str2handle
+      src: use libnftables
+      netlink: fix network address prefix
+      datatype: fix table listing if name resolution is not available
+      mnl: use nft_*_list_add_tail
+      datatype: fix crash if wrong integer type is passed
+      log: convert group and qthreshold to use u16
+      datatype: fix wrong endianess in numeric ports
+      src: allow to specify the base chain type
+      meta: fix output display of meta length
+      datatype: fix mark parsing if string is used
+      payload: fix endianess of ARP operation code
+      netlink: use uint32_t instead of size_t for attribute length
+      src: add rule batching support
+      netlink_linearize: finish reject support
+      payload: fix ethernet type protocol matching
+      parser: fix warning on deprecated directive in bison
+      build: relax compilation not to break on warning
+      datatype: fix missing nul-terminated string in string_type_print
+      netlink: improve rule deletion per chain
+      meta: fix endianness in UID/GID
+      meta: relax restriction on UID/GID parsing
+      src: fix rule flushing atomically
+      mnl: don't set NLM_F_ACK flag in mnl_nft_rule_batch_[add|del]
+      mnl: print netlink message if if --debug=netlink in mnl_talk()
+      netlink: fix dictionary feature with data mappings
+      netlink: fix wrong type in attributes
+      scanner: rename address selector from 'eth' to 'ether'
+      scanner: add aliases to symbols for easier interaction with most shells
+      segtree: add new segtree debugging option
+      netlink: use stdout for debugging
+      parser: fix parsing of ethernet protocol types
+      payload: fix crash when wrong ethernet protocol type is used
+      payload: fix inconsistency in ethertype output
+      src: add new --debug=mnl option to enable libmnl debugging
+      src: use ':' instead of '=>' in dictionaries
+      datatype: add time type parser and adapt output
+      mnl: fix chain type autoloading
+      use new libnftnl library name
+
+Patrick McHardy (96):
+      build: work around docbook2x-man inability to specify output file
+      templates: add IPv6 raw table template
+      netlink: wrap libnl object dumping in #ifdef DEBUG
+      lexer: fix some whitespace errors
+      Fix use of reserved names in header sandwich
+      kill obsolete TODO item
+      Allow newlines in sets and maps
+      Allow newlines in regular maps
+      build: remove double subdir in build output
+      build: fix installation when docs are not built
+      Add installation instructions
+      parser: fix common_block usage in chain and table blocks
+      parser: consistently use $@ for location of entire grouping
+      Add support for scoping and symbol binding
+      Add support for user-defined symbolic constants
+      Add more notes to INSTALL
+      expr: add support for cloning expressions
+      Fix multiple references to the same user defined symbolic expression
+      Release scopes during cleanup
+      Fix some memory leaks
+      netlink_linearize: remove two debugging printfs
+      ct: resync netlink header and properly add ct l3protocol support
+      netlink: add helper function for socket callback modification
+      netlink: consistent naming fixes
+      netlink: use libnl OBJ_CAST macro
+      netlink: move data related functions to netlink.c
+      datatype: maintain table of all datatypes and add registration/lookup function
+      datatype: add/move size and byte order information into data types
+      expressions: kill seperate sym_type datatype for symbols
+      add support for new set API and standalone sets
+      debug: allow runtime control of debugging output
+      netlink: fix bitmask element reconstruction
+      netlink: dump all chains when listing rules
+      netlink: fix binop RHS byteorder
+      payload: add DCCP packet type definitions
+      payload: fix two datatypes
+      parser: support bison >= 2.4
+      build: add 'archive' target
+      build: fix endless recursion with SUBDIRS=...
+      debug: properly parse debug levels
+      netlink: fix byteorder of RHS of relational meta expression
+      utils: fix invalid assertion in xrealloc()
+      netlink: fix creation of base chains with hooknum and priority 0
+      payload: fix crash with uncombinable protocols
+      netlink: fix nat stmt linearization/parsing
+      nat: validate protocol context when performing transport protocol mappings
+      netlink: add debugging for missing objects
+      don't use internal_location for files specified on command line
+      datatype: reject incompletely parsed integers in integer_type_parse()
+      add bridge filter table definitions
+      parser: fix parsing protocol names for protocols which are also keywords
+      evaluate: reintroduce type chekcs for relational expressions
+      segtree: fix segtree to properly support mappings
+      tests: add verdict map test
+      seqtree: update mapping data when keeping the base
+      payload: kill redundant payload protocol expressions during netlink postprocessing
+      expression: fix constant expression splicing
+      rules: change rule handle to 64 bit
+      netlink: fix endless loop on 64 bit when parsing binops
+      sets: fix sets using intervals
+      rule: reenable adjacent payload merging
+      cmd: fix handle use after free for implicit set declarations
+      tests: add loop detection tests
+      netlink: fix query requests
+      chains: add chain rename support
+      rule: add rule insertion (prepend) support
+      chains: add rename testcases
+      netlink_delinearize: don't reset source register after read
+      expr: kill EXPR_F_PRIMARY
+      datatype: parse/print in all basetypes subsequently
+      types: add ethernet address type
+      expr: fix concat expression type propagation
+      cmd/netlink: make sure we always have a location in netlink operations
+      mark: fix numeric mark value parsing
+      expr: catch missing and excess elements in concatenations
+      parser: include leading '.' in concat subexpression location
+      parser: fix size of internet protocol expressions matching keywords
+      nftables: fix supression of "permission denied" errors
+      nftables: shorten "could not process rule in batch" message
+      erec: fix error markup for errors starting at column 0
+      datatype: revert "fix crash if wrong integer type is passed"
+      meta: fix crash when parsing unresolvable mark values
+      parser: replace "vmap" keyword by "map"
+      Revert "parser: replace "vmap" keyword by "map""
+      expr: remove secmark from ct and meta expression
+      meta: don't require "meta" keyword for a subset of meta expressions
+      meta: fix mismerge
+      payload: fix name of eth_proto
+      expr: relational: don't surpress '==' for LHS binops in output
+      parser: fix compilation breakage
+      segtree: only use prefix expressions for ranges for selected datatypes
+      segtree: fix decomposition of unclosed intervals
+      build: fix recursive parser.h inclusion
+      set: make set flags output parsable
+      set: make set initializer parsable
+      nftables: version 0.099
+
+Phil Oester (8):
+      datatype: validate port number in inet_service_type_parse
+      datatype: allow protocols by number in inet_protocol_type_parse
+      nftables: add additional --numeric level
+      src: operational limit match
+      parser: segfault in top scope define
+      examples: adjust new chain type syntax in sets_and_maps file
+      rule: missing set cleanup in do_command_list
+      parser: add 'delete map' syntax
+
+Romain Bignon (1):
+      help: fix of the -I option in help display
+
+Tomasz Bursztyka (11):
+      netlink: Use the right datatype for verdict
+      evaluate: Remove useless variable in expr_evaluate_bitwise()
+      erec: Handle returned value properly in erec_print
+      expression: Differentiate expr among anonymous structures in struct expr
+      src: Fix base chain printing
+      INSTALL: Update dependency list and repository URLs
+      src: Wrap netfilter hooks around human readable strings
+      src: Add priority keyword on base chain description
+      tests: Update bate chain creation according to latest syntax changes
+      src: Better error reporting if chain type is invalid
+      include: cache a copy of nfnetlink.h
+
+root (1):
+      debug: include verbose message in all BUG statements
+
+
+

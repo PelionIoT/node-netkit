@@ -1,22 +1,12 @@
-var rt = require('./rtnetlink.js');
-var dns = require('dns');
-
-var nativelib = null;
-try {
-	nativelib = require('./build/Release/netkit.node');
-} catch(e) {
-	if(e.code == 'MODULE_NOT_FOUND')
-		nativelib = require('./build/Debug/netkit.node');
-	else
-		console.error("Error in nativelib [debug]: " + e + " --> " + e.stack);
-}
+var rt = require('../nl/rtnetlink.js');
+var nativelib = require('../libs/common.js').nativelib;
 
 var ipparse = {
 
 	AF_INET6: 10,
 	AF_INET: 2,
 	AF_DECnet: 12,
-	
+
 	link_oper_states: [
 		"UNKNOWN", "NOTPRESENT", "DOWN", "LOWERLAYERDOWN",
 		"TESTING", "DORMANT",	 "UP"
@@ -86,10 +76,10 @@ var ipparse = {
 	neigh_flags: {
 		0x01:	"use",
 		0x08:	"proxy", 	/* == ATF_PUBL */
-		0x80:	"router", 
+		0x80:	"router",
 
-		0x02:	"self", 
-		0x04:	"master", 
+		0x02:	"self",
+		0x04:	"master",
 	},
 
 	neigh_states: {
@@ -110,6 +100,8 @@ var ipparse = {
 	},
 
 	parseAttributes: function(filters,links,buf) {
+		//console.log("data --> " + buf.toJSON());
+		// console.log("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
 		if(typeof(at['operation']) !== 'undefined') {
 			//console.dir(at);
@@ -117,25 +109,47 @@ var ipparse = {
 			//console.log("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 			var data = boundApply(at,links);
+			 if(data === undefined) {
+			 	return data;
+			 }
 
-			// Does filter apply?
-			var applies = true;
-			if(typeof(data) === 'undefined')
-				applies = false;
+			var filters_array = [];
+			if(typeof( filters ) === 'undefined'){
+				return data;
+			} else if( Object.prototype.toString.call( filters ) === '[object Array]' ) {
+				filters_array = filters;
+			} else if(Object.prototype.toString.call( filters ) !== '[object]'){
+				filters_array.push(filters);
+			}
 
-			for(fkey in filters) {
+			//console.dir(data);
+			//console.dir(filters_array);
+			// Assume no matches will happen
+			var applies = false;
 
-				if(typeof(data[fkey]) !== 'undefined') {
-					if(data.hasOwnProperty(fkey) && (data[fkey] !== filters[fkey])) {
-						applies = false;
-						break;
+			if(filters_array.length == 0) {
+				applies = true;
+			} else {
+				for(var f in filters_array) {
+					var object_match = true;
+					for(fkey in filters_array[f]) {
+						//console.log("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+						if(typeof(data[fkey]) !== 'undefined') {
+							if(data.hasOwnProperty(fkey) && (data[fkey] !== filters_array[f][fkey])) {
+								object_match = false;
+								break;
+							}
+						} else {
+							var ev = data['event'];
+							//console.log("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+							if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
+								object_match = false;
+								break;
+							}
+						}
 					}
-				} else {
-					var ev = data['event'];
-					if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters[fkey])) {
-						applies = false;
-						break;
-					}
+					//console.log("object_match = " + object_match + " applies = " + applies);
+					applies |= object_match;
 				}
 			}
 
@@ -152,8 +166,8 @@ var ipparse = {
 		var operstate = ipparse.link_oper_states[ch['operstate'].readUInt8(0)];
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
-			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call 
-			event:  { name: ch['operation'], 
+			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call
+			event:  { name: ch['operation'],
 					  state: operstate,
 					  address: ipparse.getBufferAsHexAddr(ch['address']),
 					  broadcast: ipparse.getBufferAsHexAddr(ch['broadcast']),
@@ -168,16 +182,18 @@ var ipparse = {
 		var addr_ar =  rt.bufToArray(ch['address'], 0, ch['address'].length);
 		var addr = nativelib.fromAddress(addr_ar, ch['payload']['_family']);
 		var linkno = ch['payload']['_index'];
+		var lbl = ch['label'];
 
 		var data = {
 			ifname: links[linkno-1]['ifname'], // the interface name as labeled by the OS
-			ifnum: linkno, // the interface number, as per system call 
-			event:  {	name: ch['operation'], 
-						address: addr['address'] + '/' + ch['payload']['_prefix_len'], 
-						family: ipparse.getFamily(addr['family']), 
-						scope: ipparse.getScope(ch['payload']['_scope'])
+			ifnum: linkno, // the interface number, as per system call
+			event:  {	name: ch['operation'],
+						address: addr['address'] + '/' + ch['payload']['_prefix_len'],
+						family: ipparse.getFamily(addr['family']),
+						scope: ipparse.getScope(ch['payload']['_scope']),
 					}
 		};
+		if(lbl) data['event']['label'] = lbl; // no label for ipv6 for some reason
 
 		return data;
 	},
@@ -254,7 +270,7 @@ var ipparse = {
 	},
 
 	getRouteEventObj: function(ch) {
-					
+
 		var ret = {};
 
 		ret.name = ch['operation'];
@@ -336,7 +352,7 @@ var ipparse = {
 
 				} else if(family === ipparse.AF_INET) {
 
-				} 
+				}
 				if(name.length === 0)
 					return addr['address'] + '/' + len;
 				else
@@ -390,7 +406,7 @@ var ipparse = {
 	},
 
 	getLinkDeviceFlags: function(flags) {
-		var flags_str = "";	
+		var flags_str = "";
 		for (var k = 0; k < ipparse.net_device_flags.length; k++){
 	 		if(flags & ipparse.net_device_flags[k]['fl']) {
 	 			if(flags_str.length)
@@ -402,7 +418,7 @@ var ipparse = {
 	},
 
 	getFlags: function(flags,f) {
-		var flags_str = "";	
+		var flags_str = "";
 
 		for (var k in flags){
 			if(flags.hasOwnProperty(k)){
@@ -424,7 +440,7 @@ var ipparse = {
 			addr += buf.toString('hex', b, b+1);
 		}
 		return addr;
-	}	
+	}
 };
 
 module.exports = ipparse;

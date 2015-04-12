@@ -97,6 +97,8 @@ if (datb == 0) { (*__errno_location ()) = 12; return; } \
 
 }
 
+#define TW_ALLOC_ERROR_MSG_NO_MEM "*** MEMORY TWlib::Allocator FAILURE using ALLOC: %s:%d ***\n"
+
 // this is a macro which prints an error, but does without using the tw_log system.
 #define TW_PALLOC_ERROR( s, ... ) fprintf(stderr, s, __VA_ARGS__ )
 
@@ -109,7 +111,7 @@ if (datb == 0) { (*__errno_location ()) = 12; return; } \
 // usage: TW_NEW_WALLOC( Allocator *a, String, mystring, String() );
 // uses placement to use Allocator to allocate, then calls constructor.
 #define TW_NEW_WALLOC( newvar, type, constr, ALLOCI )  do {  newvar = (type *) ALLOCI->i_malloc(sizeof(type)); \
-	if(!newvar) TW_PALLOC_ERROR( ALLOCI->i_error_nomemmsg(), __FILE__, __LINE__ ); \
+	if(!newvar) TW_PALLOC_ERROR( TW_ALLOC_ERROR_MSG_NO_MEM, __FILE__, __LINE__ ); \
 	else newvar = new (newvar) constr; } while(0)
 
 // explicity calls destructor on 'oldvar' then frees memory using Allocator

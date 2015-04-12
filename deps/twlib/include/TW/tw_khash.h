@@ -236,11 +236,11 @@ class TW_KHash_32  {
 					if (new_n_buckets < 4) new_n_buckets = 4;
 					if (h->size >= (khint_t)(new_n_buckets * __ac_HASH_UPPER + 0.5)) j = 0;	/* requested size is too small */
 					else { /* hash table size to be changed (shrink or expand); rehash */
-						new_flags = (khint32_t*)malloc(__ac_fsize(new_n_buckets) * sizeof(khint32_t));
+						new_flags = (khint32_t*)ALLOC::malloc(__ac_fsize(new_n_buckets) * sizeof(khint32_t));
 						memset(new_flags, 0xaa, __ac_fsize(new_n_buckets) * sizeof(khint32_t));
 						if (h->n_buckets < new_n_buckets) {	/* expand */
-							h->keys = (khkey_t*)realloc(h->keys, new_n_buckets * sizeof(khkey_t));
-							if (kh_is_map) h->vals = (khval_t*)realloc(h->vals, new_n_buckets * sizeof(khval_t));
+							h->keys = (khkey_t*)ALLOC::realloc(h->keys, new_n_buckets * sizeof(khkey_t));
+							if (kh_is_map) h->vals = (khval_t*)ALLOC::realloc(h->vals, new_n_buckets * sizeof(khval_t));
 						} /* otherwise shrink */
 					}
 				}

@@ -7,6 +7,8 @@ var netkit = require('../../index.js');
 
 var util = require('util');
 
+
+
 var tun0 = netkit.newTapInterfaceRaw();
 
 tun0.ifname = "tap_test";
@@ -56,7 +58,8 @@ if(tun0.create()) {
 					console.log("assignRoute called successfully.");
 				}
 			});
-			netkit.setIfFlags(tun0.ifname,netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING); // turn the interface up
+
+
 
 			tun0.stream.on('readable', function() {
 				var chunk;
@@ -84,6 +87,21 @@ if(tun0.create()) {
 						}
 					]
 				});
+
+		        setTimeout(function(){
+		        	console.log("Set Interface DOWN.");
+					netkit.unsetIfFlags(tun0.ifname,netkit.FLAGS.IFF_NOARP ); // turn the interface down
+					setTimeout(function(){
+						console.log("Interface UP.");
+						netkit.setIfFlags(tun0.ifname,netkit.FLAGS.IFF_UP | netkit.FLAGS.IFF_RUNNING| netkit.FLAGS.IFF_NOARP); // turn the interface up
+						setTimeout(function(){
+			                console.log("Interface - enable ARP.");
+							netkit.unsetIfFlags(tun0.ifname,netkit.FLAGS.IFF_NOARP ); // turn the interface DOWN
+						},3000);
+					}, 3000);
+
+		        },2000);
+
 		    }, 5000);
 		}
 	},1000);

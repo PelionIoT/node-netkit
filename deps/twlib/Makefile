@@ -1,5 +1,5 @@
 
-LDFLAGS ?= -lpthread
+LDFLAGS ?= -lpthread -pthread
 TWLIBFLAG ?= -L. -lTW
 TWLIBNAME ?= libTW
 TWSOLIBNAME ?= $(TWLIBNAME).so
@@ -26,7 +26,7 @@ CFLAGS= $(DEBUG_OPTIONS) $(GLIBCFLAG) -D_TW_DEBUG -I./include  -D__DEBUG   -fPIC
 CROSS_PREREQ_LIBS=freescale.out/expanded-prereqs/lib
 CROSS_PREREQ_HEADERS=freescale.out/expanded-prereqs/include
 
-
+DEBUG_CFLAGS= -g
 
 ROOT_DIR=.
 OUTPUT_DIR=.
@@ -56,7 +56,7 @@ ifdef FREESCALE
 	CFLAGS+= -Lfreescale.out/expanded-prereqs/lib
 	OUTPUT_DIR=freescale.out
 else
-	CFLAGS+= -Lexpanded-prereqs/lib -Iexpanded-prereqs/include  -fPIC
+	CFLAGS+= -Lexpanded-prereqs/lib -Iexpanded-prereqs/include  -fPIC $(DEBUG_CFLAGS)
 endif
 
 GLIBCFLAG=-D_USING_GLIBC_
@@ -125,6 +125,30 @@ testtwcontainers: tw_lib tests/testtwcontainers.cpp $(TPLS) tw_log.o
 
 test_tw_sema: tw_lib tests/test_tw_sema.cpp $(TPLS) tw_log.o tw_utils.o
 	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS)  -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular: tw_lib tests/test_twcircular.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o 
+
+test_twcircular_unblockall: tw_lib tests/test_twcircular_unblockall.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_array: tw_lib tests/test_twcircular_array.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_array_transfer: tw_lib tests/test_twcircular_array_transfer.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_mv: tw_lib tests/test_twcircular_mv.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_mv_noblock: tw_lib tests/test_twcircular_mv_noblock.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_mv_timeout: tw_lib tests/test_twcircular_mv_timeout.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
+
+test_twcircular_slow_consumer: tw_lib tests/test_twcircular_slow_consumer.cpp $(TPLS) tw_log.o tw_utils.o
+	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS) -g -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 
 
 test_tw_bndsafefifo: tw_lib tests/test_tw_bndsafefifo.cpp $(TPLS) tw_log.o tw_utils.o
 	$(CXX) $(CFLAGS) $(TWLIBFLAG) $(LDFLAGS)  -I. -o $@ tests/$@.cpp tw_utils.o tw_log.o syscalls-$(ARCH).o $(TPLS) 

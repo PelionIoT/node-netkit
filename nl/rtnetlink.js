@@ -603,7 +603,7 @@ rt = {
 			//console.log('index = ' + index);
 			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 			var attr_type = data.readUInt16LE(index + 2);
-			//console.log('attr = ' + attr_type + ' len = ' + len);
+			console.log('attr = ' + attr_type + ' len = ' + len);
 
 			index += 4; // index to the data
 			var value;

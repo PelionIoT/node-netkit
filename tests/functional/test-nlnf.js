@@ -21,17 +21,7 @@ console.log(toType(fn));
 console.log(toType(buf));
 console.log(buf instanceof Buffer);
 
-// // nk.nfTable("get", null, "filter", function(err,bufs) {
-// // 	if(err) {
-// // 		console.error(util.inspect(err));
-// // 	} else {
-// // 		console.log("success!");
-// // 		console.dir(bufs);
-// // 	}
-// // });
-
-
-nk.nfTable("add", null, "filter2", function(err,bufs) {
+nk.nfTable({ command: "add", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
 	if(err) {
 		console.error(util.inspect(err));
 	} else {
@@ -40,28 +30,32 @@ nk.nfTable("add", null, "filter2", function(err,bufs) {
 	}
 });
 
-// var nl = require("../../nl/netlink.js");
-// var nk = require("../../index.js");
-// var util = require("util");
 
-// var sock_opts = {
-// 		sock_class: nl.NETLINK_NETFILTER,
-// 	};
-
-// var sock = nk.newNetlinkSocket();
-
-// sock.create(sock_opts,function(err) {
+// nk.nfTable({ command: "get", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
 // 	if(err) {
-// 		cb(new Error("socket.create() Error: " + util.inspect(err)));
-// 		return;
+// 		console.error(util.inspect(err));
 // 	} else {
-// 		nl.sendNetlinkRaw(sock, Buffer("14000000100001008CBE25550000000000000A0020000000000A05008DBE255500000000020000000C00010066696C746572320014000000110001008EBE25550000000000000A00", 'hex'), function(err,bufs) {
-// 		 	if(err) {
-// 		 		console.error(util.inspect(err));
-// 		 	} else {
-// 		 		console.log("success!");
-// 		 		console.dir(bufs);
-// 		 	}
-// 		 });
+// 		console.log("success!");
+// 		console.dir(bufs);
+// 	}
+// });
+
+
+// nk.nfTable({ command: "del", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
+// 	if(err) {
+// 		console.error(util.inspect(err));
+// 	} else {
+// 		console.log("success!");
+// 		console.dir(bufs);
+// 	}
+// });
+
+
+// nk.nfTable({ command: "update", type: "table", family: "ip", params: { name: "filter2", flags: "" }}, function(err,bufs) {
+// 	if(err) {
+// 		console.error(util.inspect(err));
+// 	} else {
+// 		console.log("success!");
+// 		console.dir(bufs);
 // 	}
 // });

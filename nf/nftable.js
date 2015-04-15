@@ -2,8 +2,6 @@ var nlnf = require('./nlnetfilter.js');
 
 nftable = {
 
-	that: null,
-
 	nft_table_attributes:
 	[
 		"unspec",
@@ -12,62 +10,93 @@ nftable = {
 		"use",
 	],
 
+	table: function(opts, cb) {
+		var that = this;
 
-	table: function(action, family, name, cb) {
-		console.log("action = " + action);
+		nftable.build_command(opts,function(err){
+			if(err) {
+				cb(err);
+			} else {
+				console.dir(opts);
 
-		that = this;
+				nlnf.netfilterSend.call(that, null, opts, nftable.nft_table_attributes, function(err,result){
+					if(err) {
+						return cb(err);
+					} else {
+						return cb(null, nftable.parse_table(result,"bobby"));
+					}
+				});
+			}
+		});
+	},
 
-		switch(action) {
+	parse_table: function(data,name) {
+		var table = {};
+
+		table.table = name;
+		table.attributes = data['genmsg'];
+		table.attributes['_family'] = nlnf.get_family_str(data['genmsg']['_family']);
+		return table;
+	},
+
+	build_command: function(opts,cb) {
+
+		console.dir(opts);
+
+		nftable.set_cmd(opts,cb);
+		nlnetfilter.set_family(opts,cb);
+		nftable.set_type(opts,cb);
+		cb();
+	},
+
+	set_cmd: function(opts, cb) {
+
+		var command = opts['command'];
+		console.log("command = " + command);
+
+		switch(command) {
 			case "get":
-				nftable.get_table(action, family, name, cb);
+				opts['cmd'] = nf.NFT_MSG_GETTABLE;
 				break;
 			case "add":
-				nftable.add_table(action, family, name, cb);
+				opts['cmd'] =  nf.NFT_MSG_NEWTABLE;
+				break;
+			case "del":
+				opts['cmd'] =  nf.NFT_MSG_DELTABLE;
+				break;
+			case "update":
+				opts['cmd'] =  nf.NFT_MSG_NEWTABLE;
 				break;
 			default:
-				return cb(new Error(action + " :operation not supported"));
+				return cb(new Error(command + " command not supported: get, add, del, update"));
 				break;
 		}
 	},
 
-	get_table: function(action, family, name, cb) {
-		var opts = {
-			cmd: nf.NFT_MSG_GETTABLE,
-			family: nf.NFPROTO_IPV4,
-			type: nl.NLM_F_ACK,
-			attrs: [{ type: "NFT_TABLE_ATTR_NAME", value: name }]
-		};
+	set_type: function(opts, cb) {
 
-		nlnf.netfilterSend.call(that, null, opts, nftable.nft_table_attributes, function(err,result){
-			if(err) {
-				return cb(err);
-			} else {
-				cb(null, nftable.parse_table(result));
-			}
-		});
+		var command = opts['command'];
+		console.log("command = " + command);
+
+		switch(command) {
+			case "get":
+				opts['type_flags'] = nl.NLM_F_ACK;
+				break;
+			case "add":
+				opts['type_flags'] =  nl.NLM_F_ACK;
+				break;
+			case "del":
+				opts['type_flags'] =  nl.NLM_F_ACK;
+				break;
+			case "update":
+				opts['type_flags'] =  nl.NLM_F_ACK;
+				break;
+			default:
+				return cb(new Error(command + " command not supported: get, add, del, update"));
+				break;
+		}
 	},
 
-	add_table: function(action, family, name, cb) {
-		var opts = {
-			cmd: nf.NFT_MSG_NEWTABLE,
-			family: nf.NFPROTO_IPV4,
-			type: nl.NLM_F_ACK,
-			attrs: [{ type: "NFT_TABLE_ATTR_NAME", value: name }]
-		};
-
-		nlnf.netfilterSend.call(that, null, opts, nftable.nft_table_attributes, function(err,result){
-			if(err) {
-				return cb(err);
-			} else {
-				cb(null, nftable.parse_table(result));
-			}
-		});
-	},
-
-	parse_table: function(data) {
-		return data;
-	},
 };
 
 module.exports = nftable;

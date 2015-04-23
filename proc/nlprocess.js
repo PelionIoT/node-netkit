@@ -1,4 +1,5 @@
-var nl = require('../nl/netlink.js')
+var pr = require('../nl/prnetlink.js')
+var nl = require('../nl/netlink.js');
 
 nlprocess = {
 
@@ -26,7 +27,7 @@ nlprocess = {
 
 		var sock_opts = {
 				sock_class: nl.NETLINK_CONNECTOR,
-				subscriptions: nl.CN_IDX_PROC
+				subscriptions: pr.CN_IDX_PROC
 			};
 
 		sock.create(sock_opts,function(err) {
@@ -34,7 +35,7 @@ nlprocess = {
 				cb(new Error("socket.create() Error: " + util.inspect(err)));
 				return;
 			} else {
-				nl.sendConnectorMsg(sock,function(err,bufs){
+				pr.sendConnectorMsg(sock,function(err,bufs){
 					if(err) {
 						cb( new Error("sendConnectorMsg() Error: " + util.inspect(err)));
 					} else {

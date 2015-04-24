@@ -1,10 +1,13 @@
-var nf = require('../nl/nfnetlink.js')
+var nf = nfnetlink = require('../nl/nfnetlink.js')
 var nl = require('../nl/netlink.js');
 var util = require('util');
 
 nlnetfilter = {
 
+	nf: nfnetlink,
+
 	netfilterSend: function(sock, opts, parse_attrs, cb) {
+		console.log("BOBBY!"); console.dir(parse_attrs);
 		var netkitObject = this;
 		var sock = netkitObject.newNetlinkSocket();
 
@@ -28,14 +31,40 @@ nlnetfilter = {
 		});
 	},
 
-
 	generateNetfilterResponse: function(bufs, parseAttributes) {
-		var data = bufs[0];
-		var total_len = data.readUInt32LE(0);
-		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
-		var result = nl.rt.parseAttrs(data, 20, total_len, parseAttributes);
-		result['genmsg'] = nfgenmsg;
-		return result;
+		// console.dir(bufs);
+
+		var result_array = []; // array if this is a multipart message
+
+		// parse all response messages
+		for(var i = 0; i < bufs.length; i++) {
+			var data = bufs[i];
+
+			// is this the done message of a multi-part message?
+			var type = data.readUInt16LE(4);
+			if(type === nl.NLMSG_DONE) {
+				return result_array;
+			}
+
+			// get the generic netfiler generation
+			var nfgenmsg = nf.unpackNfgenmsg(data, 16);
+			cur_result['genmsg'] = nfgenmsg;
+
+			// get the total message length and parse all the raw attributes
+			var total_len = data.readUInt32LE(0);
+			var cur_result = nl.rt.parseAttrs(data, 20, total_len, parseAttributes);
+
+			// get the message flags
+			var flags = data.readUInt16LE(6);
+			if(flags & nl.NLMSG_MULTI) {
+				// mutlipart message add to array result
+				result_array[i] = cur_result;
+			} else {
+				// just one response message so return it
+				return cur_result;
+			}
+		}
+		return result_array;
 	},
 
 	set_family: function(opts,cb) {

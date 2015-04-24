@@ -579,7 +579,8 @@ rt = {
 				keys = rt.neigh_info_attr_name_map
 				payload = bufferpack.unpack(ndmsg_fmt,data,index)
 			}else {
-				console.warn("WARNING: ** Received unsupported message type from netlink socket(type=" + type + ") **");
+				console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
+					+ type + ") **");
 				return ret;
 			}
 
@@ -603,7 +604,7 @@ rt = {
 			//console.log('index = ' + index);
 			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 			var attr_type = data.readUInt16LE(index + 2);
-			console.log('attr = ' + attr_type + ' len = ' + len);
+			//console.log('attr = ' + attr_type + ' len = ' + len);
 
 			index += 4; // index to the data
 			var value;

@@ -66,7 +66,7 @@ proc = {
 		var nl_hdr = nl.buildHdr();
 
 		nl_hdr._flags = 0;
-		nl_hdr._type = rt.NLMSG_DONE; // the command
+		nl_hdr._type = nl.NLMSG_DONE; // the command
 
 		var cn_msg = proc.buildCnMsg();
 		cn_msg._idx = proc.CN_IDX_PROC;

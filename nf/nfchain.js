@@ -1,36 +1,34 @@
 var nlnf = require('./nlnetfilter.js');
 
-nftable = {
+nfchain = {
 
 	table: function(opts, cb) {
 		var that = this;
 
-		nftable.build_command(opts,function(err){
+		nfchain.build_command(opts,function(err){
 			if(err) {
 				cb(err);
 			} else {
 				console.dir(opts);
 
-				nlnf.netfilterSend.call(that, null, opts,
-					nlnf.nf.attrs.table, function(err,result){
+				nlnf.netfilterSend.call(that, null, opts, nlnf.nf.attrs.chain, function(err,result){
 					if(err) {
 						return cb(err);
 					} else {
-						return cb(null, nftable.parse_table(result,opts));
+						return cb(null, nftable.parse_table(result,"bobby"));
 					}
 				});
 			}
 		});
 	},
 
-	parse_table: function(data,opts) {
+	parse_table: function(data,name) {
 		var table = {};
 
-		table = data;
-
-		// table.table = opts['params']['name'];
-		// table.attributes = data['genmsg'];
-		// table.attributes['_family'] = nlnf.get_family_str(data['genmsg']['_family']);
+		table.table = name;
+		table.attributes = data['genmsg'];
+		table.attributes['_family'] =
+			nlnf.get_family_str(data['genmsg']['_family']);
 		return table;
 	},
 
@@ -41,8 +39,6 @@ nftable = {
 		nftable.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nftable.set_type(opts,cb);
-
-		console.dir(opts);
 		cb();
 	},
 
@@ -52,9 +48,6 @@ nftable = {
 		console.log("command = " + command);
 
 		switch(command) {
-			case "list":
-				opts['cmd'] = nf.NFT_MSG_GETTABLE;
-				break;
 			case "get":
 				opts['cmd'] = nf.NFT_MSG_GETTABLE;
 				break;
@@ -80,9 +73,6 @@ nftable = {
 		console.log("command = " + command);
 
 		switch(command) {
-			case "list":
-				opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
-				break;
 			case "get":
 				opts['type_flags'] = nl.NLM_F_ACK;
 				break;

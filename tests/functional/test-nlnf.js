@@ -21,7 +21,7 @@ console.log(toType(fn));
 console.log(toType(buf));
 console.log(buf instanceof Buffer);
 
-nk.nfTable({ command: "add", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
+nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) {
 	if(err) {
 		console.error(util.inspect(err));
 	} else {

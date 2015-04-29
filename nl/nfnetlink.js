@@ -115,131 +115,231 @@ nf = {
 	  return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 	},
 
-	/*
-	*
-	*
-	* sample attr: { type: "table", params: { name: "filter" }}
-	*      	or:    { type: "chain", params: { type: "filter", hook: "input", priority: 0 }}
-	*/
-	addNfAttribute: function(bufs, attr, cb) {
-		//console.log('attrType = ' + nf.attrType(attr));
-		console.dir(attr);
 
-		// validate attr type as a string
-		if(nf.attrType(attr) !== 'object') {
-			return cb(new Error("attribute is not of type object"),null);
-		}
+	nfAttribute: function(command_type) {
 
-		// does netfilter have that type of attribute?
-		var attr_t = attr['type'];
-		//console.log('attr_t = ' + attr_t);
-		if(attr_t === 'undefined' || !nf.attrs.hasOwnProperty(attr_t)) {
-			return cb(new Error("netfilter attribute type '" + attr_t + "' not defined"),null);
-		}
+		var attr_name_map = [];
+		var attr_type_map = [];
+		var attr_size_map = [];
 
-		// aquire the types attribute object
-		var attr_subtype = nf.attrs[attr_t];
+		var init_attribute = function() {
 
-		// get and validate the params object
-		var params = attr['params'];
-		if(typeof(params) !== 'undefined') {
-			if(nf.attrType(params) !== 'object') {
-				return cb(new Error("invalid params specification"));
+			// Init attributes here when this file is required
+			var command_attrs = nf.attrs[command_type];
+			if(typeof command_attrs === 'undefined'){
+				err("command type " + command_type+ " does not exist");
+				return;
 			}
 
-			// loop through all fields in the params object
-			for(var attribute_name in params) {
-
-				// look for the paramter in the subtype
-				var subtype_param_name = "NFT_" + attr_t.toUpperCase() + "_ATTR_"
-					+ attribute_name.toUpperCase();
-				if(!attr_subtype.hasOwnProperty(subtype_param_name)) {
-					return cb(new Error("netfilter " + attr_t + " attribute not defined"),null);
+			// Build Attr_map
+			for(key in command_attrs) {
+				var name = key.split('_')[3];
+				if(name) {
+					attr_name_map.push(name.toLowerCase());
 				}
+			}
 
-				console.log('attribute_name = ' + attribute_name);
-				console.log('subtype_param_name = ' + subtype_param_name);
-				console.dir(attr_subtype);
-
-				// retreive the value of the subtypes attribute with the given name
-				var attr_subtype_val = attr_subtype[subtype_param_name];
-
-				// retrive the field specification string for that attribute subtype
-				var attr_subtype_specname = "NFT_" + attr_t.toUpperCase() + "_TYPE";
-				var spec = attr_subtype[attr_subtype_specname][attr_subtype_val];
-				var val = params[attribute_name];
-
-				console.log('val = ' + val);
-				console.log('spec name = ' + attr_subtype_specname);
-				console.log('spec = ' + spec);
-
-				var slash = spec.indexOf('/');
-				var attr_subtype_type;
-				var attr_subtype_len = -1;
-
-				//console.log("slash = " + slash);
+			var typename = "NFT_" + command_type.toUpperCase() + "_TYPE";
+			var types = command_attrs[typename];
+			for(var type in types) {
+				attr_type_map.push(types[type].slice(0,slash));
+				var slash = types[type].indexOf('/');
 				if(slash === -1) {
-					attr_subtype_type = spec;
+					attr_size_map.push(-1);
 				} else {
-					attr_subtype_type = spec.slice(0, slash - 1);
-					attr_subtype_len = parseInt(spec.slice(slash + 1));
+					attr_size_map.push(parseInt(types[type].slice(slash + 1)));
+				}
+			}
+		}();
+
+		var getAttributeValue = function(data, start, end){
+			return data.slice(start, end);// bytes;
+		};
+
+		var getAttributeString = function(data, start, end){
+			return data.toString('ascii',start,end);
+		};
+
+		var getAttribute = function(data, type){
+			if(attr_type_map[type] === 's') {
+				return data.toString('ascii', 0, data.length -1);
+			} else {
+				switch(attr_size_map[type]) {
+					case 8:
+						return data.readUInt8LE(0);
+						break;
+					case 16:
+						return data.readUInt16LE(0);
+						break;
+					case 32:
+						return data.readUInt32LE(0);
+						break;
+					case 64:
+						return (data.readUInt32LE(0) << 32 + data.readUInt32LE(4));
+						break;
+				}
+			}
+		};
+
+		return {
+
+			parseNfAttrs: function(data, attr_start, total_len) {
+				var ret = {};
+				var index = attr_start;
+
+				while(index < total_len) {
+					//console.log('index = ' + index);
+					var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
+					var attr_type = data.readUInt16LE(index + 2);
+					// console.log('attr = ' + attr_type + ' len = ' + len);
+
+					index += 4; // index to the data
+					var value;
+
+					if(0 <= attr_type && attr_type < attr_name_map.length)
+					{
+						var key = attr_name_map[attr_type];
+						ret[key] = getAttribute(data.slice(index, index + len), attr_type);
+						// console.log('added [' + key + '] = ' + ret[key])
+
+						// get to next attribute padding to mod 4
+				        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+				        // console.log("pad: " + pad);
+						index += (len + pad);
+					}
+				};
+
+				return ret;
+			},
+
+			/*
+			*
+			*
+			* sample attr: { type: "table", params: { name: "filter" }}
+			*      	or:    { type: "chain", params: { type: "filter", hook: "input", priority: 0 }}
+			*/
+			addNfAttribute: function(bufs, attr, cb) {
+				//console.log('attrType = ' + nf.attrType(attr));
+				console.dir(attr);
+
+				// validate attr type as a string
+				if(nf.attrType(attr) !== 'object') {
+					return cb(new Error("attribute is not of type object"),null);
 				}
 
-				console.log("attr_subtype_type = " + attr_subtype_type);
-				console.log("attr_subtype_len = " + attr_subtype_len);
-				if((attr_subtype_len === -1 && attr_subtype_type !== 's' )
-					|| attr_subtype_len === NaN) {
-					cb(new Error("attribute type or length parse error"),null);
-					return;
+				// does netfilter have that type of attribute?
+				var attr_t = attr['type'];
+				//console.log('attr_t = ' + attr_t);
+				if(attr_t === 'undefined' || !nf.attrs.hasOwnProperty(attr_t)) {
+					return cb(new Error("netfilter attribute type '" + attr_t + "' not defined"),null);
 				}
 
-				if(attr_subtype_type === 's') {
-					console.log("nf.attrType(val) = " + nf.attrType(val));
-					if(nf.attrType(val) !== 'string') {
-						cb(new Error("attribute type " + val + " does not match value: "
-							+ val),null);
-						return;
+				// aquire the types attribute object
+				var attr_subtype = nf.attrs[attr_t];
+
+				// get and validate the params object
+				var params = attr['params'];
+				if(typeof(params) !== 'undefined') {
+					if(nf.attrType(params) !== 'object') {
+						return cb(new Error("invalid params specification"));
 					}
 
-					console.dir(val);
+					// loop through all fields in the params object
+					for(var attribute_name in params) {
 
-					var b;
-					if(attr_subtype_len > 0) {
-						if(val.length >  attr_subtype_len) {
-							cb(new Error("attribute value string is longer than "
-								+ attr_subtype_len),null);
+						// look for the paramter in the subtype
+						var subtype_param_name = "NFT_" + attr_t.toUpperCase() + "_ATTR_"
+							+ attribute_name.toUpperCase();
+						if(!attr_subtype.hasOwnProperty(subtype_param_name)) {
+							return cb(new Error("netfilter " + attr_t + " attribute not defined"),null);
+						}
+
+						console.log('attribute_name = ' + attribute_name);
+						console.log('subtype_param_name = ' + subtype_param_name);
+						console.dir(attr_subtype);
+
+						// retreive the value of the subtypes attribute with the given name
+						var attr_subtype_val = attr_subtype[subtype_param_name];
+
+						// retrive the field specification string for that attribute subtype
+						var attr_subtype_specname = "NFT_" + attr_t.toUpperCase() + "_TYPE";
+						var spec = attr_subtype[attr_subtype_specname][attr_subtype_val];
+						var val = params[attribute_name];
+
+						console.log('val = ' + val);
+						console.log('spec name = ' + attr_subtype_specname);
+						console.log('spec = ' + spec);
+
+						var slash = spec.indexOf('/');
+						var attr_subtype_type;
+						var attr_subtype_len = -1;
+
+						//console.log("slash = " + slash);
+						if(slash === -1) {
+							attr_subtype_type = spec;
+						} else {
+							attr_subtype_type = spec.slice(0, slash - 1);
+							attr_subtype_len = parseInt(spec.slice(slash + 1));
+						}
+
+						console.log("attr_subtype_type = " + attr_subtype_type);
+						console.log("attr_subtype_len = " + attr_subtype_len);
+						if((attr_subtype_len === -1 && attr_subtype_type !== 's' )
+							|| attr_subtype_len === NaN) {
+							cb(new Error("attribute type or length parse error"),null);
 							return;
 						}
 
-						b = Buffer(attr_subtype_len);
-						b.write(val, 0 , attr_subtype_len);
-					} else {
-						b = Buffer(val + '\0');
-					}
+						if(attr_subtype_type === 's') {
+							console.log("nf.attrType(val) = " + nf.attrType(val));
+							if(nf.attrType(val) !== 'string') {
+								cb(new Error("attribute type " + val + " does not match value: "
+									+ val),null);
+								return;
+							}
 
-					console.dir(b);
-					bufs.push(rt.buildRtattrBuf(attr_subtype_val, b));
+							console.dir(val);
 
-				} else if(attr_subtype_type === 'n') {
-					if(nf.attrType(attr) !== 'number') {
-						return cb(new Error("attribute type " + attr + " does not match value: "
-							+ val),null);
-					}
+							var b;
+							if(attr_subtype_len > 0) {
+								if(val.length >  attr_subtype_len) {
+									cb(new Error("attribute value string is longer than "
+										+ attr_subtype_len),null);
+									return;
+								}
 
-					var b = Buffer(attr_subtype_len);
-					b.writeUIntBE(val,0,attr_subtype_len);
-					bufs.push(rt.buildRtattrBuf(attr_subtype_type, b));
+								b = Buffer(attr_subtype_len);
+								b.write(val, 0 , attr_subtype_len);
+							} else {
+								b = Buffer(val + '\0');
+							}
 
-				} else {
-					return cb(new Error("attribute type " + attr + " does not match value: "
-						+ val),null);
-				}
+							console.dir(b);
+							bufs.push(rt.buildRtattrBuf(attr_subtype_val, b));
 
-			} // for all params
-		} // if params
+						} else if(attr_subtype_type === 'n') {
+							if(nf.attrType(attr) !== 'number') {
+								return cb(new Error("attribute type " + attr + " does not match value: "
+									+ val),null);
+							}
 
-		return cb(null);
+							var b = Buffer(attr_subtype_len);
+							b.writeUIntBE(val,0,attr_subtype_len);
+							bufs.push(rt.buildRtattrBuf(attr_subtype_type, b));
+
+						} else {
+							return cb(new Error("attribute type " + attr + " does not match value: "
+								+ val),null);
+						}
+
+					} // for all params
+				} // if params
+
+				return cb(null);
+			},
+		};
 	},
+
 
 	nfgenmsg_fmt: "<B(_family)B(_version)H(_resid)",
 	buildNfgenmsg: function(params) {
@@ -273,7 +373,7 @@ nf = {
 		nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
 	},
 
-	addCommandMessage: function(msgreq, opts, cb) {
+	addCommandMessage: function(msgreq, opts, attrs, cb) {
 
 		var bufs = [];
 		var attrs;
@@ -307,12 +407,12 @@ nf = {
 
 			bufs.push(nf_hdr.pack());
 
-			nf.addNfAttribute(bufs,opts,function(err) {
+			attrs.addNfAttribute(bufs,opts,function(err) {
 				if(err) {
 					return cb(err);
 				} else {
 					nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
-					cb(null);
+					return cb(null);
 				}
 			});
 		} else {
@@ -320,7 +420,7 @@ nf = {
 		}
 	},
 
-	sendNetfilterCommand: function(opts, sock, cb) {
+	sendNetfilterCommand: function(opts, sock, attrs, cb) {
 
 	    var msgreq = sock.createMsgReq();
 	    var batch = (opts['type_flags'] & nl.NLM_F_MATCH) ? false : true;
@@ -330,7 +430,7 @@ nf = {
 	    // so netfiler would not be available. nft will check batching support for each command
 	    // but we assume our kernel is late enough.
 	    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
-	    nf.addCommandMessage(msgreq, opts, function(err){
+	    nf.addCommandMessage(msgreq, opts, attrs, function(err){
 	    	if(err) {
 	    		return cb(err,null);
 	    	} else {

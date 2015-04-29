@@ -9,10 +9,9 @@ nftable = {
 			if(err) {
 				cb(err);
 			} else {
-				console.dir(opts);
-
+				var attrs = nlnf.nf.nfAttribute("table");
 				nlnf.netfilterSend.call(that, null, opts,
-					nlnf.nf.attrs.table, function(err,result){
+					attrs, function(err,result){
 					if(err) {
 						return cb(err);
 					} else {
@@ -41,16 +40,12 @@ nftable = {
 		nftable.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nftable.set_type(opts,cb);
-
-		console.dir(opts);
 		cb();
 	},
 
 	set_cmd: function(opts, cb) {
 
 		var command = opts['command'];
-		console.log("command = " + command);
-
 		switch(command) {
 			case "list":
 				opts['cmd'] = nf.NFT_MSG_GETTABLE;
@@ -77,8 +72,6 @@ nftable = {
 	set_type: function(opts, cb) {
 
 		var command = opts['command'];
-		console.log("command = " + command);
-
 		switch(command) {
 			case "list":
 				opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;

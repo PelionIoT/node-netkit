@@ -6,8 +6,7 @@ nlnetfilter = {
 
 	nf: nfnetlink,
 
-	netfilterSend: function(sock, opts, parse_attrs, cb) {
-		console.log("BOBBY!"); console.dir(parse_attrs);
+	netfilterSend: function(sock, opts, attrs, cb) {
 		var netkitObject = this;
 		var sock = netkitObject.newNetlinkSocket();
 
@@ -20,18 +19,18 @@ nlnetfilter = {
 				return cb(new Error("socket.create() Error: " + util.inspect(err)));
 			} else {
 
-				nf.sendNetfilterCommand(opts, sock, function(err,bufs){
+				nf.sendNetfilterCommand(opts, sock, attrs, function(err,bufs){
 					if(err) {
 						return cb(err);
 					} else {
-						return cb(null, nlnetfilter.generateNetfilterResponse(bufs,parse_attrs));
+						return cb(null, nlnetfilter.generateNetfilterResponse(bufs,attrs));
 					}
 				});
 			}
 		});
 	},
 
-	generateNetfilterResponse: function(bufs, parseAttributes) {
+	generateNetfilterResponse: function(bufs, attrs) {
 		// console.dir(bufs);
 
 		var result_array = []; // array if this is a multipart message
@@ -48,11 +47,11 @@ nlnetfilter = {
 
 			// get the generic netfiler generation
 			var nfgenmsg = nf.unpackNfgenmsg(data, 16);
-			cur_result['genmsg'] = nfgenmsg;
 
 			// get the total message length and parse all the raw attributes
 			var total_len = data.readUInt32LE(0);
-			var cur_result = nl.rt.parseAttrs(data, 20, total_len, parseAttributes);
+			var cur_result = attrs.parseNfAttrs(data, 20, total_len);
+			cur_result['genmsg'] = nfgenmsg;
 
 			// get the message flags
 			var flags = data.readUInt16LE(6);

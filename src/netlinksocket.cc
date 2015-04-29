@@ -24,7 +24,7 @@ void byte_dump(char *buf, int size) {
 	}
 	sprintf(buf_ptr,"\n");
 	*(buf_ptr + 1) = '\0';
-	printf("DUMP: %s\n", buf_str);
+	DBG_OUT("DUMP: %s\n", buf_str);
 	free(buf_str);
 }
 

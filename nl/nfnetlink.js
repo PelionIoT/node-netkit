@@ -42,7 +42,8 @@ nf = {
 	NFT_MSG_GETGEN: 		16,
 
 	flags: {
-		NFT_TABLE_F_DORMANT: 0x1,
+		NFT_TABLE_F_ACTIVE:  0x00000000,
+		NFT_TABLE_F_DORMANT: 0x01000000,
 	},
 
 	family: {
@@ -142,23 +143,18 @@ nf = {
 			var typename = "NFT_" + command_type.toUpperCase() + "_TYPE";
 			var types = command_attrs[typename];
 			for(var type in types) {
-				attr_type_map.push(types[type].slice(0,slash));
-				var slash = types[type].indexOf('/');
-				if(slash === -1) {
+				var type_t = types[type].slice(0,1);
+				attr_type_map.push(type_t);
+				if(type_t === 's') {
 					attr_size_map.push(-1);
 				} else {
-					attr_size_map.push(parseInt(types[type].slice(slash + 1)));
+					attr_size_map.push(parseInt(types[type].slice(2)));
 				}
 			}
+			// console.dir(command_attrs);
+			// console.dir(attr_type_map);
+			// console.dir(attr_size_map);
 		}();
-
-		var getAttributeValue = function(data, start, end){
-			return data.slice(start, end);// bytes;
-		};
-
-		var getAttributeString = function(data, start, end){
-			return data.toString('ascii',start,end);
-		};
 
 		var getAttribute = function(data, type){
 			if(attr_type_map[type] === 's') {
@@ -181,6 +177,20 @@ nf = {
 			}
 		};
 
+		var getFlags = function(f) {
+			var flags_str = "";
+			for (var k in nf.flags){
+				if(nf.flags.hasOwnProperty(k)){
+			 		if(f === nf.flags[k]) {
+			 			if(flags_str.length)
+			 				flags_str += "|";
+			 			flags_str += k;
+			 		}
+		 		}
+			}
+			return flags_str;
+		};
+
 		return {
 
 			parseNfAttrs: function(data, attr_start, total_len) {
@@ -188,10 +198,11 @@ nf = {
 				var index = attr_start;
 
 				while(index < total_len) {
-					//console.log('index = ' + index);
+					// console.log('index = ' + index);
 					var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 					var attr_type = data.readUInt16LE(index + 2);
 					// console.log('attr = ' + attr_type + ' len = ' + len);
+					// console.dir(data.slice(index, index + len + 4));
 
 					index += 4; // index to the data
 					var value;
@@ -199,7 +210,10 @@ nf = {
 					if(0 <= attr_type && attr_type < attr_name_map.length)
 					{
 						var key = attr_name_map[attr_type];
-						ret[key] = getAttribute(data.slice(index, index + len), attr_type);
+						var at_val = getAttribute(data.slice(index, index + len), attr_type);
+						if(key === 'flags') at_val = getFlags(at_val);
+
+						ret[key] = at_val;
 						// console.log('added [' + key + '] = ' + ret[key])
 
 						// get to next attribute padding to mod 4
@@ -219,6 +233,7 @@ nf = {
 			*      	or:    { type: "chain", params: { type: "filter", hook: "input", priority: 0 }}
 			*/
 			addNfAttribute: function(bufs, attr, cb) {
+				console.log("addNfAttribute");
 				//console.log('attrType = ' + nf.attrType(attr));
 				console.dir(attr);
 
@@ -251,7 +266,7 @@ nf = {
 						var subtype_param_name = "NFT_" + attr_t.toUpperCase() + "_ATTR_"
 							+ attribute_name.toUpperCase();
 						if(!attr_subtype.hasOwnProperty(subtype_param_name)) {
-							return cb(new Error("netfilter " + attr_t + " attribute not defined"),null);
+							return cb(new Error("netfilter " + attr_t + " attribute '" + attribute_name + "' not defined"),null);
 						}
 
 						console.log('attribute_name = ' + attribute_name);
@@ -274,12 +289,12 @@ nf = {
 						var attr_subtype_type;
 						var attr_subtype_len = -1;
 
-						//console.log("slash = " + slash);
+						console.log("slash = " + slash);
 						if(slash === -1) {
 							attr_subtype_type = spec;
 						} else {
-							attr_subtype_type = spec.slice(0, slash - 1);
-							attr_subtype_len = parseInt(spec.slice(slash + 1));
+							attr_subtype_type = spec.slice(0, slash);
+							attr_subtype_len = parseInt(spec.slice(slash + 1) / 8); // on octect per byte
 						}
 
 						console.log("attr_subtype_type = " + attr_subtype_type);
@@ -290,8 +305,8 @@ nf = {
 							return;
 						}
 
+						console.log("nf.attrType(val) = " + nf.attrType(val));
 						if(attr_subtype_type === 's') {
-							console.log("nf.attrType(val) = " + nf.attrType(val));
 							if(nf.attrType(val) !== 'string') {
 								cb(new Error("attribute type " + val + " does not match value: "
 									+ val),null);
@@ -318,14 +333,31 @@ nf = {
 							bufs.push(rt.buildRtattrBuf(attr_subtype_val, b));
 
 						} else if(attr_subtype_type === 'n') {
-							if(nf.attrType(attr) !== 'number') {
-								return cb(new Error("attribute type " + attr + " does not match value: "
-									+ val),null);
+							if(nf.attrType(attr) !== 'object') {
+								return cb(new Error("attribute type " + nf.attrType(attr) +
+									" does not match type: 'object'"),null);
 							}
 
-							var b = Buffer(attr_subtype_len);
-							b.writeUIntBE(val,0,attr_subtype_len);
-							bufs.push(rt.buildRtattrBuf(attr_subtype_type, b));
+							b = Buffer(attr_subtype_len);
+							switch(attr_subtype_len) {
+								case 1:
+									b.writeUInt8LE(val.valueOf(),0,attr_subtype_len);
+									break;
+								case 2:
+									b.writeUInt16LE(val.valueOf(),0,attr_subtype_len);
+									break;
+								case 4:
+									b.writeUInt32LE(val.valueOf(),0,attr_subtype_len);
+									break;
+								case 8:
+									// TODO: verify the ordering of the 4 byte chunks
+									b.writeUInt32LE(val.valueOf() << 32,0,4 );
+									b.writeUInt32LE(val.valueOf(),4,attr_subtype_len);
+									break;
+							}
+
+							console.dir(b);
+							bufs.push(rt.buildRtattrBuf(attr_subtype_val, b));
 
 						} else {
 							return cb(new Error("attribute type " + attr + " does not match value: "

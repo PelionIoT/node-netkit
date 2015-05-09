@@ -15,22 +15,11 @@ nftable = {
 					if(err) {
 						return cb(err);
 					} else {
-						return cb(null, nftable.parse_table(result,opts));
+						return cb(null, result);
 					}
 				});
 			}
 		});
-	},
-
-	parse_table: function(data,opts) {
-		var table = {};
-
-		table = data;
-
-		// table.table = opts['params']['name'];
-		// table.attributes = data['genmsg'];
-		// table.attributes['_family'] = nlnf.get_family_str(data['genmsg']['_family']);
-		return table;
 	},
 
 	build_command: function(opts,cb) {
@@ -77,7 +66,7 @@ nftable = {
 				opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 				break;
 			case "get":
-				opts['type_flags'] = nl.NLM_F_ACK;
+				opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 				break;
 			case "add":
 				opts['type_flags'] =  nl.NLM_F_ACK;
@@ -94,7 +83,6 @@ nftable = {
 				break;
 		}
 	},
-
 };
 
 module.exports = nftable;

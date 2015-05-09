@@ -24,17 +24,7 @@ var util = require('util');
 // var at = require('../../nf/nfattribute.js');
 
 
-nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) {
-	if(err) {
-		console.error(util.inspect(err));
-	} else {
-		console.log("success!");
-		console.dir(bufs);
-	}
-});
-
-
-// nk.nfTable({ command: "get", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
+// nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) {
 // 	if(err) {
 // 		console.error(util.inspect(err));
 // 	} else {
@@ -42,7 +32,6 @@ nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) 
 // 		console.dir(bufs);
 // 	}
 // });
-
 
 // nk.nfTable({ command: "del", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
 // 	if(err) {
@@ -53,8 +42,7 @@ nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) 
 // 	}
 // });
 
-
-// nk.nfTable({ command: "update", type: "table", family: "ip", params: { name: "filter2", flags: "" }}, function(err,bufs) {
+// nk.nfTable({ command: "add", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
 // 	if(err) {
 // 		console.error(util.inspect(err));
 // 	} else {
@@ -62,3 +50,23 @@ nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) 
 // 		console.dir(bufs);
 // 	}
 // });
+
+
+nk.nfTable({ command: "update", type: "table", family: "ip", params: { name: "filter2", flags: nk.nf.flags.NFT_TABLE_F_ACTIVE }}, function(err,bufs) {
+	if(err) {
+		console.error(util.inspect(err));
+	} else {
+		console.log("success!");
+		console.dir(bufs);
+	}
+});
+
+nk.nfTable({ command: "get", type: "table", family: "ip", params: { name: "filter2" }}, function(err,bufs) {
+	if(err) {
+		console.error(util.inspect(err));
+	} else {
+		console.log("success!");
+		console.dir(bufs);
+	}
+});
+

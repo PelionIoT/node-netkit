@@ -31,7 +31,7 @@ nlnetfilter = {
 	},
 
 	generateNetfilterResponse: function(bufs, attrs) {
-		// console.dir(bufs);
+		 // console.dir(bufs);
 
 		var result_array = []; // array if this is a multipart message
 
@@ -43,6 +43,8 @@ nlnetfilter = {
 			var type = data.readUInt16LE(4);
 			if(type === nl.NLMSG_DONE) {
 				return result_array;
+			} else if(type === nl.NLMSG_ERROR) {
+				return {};
 			}
 
 			// get the generic netfiler generation
@@ -55,7 +57,7 @@ nlnetfilter = {
 
 			// get the message flags
 			var flags = data.readUInt16LE(6);
-			if(flags & nl.NLMSG_MULTI) {
+			if(flags & nl.NLM_F_MULTI) {
 				// mutlipart message add to array result
 				result_array[i] = cur_result;
 			} else {
@@ -90,18 +92,6 @@ nlnetfilter = {
 				break;
 		}
 	},
-
-	get_flag: function(fla) {
-		switch(fla) {
-			case 'active':
-				return 0;
-			case 'dormant':
-				return nf.flags.NFT_TABLE_F_DORMANT;
-			default:
-				return cb(new Error('"Unknown flag: active, dormant'));
-		}
-	},
-
 
 	get_family_str: function(family) {
 		for(var index in nf.family) {

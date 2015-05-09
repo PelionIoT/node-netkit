@@ -28,6 +28,7 @@ nl = {
     // netlink message flags
 	// See: linux/netlink.h
 
+	/* Flags */
 	NLM_F_REQUEST:		0x0001,	/* It is request message. 	*/
 	NLM_F_MULTI:		0x0002,	/* Multipart message, terminated by NLMSG_DONE */
 	NLM_F_ACK:   		0x0004,	/* Reply with ack, with zero or error code */
@@ -47,10 +48,11 @@ nl = {
     NLM_F_APPEND:	0x800,	/* Add to end of list		*/
 
 	NLMSG_MIN_TYPE:		0x10,	/* < 0x10: reserved control messages */
+	NLMSG_NOOP:			0x1,	/* Nothing.		*/
+	NLMSG_ERROR:		0x2,	/* Error		*/
+	NLMSG_DONE:			0x3,	/* End of a dump	*/
+	NLMSG_OVERRUN:		0x4,	/* Data lost		*/
 	NLMSG_MAX_TYPE:		0x11,	/* < 0x11: reserved control messages */
-
-	NLMSG_MULTI: 2,
-	NLMSG_DONE: 3,
 
 
     /* Netlink protocols */

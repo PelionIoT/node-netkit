@@ -28,7 +28,7 @@ nfchain = {
 		table.table = name;
 		table.attributes = data['genmsg'];
 		table.attributes['_family'] =
-			nlnf.get_family_str(data['genmsg']['_family']);
+		nlnf.get_family_str(data['genmsg']['_family']);
 		return table;
 	},
 
@@ -39,7 +39,7 @@ nfchain = {
 		nftable.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nftable.set_type(opts,cb);
-		cb();
+		return cb();
 	},
 
 	set_cmd: function(opts, cb) {

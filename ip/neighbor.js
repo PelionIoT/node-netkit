@@ -253,9 +253,9 @@ netlinkNeighCommand = function(opts,sock, cb) {
 			nl_hdr._flags |= opts['flags'];
 		}
 		if(opts.hasOwnProperty("family")) {
-			family = opts['family'];
-			nl_hdr.family = family;
-			nd_msg._family |= family;
+			var fam = opts['family'];
+			nl_hdr.family = fam;
+			nd_msg._family |= fam;
 		}
 	}
 

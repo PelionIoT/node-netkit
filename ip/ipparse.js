@@ -185,7 +185,7 @@ var ipparse = {
 		var lbl = ch['label'];
 
 		var data = {
-			ifname: links[linkno-1]['ifname'], // the interface name as labeled by the OS
+			ifname: ipparse.getLinkFromIndex(links,linkno)['ifname'], // the interface name as labeled by the OS
 			ifnum: linkno, // the interface number, as per system call
 			event:  {	name: ch['operation'],
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'],
@@ -203,7 +203,7 @@ var ipparse = {
 		var oif = ch['oif'].readUInt32LE(0);
 		var ev = ipparse.getRouteEventObj(ch);
 		var data = {
-			ifname: links[oif-1]['ifname'],
+			ifname: ipparse.getLinkFromIndex(links,oif)['ifname'],
 			ifnum: oif,
 			event: ev
 		};
@@ -223,7 +223,7 @@ var ipparse = {
 		var oif = payload['_ifindex'];
 		var neigh = {};
 
-		neigh.ifname = links[oif-1]['ifname'];
+		neigh.ifname =ipparse.getLinkFromIndex(links,oif)['ifname'];
 		neigh.ifnum = oif;
 
 		// cache info and probes currently left out.
@@ -249,6 +249,17 @@ var ipparse = {
 		}
 
 		return neigh;
+	},
+
+	getLinkFromIndex: function(links, index) {
+		for(var l in links){
+			var payload =  links[l]['payload'];
+			if(payload) {
+				var lindex = payload['_if_index'];
+				if(lindex && lindex === index)
+					return links[l];
+			}
+		}
 	},
 
 	getFamily: function(fam) {

@@ -4,7 +4,7 @@ var util = require('util');
 var err = require('../../libs/common.js').err;
 
 
-nk.route("add","eth0","192.168.0.1",null, function(err) {
+nk.route("delete","eth0","192.168.0.1",null, function(err) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err));
 

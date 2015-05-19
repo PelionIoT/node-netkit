@@ -8,6 +8,7 @@ var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
 var dbg = cmn.dbg;
+var err = cmn.err;
 var netutils = cmn.netutils;
 
 
@@ -126,8 +127,7 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,function(err, bufs){
 			if(err) {
 				console.log("* Error" + util.inspect(err));
-				cb(err);
-				return;
+				return cb(err);
 			} else {
 				//console.log("bufs --> ");
 				//console.dir(bufs);
@@ -183,7 +183,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			cmn.err("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -233,7 +233,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 			if(family === this.AF_UNSPEC) {
 				var f = cmn.isaddress(addr)
 				if(util.isError(f)) {
-					err("* Error: " + util.inspect(f));
+					cmn.err("* Error: " + util.inspect(f));
 					cb(ans);
 					return;
 				}
@@ -242,7 +242,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 
 			var ans = this.toAddress(addr, family);
 			if(util.isError(ans)) {
-				err("* Error: " + util.inspect(ans));
+				cmn.err("* Error: " + util.inspect(ans));
 				cb(ans);
 				return;
 			}

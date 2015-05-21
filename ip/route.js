@@ -28,6 +28,8 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			return cb(family);
 		}
 	}
+	// console.log("inetsrc = " + inetsrc);
+	// console.log("inetdest = " + inetdest);
 
 	if(!operation || operation === 'show') {
 		var getneigh_command_opts = {
@@ -36,9 +38,6 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 		};
 		return ipcommand.sendInquiry(netkitObject,null,getneigh_command_opts,cb);
 	} else if(operation === 'add') {
-			console.log("inetsrc = " + inetsrc);
-			console.log("inetdest = " + inetdest);
-
 		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
@@ -58,7 +57,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			}
 		}
 	} else if(operation === 'change') {
-		if(typeof(inetsrc) === undefined && typeof(inetdest) !== undefined) {
+		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
 				flags: nl.NLM_F_REQUEST|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
@@ -77,7 +76,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			}
 		}
 	} else if(operation === 'replace') {
-		if(typeof(inetsrc) === undefined && typeof(inetdest) !== undefined) {
+		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
 				flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
@@ -96,7 +95,8 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			}
 		}
 	} else if(operation === 'delete') {
-		if(typeof(inetsrc) === undefined && typeof(inetdest) !== undefined) {
+		if(inetsrc === null && inetdest !== null) {
+
 			route_opts = {
 				type: rt.RTM_DELROUTE, // the command
 				flags: nl.NLM_F_REQUEST|nl.NLM_F_ACK,

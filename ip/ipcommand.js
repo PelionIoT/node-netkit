@@ -60,7 +60,7 @@ var ipcommand = {
 				cb(err);
 				return;
 			} else {
-				console.log("Created netlink socket.");
+				//console.log("Created netlink socket.");
 
 				var getlink_command_opts = {
 					type: 	rt.RTM_GETLINK, // get link

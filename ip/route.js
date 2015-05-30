@@ -127,7 +127,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			cb(err);
 			return;
 		} else {
-			console.log("Created netlink socket.");
+			//console.log("Created netlink socket.");
 
 			netlinkRouteCommand.call(netkitObject,route_opts, sock, function(err,bufs) {
 				if(err) {

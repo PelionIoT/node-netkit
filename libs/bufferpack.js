@@ -295,7 +295,7 @@ function BufferPack() {
       for(var n=0;n<this.keylist.length;n++) {
         if(this[this.keylist[n]] != undefined) {
 //          if(this[this.keylist[n]] === null) this[this.keylist[n]] = 0;
-          ret.push(this[this.keylist[n]]);          
+          ret.push(this[this.keylist[n]]);
         }
       }
       return ret;
@@ -316,7 +316,6 @@ function BufferPack() {
     else
       if(typeof fmt === 'object') {
         var vals = fmt.toValArray();
-        console.log("vals: " + vals);
         return this.packTo(fmt.__format, new Buffer(this.calcLength(fmt.__format, vals)), 0, vals);
       }
   };

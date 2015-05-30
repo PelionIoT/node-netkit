@@ -84,7 +84,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 			cb(err);
 			return;
 		} else {
-			console.log("Created netlink socket.");
+			//console.log("Created netlink socket.");
 
 			netlinkNeighCommand.call(netkitObject,neigh_opts, sock, function(err,bufs) {
 				if(err) {
@@ -177,11 +177,11 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 		var sock = this.newNetlinkSocket();
 		sock.create(null,function(err) {
 			if(err) {
-				console.log("socket.create() Error: " + util.inspect(err));
+				//console.log("socket.create() Error: " + util.inspect(err));
 				cb(err);
 				return;
 			} else {
-				console.log("Created netlink socket.");
+				//console.log("Created netlink socket.");
 			}
 	            // that was exciting. Now let's close it.
 
@@ -202,12 +202,12 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	            	if(err) {
 	            		console.log("** Error in reply: ");
 	            		for(var n=0;n<bufs.length;n++) {
-	            			console.log('here');
-	            			console.dir(bufs[n]);
-	            			console.log('buf len = ' + bufs[n].length);
+	            			//console.log('here');
+	            			//console.dir(bufs[n]);
+	            			//console.log('buf len = ' + bufs[n].length);
 	            			var errobj = this.nl.parseErrorHdr(bufs[n]);
-	            			console.dir(this.errorFromErrno(errobj._error));
-	            			console.log(util.inspect(errobj));
+	            			//console.dir(this.errorFromErrno(errobj._error));
+	            			//console.log(util.inspect(errobj));
 	            		}
 	            	}
 	            });

@@ -127,6 +127,7 @@ nl = {
 	sendNetlinkCommand: function(sock, nl_hdr, bufs,cb) {
 
 		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
+		dbg("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
 
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)
@@ -168,6 +169,7 @@ nl = {
 
 	addNetlinkMessageToReq: function(msgreq, nl_hdr, bufs) {
 -		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
+		dbg("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
 
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)

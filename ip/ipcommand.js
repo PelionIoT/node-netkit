@@ -57,8 +57,8 @@ var ipcommand = {
 		sock.create(sock_opts,function(err) {
 			if(err) {
 				console.log("socket.create() Error: " + util.inspect(err));
-				cb(err);
-				return;
+				sock.close();
+				return cb(err);
 			} else {
 				//console.log("Created netlink socket.");
 
@@ -70,7 +70,8 @@ var ipcommand = {
 				ipcommand.netlinkInfoCommand.call(nkObject,getlink_command_opts, sock, function(err,bufs) {
 					if(err) {
 						console.error("** Error: " + util.inspect(err));
-						cb(err);
+						sock.close();
+						return cb(err);
 					} else {
 						// get the attributes of all the links first for later reference
 						var links = [];
@@ -88,12 +89,14 @@ var ipcommand = {
 									ldata.push(link);
 								}
 							}
-							cb(null, ldata);
+							sock.close();
+							return cb(null, ldata);
 						} else {
 							ipcommand.netlinkInfoCommand.call(nkObject, command, sock, function(err,c_bufs) {
 								if(err) {
 									console.error("** Error: " + util.inspect(err));
-									cb(err);
+									sock.close();
+									return cb(err);
 								} else {
 									var cdata = [];
 									for(var n = 0; n < c_bufs.length; n++) {
@@ -104,7 +107,8 @@ var ipcommand = {
 									}
 									//console.log("cdata ---> ");
 									//console.dir(cdata);
-									cb(null, cdata);
+									sock.close();
+									return cb(null, cdata);
 								}
 							});
 						}

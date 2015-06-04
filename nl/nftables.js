@@ -57,7 +57,7 @@ nft = {
 		NFTA_TABLE_NAME: 		1,
 		NFTA_TABLE_FLAGS: 		2,
 		NFTA_TABLE_USE: 		3,
-		NFTA_TABLE_SPEC:		['','n/32','s','n/32','n/32']
+		NFTA_TABLE_SPEC:		['','s','n/32','n/32']
 	},
 
 	/**

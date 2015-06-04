@@ -31,6 +31,7 @@ Attribute.prototype.getBuffer = function(spec, value) {
 
 Attribute.prototype.setBuffer = function(spec, value) {
 	var buf = null;
+	console.dir(spec);
 	if(spec.type === 's'){
 		buf = this.getStringBuffer(spec, value);
 	} else if(spec.type === 'n') {
@@ -45,7 +46,7 @@ Attribute.prototype.setBuffer = function(spec, value) {
 Attribute.prototype.getStringBuffer = function(spec, value) {
 	var buf = Buffer(value + '\0');
 	var full_attribute = rt.buildRtattrBuf(spec.typeval, buf);
-	return buf;
+	return full_attribute;
 };
 
 Attribute.prototype.getNumberBuffer = function(spec, value) {
@@ -53,18 +54,18 @@ Attribute.prototype.getNumberBuffer = function(spec, value) {
 	var buf = Buffer(len);
 	switch(len) {
 		case 1:
-			buf.writeUInt8LE(value.valueOf(),0,len);
+			buf.writeUInt8BE(value.valueOf(),0,len);
 			break;
 		case 2:
-			buf.writeUInt16LE(value.valueOf(),0,len);
+			buf.writeUInt16BE(value.valueOf(),0,len);
 			break;
 		case 4:
-			buf.writeUInt32LE(value.valueOf(),0,len);
+			buf.writeUInt32BE(value.valueOf(),0,len);
 			break;
 		case 8:
 			// TODO: verify the ordering of the 4 byte chunks
-			buf.writeUInt32LE(value.valueOf() << 32,0,4 );
-			buf.writeUInt32LE(value.valueOf(),4,len);
+			buf.writeUInt32BE(value.valueOf() << 32,0,4 );
+			buf.writeUInt32BE(value.valueOf(),4,len);
 			break;
 	}
 	var full_attribute = rt.buildRtattrBuf(spec.typeval, buf);
@@ -154,7 +155,7 @@ nfAttributes.prototype.parseNfAttrs = function(params, attrs) {
 		var spec = that.getSpec(attrs, key);
 		var val = params[key];
 
-		console.log("typeval = " + spec.typeval + " type = " + spec.type + " size = " + spec.size + " val = " + val);
+		dbg("typeval = " + spec.typeval + " type = " + spec.type + " size = " + spec.size + " val = " + val);
 		if(nf.attrType(val) === 'object') {
 			// push a nest header attribute
 			var a = new Attribute(spec,val);
@@ -255,11 +256,13 @@ nf = {
 		return flags_str;
 	},
 
-	writeAttributes: function(attrs) {
+	writeAttributes: function(bufs, attrs) {
 	    var that = this;
 	    var keys = Object.keys(attrs.attribute_array);
 		keys.forEach(function(attr) {
-			dbg("attr ---> " + attrs.attribute_array[attr].getBuffer().toString('hex'));
+			var bf = attrs.attribute_array[attr].getBuffer();
+			dbg("attr ---> " + bf.toString('hex'));
+			bufs.push(bf);
 		});
 	},
 
@@ -329,9 +332,9 @@ nf = {
 
 			bufs.push(nf_hdr.pack());
 
-			attrs.addNfAttribute(bufs,opts);
+			nf.writeAttributes(bufs,attrs);
 			nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
-
+			cb(null);
 		} else {
 			cb(new Error("no options specified"));
 		}

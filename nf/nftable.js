@@ -9,7 +9,7 @@ nftable = {
 			if(err) {
 				cb(err);
 			} else {
-				var attrs = nlnf.nf.nfAttribute("table");
+				var attrs = nlnf.nf.Attributes("table", opts.params);
 				nlnf.netfilterSend.call(that, null, opts,
 					attrs, function(err,result){
 					if(err) {
@@ -23,8 +23,6 @@ nftable = {
 	},
 
 	build_command: function(opts,cb) {
-
-		console.dir(opts);
 
 		nftable.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);

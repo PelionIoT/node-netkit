@@ -41,19 +41,23 @@ var nf = require('../../nl/nfnetlink.js');
 // 		console.log("success!");
 // 		console.dir(bufs);
 
-		// nk.nfChain({ command: "add", type: "chain", family: "ip", params: { table: "filter", name: "input", hook: {hooknum: 1, priority: 0} }}, function(err,bufs) {
-		// 	if(err) {
-		// 		console.error(util.inspect(err));
-		// 	} else {
-		// 		console.log("success!");
-		// 		console.dir(bufs);
-		// 	}
-		// });
+		nk.nfChain({ command: "add",
+					 type: "chain",
+					 family: "ip",
+					 params: { table: "filter", name: "input", hook: {hooknum: 1, priority: 0} }},
+					 function(err,bufs) {
+			if(err) {
+				console.error(util.inspect(err));
+			} else {
+				console.log("success!");
+				console.dir(bufs);
+			}
+		});
 // 	}
 // });
 
-var attrs = new nf.Attributes("chain", { table: "filter", name: "input", hook: {hooknum: 1, priority: 0} });
-nf.writeAttributes(attrs);
+// var attrs = new nf.Attributes("chain", { table: "filter", name: "input", hook: {hooknum: 1, priority: 0} });
+// nf.writeAttributes(attrs);
 
 // nk.nfTable({ command: "list", type: "table", family: "ip" }, function(err,bufs) {
 // 	if(err) {

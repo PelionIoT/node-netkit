@@ -16,13 +16,15 @@ nlnetfilter = {
 
 		sock.create(sock_opts,function(err) {
 			if(err) {
+				sock.close();
 				return cb(new Error("socket.create() Error: " + util.inspect(err)));
 			} else {
-
 				nf.sendNetfilterCommand(opts, sock, attrs, function(err,bufs){
 					if(err) {
+						sock.close();
 						return cb(err);
 					} else {
+						sock.close();
 						return cb(null, nlnetfilter.generateNetfilterResponse(bufs,attrs));
 					}
 				});

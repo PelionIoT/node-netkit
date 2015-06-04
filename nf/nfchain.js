@@ -13,7 +13,7 @@ nfchain = {
 				console.log("BOBBY!!!!!!");
 				console.dir(opts);
 
-				var attrs = nlnf.nf.nfAttribute("chain");
+				var attrs = nlnf.nf.Attributes("chain", opts.params);
 				nlnf.netfilterSend.call(that, null, opts,
 					attrs, function(err,result){
 					if(err) {

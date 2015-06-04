@@ -67,7 +67,7 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 			cb(err);
 			return;
 		} else {
-			console.log("Created netlink socket.");
+			//console.log("Created netlink socket.");
 		}
 	 });
 

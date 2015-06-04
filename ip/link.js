@@ -69,7 +69,7 @@ module.exports.link = function(operation,ifname,cb) {
 			cb(err);
 			return;
 		} else {
-			console.log("Created netlink socket.");
+			//console.log("Created netlink socket.");
 
 			netlinkLinkCommand.call(netkitObject,link_opts, sock, function(err,bufs) {
 				if(err) {

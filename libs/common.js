@@ -40,6 +40,6 @@ module.exports = {
 		var ipv4 = "((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])";
 		if(str.match(ipv4)) return 'inet';
 		else if(str.match(ipv6)) return 'inet6';
-		else return (new Error("* Error: isaddres fail : " + str));
+		else return (new Error("* Error: isaddress fail : " + str));
 	},
 };

@@ -4,7 +4,7 @@ var util = require('util');
 var err = require('../../libs/common.js').err;
 
 
-nk.neighbor("change","eth0","fe80::aeb3:13ff:fec3:bec7","ac:b3:13:c3:be:c7", function(err) {
+nk.route("delete","eth0","192.168.0.1",null, function(err) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err));
 
@@ -38,13 +38,13 @@ nk.neighbor("change","eth0","fe80::aeb3:13ff:fec3:bec7","ac:b3:13:c3:be:c7", fun
 	}
 });
 
-nk.ipv4Neighbor("show",null,null,null, function(err, bufs) {
-	if(err) {
-		console.error("** Error: " + util.inspect(err));
-	} else {
-		console.dir(bufs);
-	}
-});
+// nk.ipv4Neighbor("show",null,null,null, function(err, bufs) {
+// 	if(err) {
+// 		console.error("** Error: " + util.inspect(err));
+// 	} else {
+// 		console.dir(bufs);
+// 	}
+// });
 
 //ifname,inet6dest,lladdr,cb,sock
 

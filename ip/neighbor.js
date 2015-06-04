@@ -11,24 +11,37 @@ var dbg = cmn.dbg;
 var netutils = cmn.netutils;
 
 
-module.exports.neighbor = function(operation,ifname,inet4dest,lladdr,cb) {
+module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 	var netkitObject = this;
 	var neigh_opts;
 	var sock_opts = {};
+	var family;
+
+	if(!inetdest) {
+		family = rt.AF_INET | rt.AF_INET6
+	} else {
+		family = cmn.isaddress(inetdest);
+		if (family === 'inet') {
+			family = rt.AF_INET;
+		} else if(family === 'inet6') {
+			family = rt.AF_INET6;
+		} else {
+			return cb(family);
+		}
+	}
 
 	if(!operation || operation === 'show') {
 		var getneigh_command_opts = {
 			type: 	rt.RTM_GETNEIGH,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
-		ipcommand.sendInquiry(netkitObject,null,getneigh_command_opts,cb);
-		return;
+		return ipcommand.sendInquiry(netkitObject,null,getneigh_command_opts,cb);
 	} else if(operation === 'add') {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
-			family: rt.AF_INET,
-			inet4dest: inet4dest,
+			family: family,
+			inetdest: inetdest,
 			lladdr: lladdr,
 			ifname: ifname
 		}
@@ -36,8 +49,8 @@ module.exports.neighbor = function(operation,ifname,inet4dest,lladdr,cb) {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
-			family: rt.AF_INET,
-			inet4dest: inet4dest,
+			family: family,
+			inetdest: inetdest,
 			lladdr: lladdr,
 			ifname: ifname
 		}
@@ -45,8 +58,8 @@ module.exports.neighbor = function(operation,ifname,inet4dest,lladdr,cb) {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
-			family: rt.AF_INET,
-			inet4dest: inet4dest,
+			family: family,
+			inetdest: inetdest,
 			lladdr: lladdr,
 			ifname: ifname
 		}
@@ -54,8 +67,8 @@ module.exports.neighbor = function(operation,ifname,inet4dest,lladdr,cb) {
 		neigh_opts = {
 			type: rt.RTM_DELNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_ACK,
-			family: rt.AF_INET,
-			inet4dest: inet4dest,
+			family: family,
+			inetdest: inetdest,
 			lladdr: lladdr,
 			ifname: ifname
 		}
@@ -71,7 +84,7 @@ module.exports.neighbor = function(operation,ifname,inet4dest,lladdr,cb) {
 			cb(err);
 			return;
 		} else {
-			console.log("Created netlink socket.");
+			//console.log("Created netlink socket.");
 
 			netlinkNeighCommand.call(netkitObject,neigh_opts, sock, function(err,bufs) {
 				if(err) {
@@ -164,11 +177,11 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 		var sock = this.newNetlinkSocket();
 		sock.create(null,function(err) {
 			if(err) {
-				console.log("socket.create() Error: " + util.inspect(err));
+				//console.log("socket.create() Error: " + util.inspect(err));
 				cb(err);
 				return;
 			} else {
-				console.log("Created netlink socket.");
+				//console.log("Created netlink socket.");
 			}
 	            // that was exciting. Now let's close it.
 
@@ -189,12 +202,12 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	            	if(err) {
 	            		console.log("** Error in reply: ");
 	            		for(var n=0;n<bufs.length;n++) {
-	            			console.log('here');
-	            			console.dir(bufs[n]);
-	            			console.log('buf len = ' + bufs[n].length);
+	            			//console.log('here');
+	            			//console.dir(bufs[n]);
+	            			//console.log('buf len = ' + bufs[n].length);
 	            			var errobj = this.nl.parseErrorHdr(bufs[n]);
-	            			console.dir(this.errorFromErrno(errobj._error));
-	            			console.log(util.inspect(errobj));
+	            			//console.dir(this.errorFromErrno(errobj._error));
+	            			//console.log(util.inspect(errobj));
 	            		}
 	            	}
 	            });
@@ -231,6 +244,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 	nd_msg._state = rt.NUD_PERMANENT;
 	nd_msg._ifindex = ifndex;
 
+	var family = 'inet'; // default
 	if(typeof(opts) !== 'undefined') {
 		if(opts.hasOwnProperty('type')) {
 			nl_hdr._type = opts['type'];
@@ -239,8 +253,9 @@ netlinkNeighCommand = function(opts,sock, cb) {
 			nl_hdr._flags |= opts['flags'];
 		}
 		if(opts.hasOwnProperty("family")) {
-			nl_hdr.family = opts['family'];
-			nd_msg._family |= opts['family'];
+			var fam = opts['family'];
+			nl_hdr.family = fam;
+			nd_msg._family |= fam;
 		}
 	}
 
@@ -250,11 +265,17 @@ netlinkNeighCommand = function(opts,sock, cb) {
 	bufs.push(nd_msg.pack());
 
 	// Build the rt attributes for the command
-	if(opts.hasOwnProperty('inet4dest')) {
+	if(opts.hasOwnProperty('inetdest')) {
 		var destbuf;
-		var inet4dest = opts['inet4dest'];
-		if(typeof inet4dest === 'string') {
-			var ans = this.toAddress(inet4dest,this.AF_INET);
+		var inetdest = opts['inetdest'];
+		if(typeof inetdest === 'string') {
+			var ans;
+			if(family === 'inet'){
+				ans = this.toAddress(inetdest,this.AF_INET);
+			} else {
+				ans = this.toAddress(inetdest,this.AF_INET6);
+			}
+
 			if(util.isError(ans)) {
 				cb(ans);
 				return;
@@ -262,7 +283,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 
 			destbuf = ans;
 		} else {
-			destbuf = inet4dest;
+			destbuf = inetdest;
 		}
 
 		var rt_attr = rt.buildRtattrBuf(rt.neigh_attributes.NDA_DST,destbuf.bytes);

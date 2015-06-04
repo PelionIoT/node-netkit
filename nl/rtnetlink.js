@@ -497,6 +497,15 @@ rt = {
 // "<B(_family)B(_dst_len)B(_src_len)B(_tos)B(_table)B(_protocol)B(_scope)B(_type)I(_flags)";
 	buildRtmsg: function() {
 		var o = bufferpack.metaObject(rtmsg_fmt,true);
+		o._family = 0;
+		o._dst_len = 0;
+		o._src_len = 0;
+		o._tos = 0;
+		o._table = 0;
+		o._protocol = 0;
+		o._scope = 0;
+		o._type = 0;
+		o._flags = 0;
 		return o;
 	},
 

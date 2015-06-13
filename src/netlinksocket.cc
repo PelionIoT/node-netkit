@@ -601,8 +601,11 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
 
-		if(mode == NetlinkTypes::SOCKET_BLOCKING)
+		if(mode == NetlinkTypes::SOCKET_BLOCKING) {
 			return true;
+		} else {
+			return false;
+		}
 	}
 }
 

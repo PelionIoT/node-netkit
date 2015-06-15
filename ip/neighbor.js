@@ -245,6 +245,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 	nd_msg._ifindex = ifndex;
 
 	var family = 'inet'; // default
+	var fam;
 	if(typeof(opts) !== 'undefined') {
 		if(opts.hasOwnProperty('type')) {
 			nl_hdr._type = opts['type'];
@@ -253,7 +254,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 			nl_hdr._flags |= opts['flags'];
 		}
 		if(opts.hasOwnProperty("family")) {
-			var fam = opts['family'];
+			fam = opts['family'];
 			nl_hdr.family = fam;
 			nd_msg._family |= fam;
 		}
@@ -270,7 +271,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 		var inetdest = opts['inetdest'];
 		if(typeof inetdest === 'string') {
 			var ans;
-			if(family === 'inet'){
+			if(fam === 'inet'){
 				ans = this.toAddress(inetdest,this.AF_INET);
 			} else {
 				ans = this.toAddress(inetdest,this.AF_INET6);

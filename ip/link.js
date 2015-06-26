@@ -66,18 +66,19 @@ module.exports.link = function(operation,ifname,cb) {
 	sock.create(sock_opts,function(err) {
 		if(err) {
 			console.log("socket.create() Error: " + util.inspect(err));
-			cb(err);
-			return;
+			sock.close();
+			return cb(err);
 		} else {
 			//console.log("Created netlink socket.");
 
 			netlinkLinkCommand.call(netkitObject,link_opts, sock, function(err,bufs) {
 				if(err) {
-					cb(err);
+					sock.close();
+					return cb(err);
 				} else {
-					cb();
+					sock.close();
+					return cb();
 				}
-				sock.close();
 			});
 		}
 	});

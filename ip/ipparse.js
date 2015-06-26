@@ -162,8 +162,9 @@ var ipparse = {
 	},
 
 	packageInfoLink: function(ch,links) {
-
-		var operstate = ipparse.link_oper_states[ch['operstate'].readUInt8(0)];
+		var opst = ch['operstate'];
+		if(typeof opst === undefined) return {};
+		var operstate = ipparse.link_oper_states[opst.readUInt8(0)];
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call

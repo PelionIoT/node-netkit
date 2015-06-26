@@ -125,36 +125,46 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 		};
 
 		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,function(err, bufs){
+	        var onComplete = function() {
+				sock.close();
+	            return cb(null);
+    	    };
+
 			if(err) {
 				console.log("* Error" + util.inspect(err));
+				sock.close()
 				return cb(err);
 			} else {
-				//console.log("bufs --> ");
-				//console.dir(bufs);
+				console.log("bufs --> ");
+				console.dir(bufs);
 
-				var keep_going = true;
-				for(var i = 0; i < bufs.length && keep_going; i++) {
+				var keys = Object.keys(bufs);
+				var keysToGo = keys.length;
 
-					opts.addr = bufs[i]['event']['address'];
+		        if (keysToGo === 0) {
+		            onComplete();
+		        } else {
+			        keys.forEach(function(key) {
 
-					//console.log("bufs.length = " + bufs.length + " i = " + i);
-					//console.dir(opts);
-					netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
-						if(err) {
-							//console.log("err: " + util.inspect(err));
-						} else {
-							//cb(null,bufs);
-							//return;
-						}
-					});
-				}
-				sock.close();
-				cb(null);
-				return;
+						opts.addr = bufs[key]['event']['address'];
+
+						console.log("bufs.length = " + bufs.length + " i = " + key);
+						console.dir(opts);
+
+						netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
+							if(err) {
+								sock.close();
+								return cb(err);
+							} else {
+			                    if (--keysToGo === 0) {
+			                        onComplete();
+			                    }
+							}
+						});
+			        });
+			    }
 			}
 		});
-
-
 	} else {
 		console.error("event type = '" + operation + "'' : Not supported");
 		return;
@@ -163,15 +173,14 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 	if(operation !== 'flush') {
 		netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 			if(err) {
-				cb(err);
-				return;
+				sock.close();
+				return cb(err);
 			} else {
 				//console.log("bufs--->");
 				//console.dir(bufs);
-				cb(null,bufs);
-				return;
+				sock.close();
+				return cb(null,bufs);
 			}
-			sock.close();
 		});
 	}
 };
@@ -181,6 +190,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 
 	var ifndex;
 	if(opts.hasOwnProperty('ifname')) {
+		console.log("ifname = " + opts['ifname']);
 		ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
 			cmn.err("* Error: " + util.inspect(ifndex));
@@ -230,11 +240,12 @@ netlinkAddrCommand = function(opts, sock, cb) {
 		var addr = opts['addr'];
 		var destbuf;
 		if(typeof addr === 'string') {
+			console.log("family = " + family);
 			if(family === this.AF_UNSPEC) {
 				var f = cmn.isaddress(addr)
 				if(util.isError(f)) {
 					cmn.err("* Error: " + util.inspect(f));
-					cb(ans);
+					cb(f);
 					return;
 				}
 				family = (f === 'inet6') ? this.AF_INET6 : this.AF_INET;

@@ -1,16 +1,16 @@
 var nlnf = require('./nlnetfilter.js');
 
-nfchain = {
+nfrule = {
 
-	chain: function(opts, cb) {
+	rule: function(opts, cb) {
 		var that = this;
 
-		nfchain.build_command(opts,function(err){
+		nfrule.build_command(opts,function(err){
 			if(err) {
 				cb(err);
 			} else {
 
-				var attrs = nlnf.nf.Attributes("chain", opts.params);
+				var attrs = nlnf.nf.Attributes("rule", opts.params);
 				nlnf.netfilterSend.call(that, null, opts,
 					attrs, function(err,result){
 					if(err) {
@@ -23,23 +23,23 @@ nfchain = {
 		});
 	},
 
-	parse_chain: function(data,name) {
-		var chain = {};
+	parse_rule: function(data,name) {
+		var rule = {};
 
-		chain.chain = name;
-		chain.attributes = data['genmsg'];
-		chain.attributes['_family'] =
+		rule.rule = name;
+		rule.attributes = data['genmsg'];
+		rule.attributes['_family'] =
 		nlnf.get_family_str(data['genmsg']['_family']);
-		return chain;
+		return rule;
 	},
 
 	build_command: function(opts,cb) {
 
 		//console.dir(opts);
 
-		nfchain.set_cmd(opts,cb);
+		nfrule.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
-		nfchain.set_type(opts,cb);
+		nfrule.set_type(opts,cb);
 		return cb();
 	},
 
@@ -48,16 +48,16 @@ nfchain = {
 		var command = opts['command'];
 		switch(command) {
 			case "get":
-				opts['cmd'] = nf.NFT_MSG_GETCHAIN;
+				opts['cmd'] = nf.NFT_MSG_GETRULE;
 				break;
 			case "add":
-				opts['cmd'] =  nf.NFT_MSG_NEWCHAIN;
+				opts['cmd'] =  nf.NFT_MSG_NEWRULE ;
 				break;
 			case "del":
-				opts['cmd'] =  nf.NFT_MSG_DELCHAIN;
+				opts['cmd'] =  nf.NFT_MSG_DERULE;
 				break;
 			case "update":
-				opts['cmd'] =  nf.NFT_MSG_NEWCHAIN
+				opts['cmd'] =  nf.NFT_MSG_NEWRULE
 				break;
 			default:
 				return cb(new Error(command +
@@ -74,7 +74,7 @@ nfchain = {
 				opts['type_flags'] = nl.NLM_F_ACK;
 				break;
 			case "add":
-				opts['type_flags'] =  nl.NLM_F_ACK;
+				opts['type_flags'] =  nl.NLM_F_APPEND | nl.NLM_F_CREATE |nl.NLM_F_ACK;
 				break;
 			case "del":
 				opts['type_flags'] =  nl.NLM_F_ACK;
@@ -91,4 +91,4 @@ nfchain = {
 
 };
 
-module.exports = nfchain;
+module.exports = nfrule;

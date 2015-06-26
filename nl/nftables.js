@@ -1,27 +1,175 @@
 nft = {
 
-	// TODO : add this others not in chain,rule or table
-	isNested: function(attr) {
-		switch(attr) {
-			case nft.nft_chain_attributes.NFTA_CHAIN_HOOK:
-			case nft.nft_chain_attributes.NFTA_CHAIN_COUNTERS:
-			case nft.nft_rule_attributes.NFTA_RULE_EXPRESSIONS:
-			case nft.nft_rule_attributes.NFTA_RULE_COMPAT:
-				return true;
-			default:
-				return false;
-		}
+
+
+	/*
+	* Standard well-defined IP protocols.
+	* include/uapi/linux/in.h
+	*/
+	ip_proto: {
+	  IPPROTO_IP:  0,		/* Dummy protocol for TCP		*/
+	  IPPROTO_ICMP:  1,		/* Internet Control Message Protocol	*/
+	  IPPROTO_IGMP:  2,		/* Internet Group Management Protocol	*/
+	  IPPROTO_IPIP:  4,		/* IPIP tunnels (older KA9Q tunnels use 94) */
+	  IPPROTO_TCP:  6,		/* Transmission Control Protocol	*/
+	  IPPROTO_EGP:  8,		/* Exterior Gateway Protocol		*/
+	  IPPROTO_PUP:  12,		/* PUP protocol				*/
+	  IPPROTO_UDP:  17,		/* User Datagram Protocol		*/
+	  IPPROTO_IDP:  22,		/* XNS IDP protocol			*/
+	  IPPROTO_TP:  29,		/* SO Transport Protocol Class 4	*/
+	  IPPROTO_DCCP:  33,		/* Datagram Congestion Control Protocol */
+	  IPPROTO_IPV6:  41,		/* IPv6-in-IPv4 tunnelling		*/
+	  IPPROTO_RSVP:  46,		/* RSVP Protocol			*/
+	  IPPROTO_GRE:  47,		/* Cisco GRE tunnels (rfc 1701,1702)	*/
+	  IPPROTO_ESP:  50,		/* Encapsulation Security Payload protocol */
+	  IPPROTO_AH:  51,		/* Authentication Header protocol	*/
+	  IPPROTO_MTP:  92,		/* Multicast Transport Protocol		*/
+	  IPPROTO_BEETPH:  94,		/* IP option pseudo header for BEET	*/
+	  IPPROTO_ENCAP:  98,		/* Encapsulation Header			*/
+	  IPPROTO_PIM:  103,		/* Protocol Independent Multicast	*/
+	  IPPROTO_COMP:  108,		/* Compression Header Protocol		*/
+	  IPPROTO_SCTP:  132,		/* Stream Control Transport Protocol	*/
+	  IPPROTO_UDPLITE:  136,	/* UDP-Lite (RFC 3828)			*/
+	  IPPROTO_RAW:  255,		/* Raw IP packets			*/
+	},
+
+
+	/*
+	* iphdr structure definitions from -  include/uapi/linux/ip.h
+		struct iphdr {
+			 #if defined(__LITTLE_ENDIAN_BITFIELD)
+			         __u8    ihl:4,
+			                 version:4;
+			 #elif defined (__BIG_ENDIAN_BITFIELD)
+			         __u8    version:4,
+			                 ihl:4;
+			 #else
+			 #error  "Please fix <asm/byteorder.h>"
+			 #endif
+			         __u8    tos;
+			         __u16   tot_len;
+			         __u16   id;
+			         __u16   frag_off;
+			         __u8    ttl;
+			         __u8    protocol;
+			         __u16   check;
+			         __u32   saddr;
+			         __u32   daddr;
+			 };
+	*/
+	iphdr_offsets: {
+		version_ihl: 	0,
+		tos: 			1,
+		tot_len: 		2,
+		id: 			4,
+		frag_off: 		6,
+		ttl: 			8,
+		protocol: 		9,
+		check: 			10,
+		saddr: 			12,
+		daddr: 			16,
+		/*The options start here. */
+	},
+
+	iphdr_sizes: {
+		version_ihl: 	1,
+		tos: 			1,
+		tot_len: 		2,
+		id: 			2,
+		frag_off: 		2,
+		ttl: 			1,
+		protocol: 		1,
+		check: 			2,
+		saddr: 			4,
+		daddr: 			4,
+		/*The options start here. */
+	},
+
+	/*
+	* tcphdr structure definitions from -  include/uapi/linux/tcp.h
+	*/
+	tcphdr_offsets: {
+		source: 	0,
+		dest: 		2,
+		seq: 		4,
+		ack_seq: 	8,
+		offset_flag:12,
+		window: 	14,
+		check: 		16,
+		urg_ptr: 	18,
+	},
+
+	tcphdr_sizes: {
+		source: 	2,
+		dest: 		2,
+		seq: 		4,
+		ack_seq: 	4,
+		offset_flag:2,
+		window: 	2,
+		check: 		2,
+		urg_ptr: 	2,
+	},
+
+	/*
+	* nft register defines
+	*/
+	nft_registers: {
+		NFT_REG_VERDICT: 	0,
+		NFT_REG_1: 			1,
+		NFT_REG_2: 			2,
+		NFT_REG_3: 			3,
+		NFT_REG_4: 			4,
 	},
 
 	/**
-	 * enum nft_list_attributes - nf_tables generic list netlink attributes
+	 * enum nft_verdicts - nf_tables internal verdicts
 	 *
-	 * @NFTA_LIST_ELEM: list element (NLA_NESTED)
+	 * @NFT_CONTINUE: continue evaluation of the current rule
+	 * @NFT_BREAK: terminate evaluation of the current rule
+	 * @NFT_JUMP: push the current chain on the jump stack and jump to a chain
+	 * @NFT_GOTO: jump to a chain without pushing the current chain on the jump stack
+	 * @NFT_RETURN: return to the topmost chain on the jump stack
+	 *
+	 * The nf_tables verdicts share their numeric space with the netfilter verdicts.
 	 */
-	nft_list_attributes:  {
-		NFTA_LIST_UNPEC: 	0,
-		NFTA_LIST_ELEM: 	1,
+	nft_verdicts: {
+		NFT_CONTINUE: 	-1,
+		NFT_BREAK: 		-2,
+		NFT_JUMP:		-3,
+		NFT_GOTO: 		-4,
+		NFT_RETURN: 	-5,
 	},
+
+
+	/* @NFT_PAYLOAD_LL_HEADER: link layer header
+  	* @NFT_PAYLOAD_NETWORK_HEADER: network header
+  	* @NFT_PAYLOAD_TRANSPORT_HEADER: transport header
+	*/
+	nft_payload_bases: {
+		NFT_PAYLOAD_LL_HEADER: 0,
+		NFT_PAYLOAD_NETWORK_HEADER: 1,
+		NFT_PAYLOAD_TRANSPORT_HEADER: 2,
+	},
+
+	/**
+	 * enum nft_cmp_ops - nf_tables relational operator
+	 *
+	 * @NFT_CMP_EQ: equal
+	 * @NFT_CMP_NEQ: not equal
+	 * @NFT_CMP_LT: less than
+	 * @NFT_CMP_LTE: less than or equal to
+	 * @NFT_CMP_GT: greater than
+	 * @NFT_CMP_GTE: greater than or equal to
+	 */
+	nft_cmp_ops: {
+		NFT_CMP_EQ: 	0,
+		NFT_CMP_NEQ: 	1,
+		NFT_CMP_LT: 	2,
+		NFT_CMP_LTE: 	3,
+		NFT_CMP_GT: 	4,
+		NFT_CMP_GTE: 	5,
+	},
+
 
 	/**
 	 * enum nft_hook_attributes - nf_tables netfilter hook netlink attributes
@@ -44,6 +192,21 @@ nft = {
 	nft_table_flags: {
 		NFT_TABLE_F_DORMANT:  0x1,
 	},
+
+
+	/* ------------------------------------------------------------------------
+	*
+	*	NFT atrributes section
+	*
+	*	SPEC values: 	s = string,
+	* 					n/<x> = number/size in bytes
+	*					r = recursion (nested attribute object)
+	*					l = list of attribute objects
+	*					e = expression object: with the attibute object in the data element
+	*										and the element's attribute object type in the name
+	*
+	*  ------------------------------------------------------------------------  */
+
 
 	/**
 	 * enum nft_table_attributes - nf_tables table netlink attributes
@@ -105,7 +268,31 @@ nft = {
 		NFTA_RULE_COMPAT: 		5,
 		NFTA_RULE_POSITION: 	6,
 		NFTA_RULE_USERDATA: 	7,
-		NFTA_RULE_SPEC: 		['','s','s','n/64','r/nft_expr_attributes','r/nft_rule_compat_attributes','n/64','b']
+		NFTA_RULE_SPEC: 		['','s','s','n/64','l/nft_list_attributes','r/nft_rule_compat_attributes','n/64','b']
+	},
+
+	/**
+	 * enum nft_list_attributes - nf_tables generic list netlink attributes
+	 *
+	 * @NFTA_LIST_ELEM: list element (NLA_NESTED)
+	 */
+	nft_list_attributes:  {
+		NFTA_LIST_UNPEC: 	0,
+		NFTA_LIST_ELEM: 	1,
+		NFTA_LIST_SPEC: 	['','r/nft_expr_attributes'],
+	},
+
+	/**
+	 * enum nft_expr_attributes - nf_tables expression netlink attributes
+	 *
+	 * @NFTA_EXPR_NAME: name of the expression type (NLA_STRING)
+	 * @NFTA_EXPR_DATA: type specific data (NLA_NESTED)
+	 */
+	nft_expr_attributes: {
+		NFTA_EXPR_UNSPEC: 	0,
+		NFTA_EXPR_NAME: 	1,
+		NFTA_EXPR_DATA: 	2,
+		NFTA_EXPR_SPEC: 	['','s','e'],
 	},
 
 	/**
@@ -131,16 +318,125 @@ nft = {
 	},
 
 	/**
-	 * enum nft_expr_attributes - nf_tables expression netlink attributes
+	 * enum nft_cmp_attributes - nf_tables cmp expression netlink attributes
 	 *
-	 * @NFTA_EXPR_NAME: name of the expression type (NLA_STRING)
-	 * @NFTA_EXPR_DATA: type specific data (NLA_NESTED)
+	 * @NFTA_CMP_SREG: source register of data to compare (NLA_U32: nft_registers)
+	 * @NFTA_CMP_OP: cmp operation (NLA_U32: nft_cmp_ops)
+	 * @NFTA_CMP_DATA: data to compare against (NLA_NESTED: nft_data_attributes)
 	 */
-	nft_expr_attributes: {
-		NFTA_EXPR_UNSPEC: 	0,
-		NFTA_EXPR_NAME: 	1,
-		NFTA_EXPR_DATA: 	2,
+	nft_cmp_attributes: {
+		NFTA_CMP_UNSPEC: 	0,
+		NFTA_CMP_SREG: 		1,
+		NFTA_CMP_OP: 		2,
+		NFTA_CMP_DATA: 		3,
+
+		//NFTA_CMP_SPEC: 		['','n/32','n/32','n/32', 'n/32']
+		NFTA_CMP_SPEC: 		['','n/32','n/32','r/nft_data_attributes']
 	},
+
+	/**
+	 * enum nft_counter_attributes - nf_tables counter expression netlink attributes
+	 *
+	 * @NFTA_COUNTER_BYTES: number of bytes (NLA_U64)
+	 * @NFTA_COUNTER_PACKETS: number of packets (NLA_U64)
+	 */
+	nft_counter_attributes: {
+		NFTA_COUNTER_UNSPEC: 	0,
+		NFTA_COUNTER_BYTES: 	1,
+		NFTA_COUNTER_PACKETS: 	2,
+		NFTA_COUNTER_SPEC: 		['','n/64','n/64']
+
+	},
+
+	/**
+	 * enum nft_payload_attributes - nf_tables payload expression netlink attributes
+	 *
+	 * @NFTA_PAYLOAD_DREG: destination register to load data into (NLA_U32: nft_registers)
+	 * @NFTA_PAYLOAD_BASE: payload base (NLA_U32: nft_payload_bases)
+	 * @NFTA_PAYLOAD_OFFSET: payload offset relative to base (NLA_U32)
+	 * @NFTA_PAYLOAD_LEN: payload length (NLA_U32)
+	 */
+	nft_payload_attributes: {
+		NFTA_PAYLOAD_UNSPEC: 	0,
+		NFTA_PAYLOAD_DREG: 		1,
+		NFTA_PAYLOAD_BASE: 		2,
+		NFTA_PAYLOAD_OFFSET: 	3,
+		NFTA_PAYLOAD_LEN: 		4,
+		NFTA_PAYLOAD_SPEC: 		['','n/32','n/32','n/32','n/32']
+	},
+
+
+	/**
+	 * enum nft_data_attributes - nf_tables data netlink attributes
+	 *
+	 * @NFTA_DATA_VALUE: generic data (NLA_BINARY)
+	 * @NFTA_DATA_VERDICT: nf_tables verdict (NLA_NESTED: nft_verdict_attributes)
+	 */
+	nft_data_attributes: {
+		NFTA_DATA_UNSPEC: 	0,
+		NFTA_DATA_VALUE: 	1,
+		NFTA_DATA_VERDICT: 	2,
+		NFTA_DATA_SPEC: 	['','g/8','r/nft_verdict_attributes']
+	},
+
+	/**
+	 * enum nft_bitwise_attributes - nf_tables bitwise expression netlink attributes
+	 *
+	 * @NFTA_BITWISE_SREG: source register (NLA_U32: nft_registers)
+	 * @NFTA_BITWISE_DREG: destination register (NLA_U32: nft_registers)
+	 * @NFTA_BITWISE_LEN: length of operands (NLA_U32)
+	 * @NFTA_BITWISE_MASK: mask value (NLA_NESTED: nft_data_attributes)
+	 * @NFTA_BITWISE_XOR: xor value (NLA_NESTED: nft_data_attributes)
+	 *
+	 * The bitwise expression performs the following operation:
+	 *
+	 * dreg = (sreg & mask) ^ xor
+	 *
+	 * which allow to express all bitwise operations:
+	 *
+	 * 		mask	xor
+	 * NOT:		1	1
+	 * OR:		0	x
+	 * XOR:		1	x
+	 * AND:		x	0
+	 */
+	nft_bitwise_attributes: {
+		NFTA_BITWISE_UNSPEC: 	0,
+		NFTA_BITWISE_SREG: 		1,
+		NFTA_BITWISE_DREG: 		2,
+		NFTA_BITWISE_LEN: 		3,
+		NFTA_BITWISE_MASK: 		4,
+		NFTA_BITWISE_XOR: 		5,
+		NFTA_BITWISE_SPEC: 		['','n/32','n/32','n/32','r/nft_data_attributes','r/nft_data_attributes']
+	},
+
+	/**
+	 * enum nft_verdict_attributes - nf_tables verdict netlink attributes
+	 *
+	 * @NFTA_VERDICT_CODE: nf_tables verdict (NLA_U32: enum nft_verdicts)
+	 * @NFTA_VERDICT_CHAIN: jump target chain name (NLA_STRING)
+	 */
+	nft_verdict_attributes: {
+		NFTA_VERDICT_UNSPEC: 		0,
+		NFTA_VERDICT_CODE: 			1,
+		NFTA_VERDICT_CHAIN: 		2,
+		NFTA_VERDICT_SPEC: 			['','n/32','s']
+	},
+
+	/**
+	 * enum nft_immediate_attributes - nf_tables immediate expression netlink attributes
+	 *
+	 * @NFTA_IMMEDIATE_DREG: destination register to load data into (NLA_U32)
+	 * @NFTA_IMMEDIATE_DATA: data to load (NLA_NESTED: nft_data_attributes)
+	 */
+	nft_immediate_attributes: {
+		NFTA_IMMEDIATE_UNSPEC: 		0,
+		NFTA_IMMEDIATE_DREG: 		1,
+		NFTA_IMMEDIATE_DATA: 		2,
+		NFTA_IMMEDIATE_SPEC: 		['','n/32','r/nft_data_attributes']
+	},
+
+
 // /**
 //  * enum nft_set_flags - nf_tables set flags
 //  *
@@ -274,78 +570,6 @@ nft = {
 
 // #define NFT_DATA_RESERVED_MASK	0xffffff00U
 
-// /**
-//  * enum nft_data_attributes - nf_tables data netlink attributes
-//  *
-//  * @NFTA_DATA_VALUE: generic data (NLA_BINARY)
-//  * @NFTA_DATA_VERDICT: nf_tables verdict (NLA_NESTED: nft_verdict_attributes)
-//  */
-// enum nft_data_attributes {
-// 	NFTA_DATA_UNSPEC,
-// 	NFTA_DATA_VALUE,
-// 	NFTA_DATA_VERDICT,
-// 	__NFTA_DATA_MAX
-// };
-// #define NFTA_DATA_MAX		(__NFTA_DATA_MAX - 1)
-
-// /**
-//  * enum nft_verdict_attributes - nf_tables verdict netlink attributes
-//  *
-//  * @NFTA_VERDICT_CODE: nf_tables verdict (NLA_U32: enum nft_verdicts)
-//  * @NFTA_VERDICT_CHAIN: jump target chain name (NLA_STRING)
-//  */
-// enum nft_verdict_attributes {
-// 	NFTA_VERDICT_UNSPEC,
-// 	NFTA_VERDICT_CODE,
-// 	NFTA_VERDICT_CHAIN,
-// 	__NFTA_VERDICT_MAX
-// };
-// #define NFTA_VERDICT_MAX	(__NFTA_VERDICT_MAX - 1)
-// /**
-//  * enum nft_immediate_attributes - nf_tables immediate expression netlink attributes
-//  *
-//  * @NFTA_IMMEDIATE_DREG: destination register to load data into (NLA_U32)
-//  * @NFTA_IMMEDIATE_DATA: data to load (NLA_NESTED: nft_data_attributes)
-//  */
-// enum nft_immediate_attributes {
-// 	NFTA_IMMEDIATE_UNSPEC,
-// 	NFTA_IMMEDIATE_DREG,
-// 	NFTA_IMMEDIATE_DATA,
-// 	__NFTA_IMMEDIATE_MAX
-// };
-// #define NFTA_IMMEDIATE_MAX	(__NFTA_IMMEDIATE_MAX - 1)
-
-// /**
-//  * enum nft_bitwise_attributes - nf_tables bitwise expression netlink attributes
-//  *
-//  * @NFTA_BITWISE_SREG: source register (NLA_U32: nft_registers)
-//  * @NFTA_BITWISE_DREG: destination register (NLA_U32: nft_registers)
-//  * @NFTA_BITWISE_LEN: length of operands (NLA_U32)
-//  * @NFTA_BITWISE_MASK: mask value (NLA_NESTED: nft_data_attributes)
-//  * @NFTA_BITWISE_XOR: xor value (NLA_NESTED: nft_data_attributes)
-//  *
-//  * The bitwise expression performs the following operation:
-//  *
-//  * dreg = (sreg & mask) ^ xor
-//  *
-//  * which allow to express all bitwise operations:
-//  *
-//  * 		mask	xor
-//  * NOT:		1	1
-//  * OR:		0	x
-//  * XOR:		1	x
-//  * AND:		x	0
-//  */
-// enum nft_bitwise_attributes {
-// 	NFTA_BITWISE_UNSPEC,
-// 	NFTA_BITWISE_SREG,
-// 	NFTA_BITWISE_DREG,
-// 	NFTA_BITWISE_LEN,
-// 	NFTA_BITWISE_MASK,
-// 	NFTA_BITWISE_XOR,
-// 	__NFTA_BITWISE_MAX
-// };
-// #define NFTA_BITWISE_MAX	(__NFTA_BITWISE_MAX - 1)
 
 // /**
 //  * enum nft_byteorder_ops - nf_tables byteorder operators
@@ -396,23 +620,6 @@ nft = {
 // 	NFT_CMP_GT,
 // 	NFT_CMP_GTE,
 // };
-
-// /**
-//  * enum nft_cmp_attributes - nf_tables cmp expression netlink attributes
-//  *
-//  * @NFTA_CMP_SREG: source register of data to compare (NLA_U32: nft_registers)
-//  * @NFTA_CMP_OP: cmp operation (NLA_U32: nft_cmp_ops)
-//  * @NFTA_CMP_DATA: data to compare against (NLA_NESTED: nft_data_attributes)
-//  */
-// enum nft_cmp_attributes {
-// 	NFTA_CMP_UNSPEC,
-// 	NFTA_CMP_SREG,
-// 	NFTA_CMP_OP,
-// 	NFTA_CMP_DATA,
-// 	__NFTA_CMP_MAX
-// };
-// #define NFTA_CMP_MAX		(__NFTA_CMP_MAX - 1)
-
 // /**
 //  * enum nft_lookup_attributes - nf_tables set lookup expression netlink attributes
 //  *
@@ -443,25 +650,6 @@ nft = {
 // 	NFT_PAYLOAD_NETWORK_HEADER,
 // 	NFT_PAYLOAD_TRANSPORT_HEADER,
 // };
-
-// /**
-//  * enum nft_payload_attributes - nf_tables payload expression netlink attributes
-//  *
-//  * @NFTA_PAYLOAD_DREG: destination register to load data into (NLA_U32: nft_registers)
-//  * @NFTA_PAYLOAD_BASE: payload base (NLA_U32: nft_payload_bases)
-//  * @NFTA_PAYLOAD_OFFSET: payload offset relative to base (NLA_U32)
-//  * @NFTA_PAYLOAD_LEN: payload length (NLA_U32)
-//  */
-// enum nft_payload_attributes {
-// 	NFTA_PAYLOAD_UNSPEC,
-// 	NFTA_PAYLOAD_DREG,
-// 	NFTA_PAYLOAD_BASE,
-// 	NFTA_PAYLOAD_OFFSET,
-// 	NFTA_PAYLOAD_LEN,
-// 	__NFTA_PAYLOAD_MAX
-// };
-// #define NFTA_PAYLOAD_MAX	(__NFTA_PAYLOAD_MAX - 1)
-
 // *
 //  * enum nft_exthdr_attributes - nf_tables IPv6 extension header expression netlink attributes
 //  *
@@ -616,20 +804,6 @@ nft = {
 // 	__NFTA_LIMIT_MAX
 // };
 // #define NFTA_LIMIT_MAX		(__NFTA_LIMIT_MAX - 1)
-
-	/**
-	 * enum nft_counter_attributes - nf_tables counter expression netlink attributes
-	 *
-	 * @NFTA_COUNTER_BYTES: number of bytes (NLA_U64)
-	 * @NFTA_COUNTER_PACKETS: number of packets (NLA_U64)
-	 */
-	nft_counter_attributes: {
-		NFTA_COUNTER_UNSPEC: 	0,
-		NFTA_COUNTER_BYTES: 	1,
-		NFTA_COUNTER_PACKETS: 	2,
-		NFTA_COUNTER_SPEC: 		['','n/64','n/64']
-
-	},
 
 // /**
 //  * enum nft_log_attributes - nf_tables log expression netlink attributes

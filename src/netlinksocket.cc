@@ -323,7 +323,16 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			if(!sock->listening)
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
-			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
+			// DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
+			// uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
+
+
+			uv_work_t work;
+			memset(&work, 0, sizeof(uv_work_t));
+			work.data = req;
+			do_sendmsg(&work);
+			post_recvmsg(&work,0);
+
 		} else {
 			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
 		}

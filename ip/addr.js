@@ -135,8 +135,8 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 				sock.close()
 				return cb(err);
 			} else {
-				console.log("bufs --> ");
-				console.dir(bufs);
+				// console.log("bufs --> ");
+				// console.dir(bufs);
 
 				var keys = Object.keys(bufs);
 				var keysToGo = keys.length;
@@ -148,8 +148,8 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 
 						opts.addr = bufs[key]['event']['address'];
 
-						console.log("bufs.length = " + bufs.length + " i = " + key);
-						console.dir(opts);
+						// console.log("bufs.length = " + bufs.length + " i = " + key);
+						// console.dir(opts);
 
 						netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 							if(err) {

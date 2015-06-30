@@ -183,9 +183,9 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 
 		}
 	}
-	DBG_OUT("type_flags = %x", type_flags);
-	DBG_OUT("netlink_class = %d", netlink_class);
-	DBG_OUT("subscription = %x", subscription);
+	//DBG_OUT("type_flags = %x", type_flags);
+	//DBG_OUT("netlink_class = %d", netlink_class);
+	//DBG_OUT("subscription = %x", subscription);
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
@@ -324,7 +324,7 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
 			// DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
-			// uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
+			// uv_queue_work(uv_efault_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 
 
 			uv_work_t work;

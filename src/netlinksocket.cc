@@ -501,6 +501,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 					receiving = do_recvmsg(req,NetlinkTypes::SOCKET_BLOCKING); //blocking read on req
 				}
 			}
+
+			free(iov_array);
 		} else {
 			req->err.setError(_net::OTHER_ERROR,"do_sendmsg: Empty request list.");
 		}
@@ -615,6 +617,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		} else {
 			return false;
 		}
+		free(iov_array);
 	}
 }
 
@@ -703,8 +706,9 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 	}
 
-	 if(!job->self->listening)
+	 if(!job->self->listening) {
 		job->reqUnref(); // we are done with the request object, let the GC handle it
+	 }
 }
 
 // ------------------------------------------------------------------------------

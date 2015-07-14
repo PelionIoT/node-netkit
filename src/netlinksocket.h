@@ -101,7 +101,7 @@ protected:
 				{ work.data = this; first_seq = last_seq = s->seq; }
 			sockMsgReq(NetlinkSocket *s, v8obj handle) : sockMsgReq(s) { this->Wrap(handle); }
 			void reqRef() {	this->Ref(); }
-			void reqUnref() { this->Unref(); DBG_OUT("new req here"); }
+			void reqUnref() { this->Unref(); }
 			~sockMsgReq() {	if(recvBuffer) free(recvBuffer); }
 
 		private:

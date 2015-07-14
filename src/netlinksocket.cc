@@ -261,7 +261,9 @@ Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a
 
 	Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
 
-	Request_t *req = new Request_t(sock,v8req);
+	// Save a reference so the request will get unRef'ed in during socket closure
+	// in the case this is a listening socket who's request is not unRef'ed by the port_recv function.
+	sock->saveReqRef(new Request_t(sock,v8req));
 	// ignore warning, this is fine. It's wrapped in the cstor of sockMsgReq
 
 	return scope.Close(v8req);
@@ -501,6 +503,8 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 					receiving = do_recvmsg(req,NetlinkTypes::SOCKET_BLOCKING); //blocking read on req
 				}
 			}
+
+			free(iov_array);
 		} else {
 			req->err.setError(_net::OTHER_ERROR,"do_sendmsg: Empty request list.");
 		}
@@ -615,6 +619,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		} else {
 			return false;
 		}
+		free(iov_array);
 	}
 }
 
@@ -703,8 +708,9 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 	}
 
-	 if(!job->self->listening)
+	 if(!job->self->listening) {
 		job->reqUnref(); // we are done with the request object, let the GC handle it
+	 }
 }
 
 // ------------------------------------------------------------------------------

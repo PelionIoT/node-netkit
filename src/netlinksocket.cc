@@ -261,7 +261,9 @@ Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a
 
 	Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
 
-	Request_t *req = new Request_t(sock,v8req);
+	// Save a reference so the request will get unRef'ed in during socket closure
+	// in the case this is a listening socket who's request is not unRef'ed by the port_recv function.
+	sock->saveReqRef(new Request_t(sock,v8req));
 	// ignore warning, this is fine. It's wrapped in the cstor of sockMsgReq
 
 	return scope.Close(v8req);

@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "netkit_err.h"
+#include "error-common.h"
 
 /**
  * LICENSE_IMPORT_BEGIN 9/7/14
@@ -159,14 +160,6 @@ namespace _net {
 	errev.setError(_net::OTHER_ERROR,b);\
 }
 
-// confused? here: https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html
-#define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s "\n", ##__VA_ARGS__ );
-//#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) { char *__S=_net::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _net::free_error_str(__S); }
-
-#define WARN_OUT(s,...) fprintf(stderr, "**WARN** " s "\n", ##__VA_ARGS__ );
-
-#define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s "\n", ##__VA_ARGS__ );
 
 #define _ERRCMD_CUSTOM_ERROR_CUTOFF 4000   // arbitrary - needs to be higher than any normal errno number
 

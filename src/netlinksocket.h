@@ -121,8 +121,8 @@ protected:
 			v8::Persistent<Object> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;
-			int first_seq; // sequence bounds
-			int last_seq;  // for this request
+			unsigned int first_seq; // sequence bounds
+			unsigned int last_seq;  // for this request
 			NetlinkSocket *self;
 	};
 

@@ -108,7 +108,7 @@ void TunInterface::ExtendFrom(const Arguments& args) {
 		if(args[0]->IsObject()) {
 			Local<Object> base = args[0]->ToObject();
 			Local<Array> keys = base->GetPropertyNames();
-			for(int n=0;n<keys->Length();n++) {
+			for(unsigned int n=0;n<keys->Length();n++) {
 				Local<String> keyname = keys->Get(n)->ToString();
 				tpl->InstanceTemplate()->Set(keyname, base->Get(keyname));
 			}

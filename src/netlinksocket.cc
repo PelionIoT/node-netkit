@@ -39,7 +39,7 @@ void NetlinkSocket::ExtendFrom(const Arguments& args) {
 		if(args[0]->IsObject()) {
 			Local<Object> base = args[0]->ToObject();
 			Local<Array> keys = base->GetPropertyNames();
-			for(int n=0;n<keys->Length();n++) {
+			for(unsigned int n=0;n<keys->Length();n++) {
 				Local<String> keyname = keys->Get(n)->ToString();
 				tpl->InstanceTemplate()->Set(keyname, base->Get(keyname));
 			}
@@ -49,28 +49,10 @@ void NetlinkSocket::ExtendFrom(const Arguments& args) {
 	tpl->InstanceTemplate()->Set(String::NewSymbol("create"), FunctionTemplate::New(Create)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("close"), FunctionTemplate::New(Close)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("createMsgReq"), FunctionTemplate::New(CreateMsgReq)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("onError"), FunctionTemplate::New(OnError)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("onRecv"), FunctionTemplate::New(OnRecv)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("stopRecv"), FunctionTemplate::New(StopRecv)->GetFunction());
 	tpl->InstanceTemplate()->Set(String::NewSymbol("sendMsg"), FunctionTemplate::New(Sendmsg)->GetFunction());
 
-
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("isCreated"), FunctionTemplate::New(IsCreated)->GetFunction());
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("create"), FunctionTemplate::New(Create)->GetFunction());
-//	tpl->InstanceTemplate()->SetAccessor(String::New("ifname"), GetIfName, SetIfName);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("fd"), GetIfFD, SetIfFD);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("flags"), GetIfFlags, SetIfFlags);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("lastError"), GetLastError, SetLastError);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("lastErrorStr"), GetLastErrorStr, SetLastErrorStr);
-//
-//	tpl->InstanceTemplate()->SetAccessor(String::New("_readChunkSize"), GetReadChunkSize, SetReadChunkSize);
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("_open"), FunctionTemplate::New(Open)->GetFunction());
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("_close"), FunctionTemplate::New(Close)->GetFunction());
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("_getData"), FunctionTemplate::New(GetData)->GetFunction());
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("_sendData"), FunctionTemplate::New(SendData)->GetFunction());
-
-
-//	TunInterface::prototype = Persistent<ObjectTemplate>::New(tpl->PrototypeTemplate());
 	NetlinkSocket::cstor_socket = Persistent<Function>::New(tpl->GetFunction());
 
 	tpl = FunctionTemplate::New(New);
@@ -141,9 +123,6 @@ Handle<Value> NetlinkSocket::NewInstance(const Arguments& args) {
 	}
 
 	return scope.Close(instance);
-}
-
-Handle<Value> NetlinkSocket::Bind(const Arguments& args) {
 }
 
 /**
@@ -325,15 +304,15 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			if(!sock->listening)
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
-			// DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
-			// uv_queue_work(uv_efault_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
+			DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
+			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 
 
-			uv_work_t work;
-			memset(&work, 0, sizeof(uv_work_t));
-			work.data = req;
-			do_sendmsg(&work);
-			post_recvmsg(&work,0);
+			// uv_work_t work;
+			// memset(&work, 0, sizeof(uv_work_t));
+			// work.data = req;
+			// do_sendmsg(&work);
+			// post_recvmsg(&work,0);
 
 		} else {
 			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
@@ -417,9 +396,6 @@ Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
 		return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. sockMsgReq Object and callback required.")));
 	}
 	return scope.Close(Undefined());
-}
-
-Handle<Value> NetlinkSocket::OnError(const Arguments& args) {
 }
 
 Handle<Value> NetlinkSocket::Close(const Arguments& args) {
@@ -566,12 +542,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 		ERROR_OUT("Error on recvmsg(): %d\n", ret);
 		req->err.setError(errno);
 		return false;
-	} else if (ret > sizeof(struct nlmsghdr)){
+	} else if (ret > (int) sizeof(struct nlmsghdr)){
 		// parse the read for multiple netlink messages, otherwise only the first message
 		// will get processed if there are multiple messages in the read.
 
 		struct nlmsghdr *nlhdr = (struct nlmsghdr *) req->recvBuffer;
-		while(ret >= sizeof(struct nlmsghdr))
+		while(ret >= (int) sizeof(struct nlmsghdr))
 		{
 			int nlmsghdr_length = nlhdr->nlmsg_len;
 			int msglen = nlmsghdr_length - sizeof(struct nlmsghdr);
@@ -597,7 +573,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 					memcpy(replyBuf->rawMemory,nlhdr,nlmsghdr_length);
 
 					struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(nlhdr);
-					if (msglen < sizeof(struct nlmsgerr)) {
+					if (msglen < (int) sizeof(struct nlmsgerr)) {
 						req->err.setError(_net::OTHER_ERROR, "Netlink ERROR truncated");
 						replyBuf->iserr = true;
 					} else if(err->error) {
@@ -614,12 +590,12 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
 
-		if(mode == NetlinkTypes::SOCKET_BLOCKING) {
-			return true;
-		} else {
-			return false;
-		}
 		free(iov_array);
+	}
+	if(mode == NetlinkTypes::SOCKET_BLOCKING) {
+		return true;
+	} else {
+		return false;
 	}
 }
 

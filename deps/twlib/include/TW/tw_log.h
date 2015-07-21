@@ -103,7 +103,6 @@
 #endif
 #ifndef TW_CRASH_LT
 #define TW_CRASH_LT {}
-#pragma message "twlib NOTE: TW_CRASH_LT is disabled."
 #endif
 #ifndef TW_DEBUG
 #define TW_DEBUG {}

@@ -589,8 +589,6 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			ret -= NLMSG_ALIGN(nlmsghdr_length);
 			nlhdr = (struct nlmsghdr*)((char*)nlhdr + NLMSG_ALIGN(nlmsghdr_length));
 		}
-
-		free(iov_array);
 	}
 	if(mode == NetlinkTypes::SOCKET_BLOCKING) {
 		return true;

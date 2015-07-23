@@ -1,5 +1,6 @@
 var rt = require('../nl/rtnetlink.js');
 var nativelib = require('../libs/common.js').nativelib;
+var util = require('util');
 
 var ipparse = {
 
@@ -108,7 +109,13 @@ var ipparse = {
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
 			//console.log("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
-			var data = boundApply(at,links);
+
+			try {
+				var data = boundApply(at,links);
+			} catch(err) {
+				log.err(util.inspect(err) + " attributes = " + util.inspect(at));
+			}
+
 			 if(data === undefined) {
 			 	return data;
 			 }
@@ -162,19 +169,24 @@ var ipparse = {
 	},
 
 	packageInfoLink: function(ch,links) {
-		var opst = ch['operstate'];
-		var addr = ch['address'];
-		var brdcst = ch['broadcast'];
-		var ev = {};
 
-		ev.name = ch['operation'];
-		if(typeof opst !== 'undefined')
-			ev.state = ipparse.link_oper_states[opst.readUInt8(0)];
-		if(typeof addr !== 'undefined')
-			ev.address = ipparse.getBufferAsHexAddr(addr);
-		if(typeof brdcst !== 'undefined')
-			ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
-		ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
+		try{
+			var opst = ch['operstate'];
+			var addr = ch['address'];
+			var brdcst = ch['broadcast'];
+			var ev = {};
+
+			ev.name = ch['operation'];
+			if(typeof opst !== 'undefined')
+				ev.state = ipparse.link_oper_states[opst.readUInt8(0)];
+			if(typeof addr !== 'undefined')
+				ev.address = ipparse.getBufferAsHexAddr(addr);
+			if(typeof brdcst !== 'undefined')
+				ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
+			ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
+		} catch(err) {
+			log.err("error parsing ling: " +util.inspect(err) + util.inspect(ch));
+		}
 
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS

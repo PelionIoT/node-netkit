@@ -8,8 +8,6 @@
 #ifndef ERROR_COMMON_H_
 #define ERROR_COMMON_H_
 
-
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -61,32 +59,28 @@ namespace _errcmn {
 
 #ifndef NO_ERROR_CMN_OUTPUT  // if define this, you must define these below yourself
 
-#ifdef ERRCMN_DEBUG_BUILD
-#pragma message "Build is Debug"
-// confused? here: https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html
-#define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s "\n", ##__VA_ARGS__ )
-//#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) { char *__S=_err_common::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _err_common::free_error_str(__S); }
+  #ifdef ERRCMN_DEBUG_BUILD
+    // confused? here: https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html
+    #define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s "\n", ##__VA_ARGS__ )
+    //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
+    #define ERROR_PERROR(s,E,...) { char *__S=_errcmn::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s "\n", __S, ##__VA_ARGS__ ); _errcmn::free_error_str(__S); }
 
-#define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s "\n", ##__VA_ARGS__ )
-#define IF_DBG( x ) { x }
+    #define DBG_OUT(s,...) fprintf(stderr, "**DEBUG** " s "\n", ##__VA_ARGS__ )
+    #define IF_DBG( x ) { x }
+  #else
+    #define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s, ##__VA_ARGS__ )//#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
+    #define ERROR_PERROR(s,E,...) { char *__S=_errcmn::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s, __S, ##__VA_ARGS__ ); _errcmn::free_error_str(__S); }
+    #define DBG_OUT(s,...) {}
+    #define IF_DBG( x ) {}
+  #endif
+
 #else
-#define ERROR_OUT(s,...) fprintf(stderr, "**ERROR** " s, ##__VA_ARGS__ )//#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) { char *__S=_err_common::get_error_str(E); fprintf(stderr, "**ERROR** [ %s ] " s, __S, ##__VA_ARGS__ ); _err_common::free_error_str(__S); }
-#define DBG_OUT(s,...) {}
-#define IF_DBG( x ) {}
-#endif
 
-#else
-
-#define ERROR_OUT(s,...) {} //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
-#define ERROR_PERROR(s,E,...) {}
-#define DBG_OUT(s,...) {}
-#define IF_DBG( x ) {}
-
+  #define ERROR_OUT(s,...) {} //#define ERROR_PERROR(s,...) fprintf(stderr, "*****ERROR***** " s, ##__VA_ARGS__ );
+  #define ERROR_PERROR(s,E,...) {}
+  #define DBG_OUT(s,...) {}
+  #define IF_DBG( x ) {}
 
 #endif // NO_ERROR_CMN_OUTPUT
-
-
 
 #endif /* ERROR_COMMON_H_ */

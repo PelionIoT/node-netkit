@@ -163,17 +163,23 @@ var ipparse = {
 
 	packageInfoLink: function(ch,links) {
 		var opst = ch['operstate'];
-		if(typeof opst === undefined) return {};
-		var operstate = ipparse.link_oper_states[opst.readUInt8(0)];
+		var addr = ch['address'];
+		var brdcst = ch['broadcast'];
+		var ev = {};
+
+		ev.name = ch['operation'];
+		if(typeof opst !== 'undefined')
+			ev.state = ipparse.link_oper_states[opst.readUInt8(0)];
+		if(typeof addr !== 'undefined')
+			ev.address = ipparse.getBufferAsHexAddr(addr);
+		if(typeof brdcst !== 'undefined')
+			ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
+		ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
+
 		var data = {
 			ifname: ch['ifname'], // the interface name as labeled by the OS
 			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call
-			event:  { name: ch['operation'],
-					  state: operstate,
-					  address: ipparse.getBufferAsHexAddr(ch['address']),
-					  broadcast: ipparse.getBufferAsHexAddr(ch['broadcast']),
-					  flags: ipparse.getLinkDeviceFlags(ch['payload']['_if_flags'])  }
-		};
+			event:  ev };
 
 		return data;
 	},

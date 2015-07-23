@@ -10,6 +10,10 @@ node module for network interface &amp; routing manipulation
 * IPv4 support largely untested yet
 * rapidly changing. **not for production** unless you really know what you're doing.
 
+#### IPv6
+* make sure IPv6 is enabled
+sudo modprobe ipv6
+echo 0 > /proc/sys/net/ipv6/conf/eth2/disable_ipv6
 
 #### API
 

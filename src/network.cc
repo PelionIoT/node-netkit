@@ -113,6 +113,7 @@ Handle<Value> PackTest(const Arguments& args) {
 //		__u16		nlmsg_flags;	/* Additional flags */
 //		__u32		nlmsg_seq;	/* Sequence number */
 //		__u32		nlmsg_pid;
+	#ifdef DEBUG
 	if(args.Length() > 1 && args[1]->IsObject()) {
 			char *backing = node::Buffer::Data(args[1]->ToObject());
 			nlmsghdr *d = (nlmsghdr *) backing;
@@ -123,6 +124,7 @@ Handle<Value> PackTest(const Arguments& args) {
 			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
 			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
 	}
+	#endif
 
 	return scope.Close(Undefined());
 }
@@ -1251,7 +1253,6 @@ Handle<Value> AssignRoute(const Arguments& args) {
 //	v8::String::Utf8Value v8ifname(js_ifname->ToString());
 //	_net::jsToIfName(_ifname,v8ifname.operator *(),v8ifname.length());
 
-	bool error = false;
 
 	_net::err_ev err;
 	Handle<Value> v8err;
@@ -1274,11 +1275,8 @@ Handle<Value> AssignRoute(const Arguments& args) {
 				Handle<Value> el = arrayAddr->Get(n)->ToObject();
 				if(el->IsObject()) {
 					process_route(el->ToObject(),err, RTACTION_IN6_ADD);
-					if(err.hasErr())
-						error = true;
 				} else {
 					ERROR_OUT("Array in add_route6 has a non-object! Invalid. Skipping.\n");
-					error = true;
 				}
 			}
 		} else {  // object
@@ -1298,7 +1296,6 @@ Handle<Value> AssignRoute(const Arguments& args) {
 					process_route(el->ToObject(),err, RTACTION_IN6_DEL);
 				} else {
 					ERROR_OUT("Array in del_route6 has a non-object! Invalid. Skipping.\n");
-					error = true;
 				}
 			}
 		} else {  // object
@@ -1361,11 +1358,6 @@ Handle<Value> InitIfFlags(const Arguments& args) {
 	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
 		v8::String::Utf8Value v8ifname(args[0]->ToString());
 
-		int len = v8ifname.length() + 1;
-		if(v8ifname.length() > IFNAMSIZ) {
-			len = IFNAMSIZ;
-		}
-
 		short int flags = args[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
@@ -1416,11 +1408,6 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 
 	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
 		v8::String::Utf8Value v8ifname(args[0]->ToString());
-
-		int len = v8ifname.length() + 1;
-		if(v8ifname.length() > IFNAMSIZ) {
-			len = IFNAMSIZ;
-		}
 
 		short int flags = args[1]->Int32Value();
 

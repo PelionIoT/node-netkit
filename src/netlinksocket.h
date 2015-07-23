@@ -16,13 +16,14 @@ public:
     static Persistent<Function> cstor_sockMsgReq;
 
 public:
-	NetlinkSocket() 
+	NetlinkSocket()
 		: node::ObjectWrap()
 		, fd(0)
 		, seq(0)
 		, err()
 		, onDataCB()
 		, listening(false)
+		, listenReq(nullptr)
 	{
 		seq = time(NULL); // yes. I did the same thing as iproute2 guys. See: iproute2/lib/libnetlink.c:~80
 		                  // my guess is this number just needs to be unique.
@@ -32,11 +33,6 @@ public:
 		// malloc_info(0, stderr);
 		// fprintf(stderr,"======================================================\n" );
 	}
-
-	// virtual ~NetlinkSocket()
-	// {
-	// 	malloc_info(0, stderr);
-	// }
 
 	static Handle<Value> Init(const Arguments& args);
 	static void ExtendFrom(const Arguments& args);
@@ -84,9 +80,9 @@ protected:
 
 		private:
 			// we only use this in the tw_FIFO below
-			// and we don't want multiple copies of 
+			// and we don't want multiple copies of
 			// of these wrappers around
-			reqWrapper( const reqWrapper &o );     
+			reqWrapper( const reqWrapper &o );
 			reqWrapper &operator=(const reqWrapper &o);
 	};
 
@@ -101,7 +97,7 @@ protected:
 
 		public:
 			// need Buffer
-			sockMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), self(s) 
+			sockMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), self(s)
 				{ work.data = this; first_seq = last_seq = s->seq; }
 			sockMsgReq(NetlinkSocket *s, v8obj handle) : sockMsgReq(s) { this->Wrap(handle); }
 			void reqRef() {	this->Ref(); }
@@ -125,14 +121,15 @@ protected:
 			v8::Persistent<Object> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;
-			int first_seq; // sequence bounds  
-			int last_seq;  // for this request
+			unsigned int first_seq; // sequence bounds
+			unsigned int last_seq;  // for this request
 			NetlinkSocket *self;
 	};
 
 public:
-	typedef NetlinkSocket::sockMsgReq Request_t;  
+	typedef NetlinkSocket::sockMsgReq Request_t;
 	typedef NetlinkTypes::SocketMode SocketMode;
+	void saveReqRef(Request_t* r) { listenReq = r; }
 
 protected:
 
@@ -146,6 +143,7 @@ protected:
 	_net::err_ev err;
 	v8::Persistent<Function> onDataCB;
 	bool listening;
+	Request_t* listenReq;
 	uv_poll_t handle;  // currently only one event loop supported  until we contextualize this
 
 	static int do_recvmsg(Request_t *req, SocketMode mode);

@@ -14,6 +14,7 @@
 #include <node_buffer.h>
 #include "node_pointer.h"
 #include "network-common.h"
+#include "error-common.h"
 
 using namespace node;
 using namespace v8;

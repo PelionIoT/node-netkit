@@ -340,14 +340,13 @@ inline bool tw_FIFO<T,ALLOC>::iter::atEnd() {
 
 template <class T,class ALLOC>
 T &tw_safeFIFOmv<T,ALLOC>::iter::el() {
-	if(look) {
-		return look->d;
-	} else {
-		TW_ERROR("tw_safeFIFOmv --- went past end of list\n",NULL);
+	if(!look) {
+		TW_ERROR("tw_safeFIFOmv --- went past end of list\n");
 #ifdef __EXCEPTIONS
 		throw false;
 #endif
 	}
+	return look->d;
 }
 
 template <class T,class ALLOC>
@@ -1533,7 +1532,7 @@ void tw_safeFIFOmv<T,ALLOC>::addToHead( T &the_d ) {
 
 template <class T,class ALLOC>
 T *tw_safeFIFOmv<T,ALLOC>::addEmpty() {
-	tw_FIFO_link *newlink;
+	tw_FIFO_link *newlink = nullptr;
 //	newlink->prev=NULL;
 //	newlink->d = the_d;
 //	newlink->prev = in;
@@ -1757,7 +1756,7 @@ int tw_safeFIFOmv<T,ALLOC>::remaining(void) {
 	pthread_mutex_lock(&dataMutex);
 	ret = remain;
 	pthread_mutex_unlock(&dataMutex);
-	return remain;
+	return ret;
 
 }
 

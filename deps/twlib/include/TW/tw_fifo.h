@@ -1532,7 +1532,7 @@ void tw_safeFIFOmv<T,ALLOC>::addToHead( T &the_d ) {
 
 template <class T,class ALLOC>
 T *tw_safeFIFOmv<T,ALLOC>::addEmpty() {
-	tw_FIFO_link *newlink;
+	tw_FIFO_link *newlink = nullptr;
 //	newlink->prev=NULL;
 //	newlink->d = the_d;
 //	newlink->prev = in;

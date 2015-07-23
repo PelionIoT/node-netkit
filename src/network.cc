@@ -113,6 +113,7 @@ Handle<Value> PackTest(const Arguments& args) {
 //		__u16		nlmsg_flags;	/* Additional flags */
 //		__u32		nlmsg_seq;	/* Sequence number */
 //		__u32		nlmsg_pid;
+	#ifdef DEBUG
 	if(args.Length() > 1 && args[1]->IsObject()) {
 			char *backing = node::Buffer::Data(args[1]->ToObject());
 			nlmsghdr *d = (nlmsghdr *) backing;
@@ -123,6 +124,7 @@ Handle<Value> PackTest(const Arguments& args) {
 			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
 			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
 	}
+	#endif
 
 	return scope.Close(Undefined());
 }

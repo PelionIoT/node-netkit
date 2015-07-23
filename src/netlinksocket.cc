@@ -24,7 +24,7 @@ void byte_dump(char *buf, int size) {
 	}
 	sprintf(buf_ptr,"\n");
 	*(buf_ptr + 1) = '\0';
-	printf("DUMP: %s\n", buf_str);
+	DBG_OUT("DUMP: %s\n", buf_str);
 	free(buf_str);
 }
 
@@ -614,8 +614,10 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 
 		post_recvmsg(&work, status);
 	} else if(status < 0) {
+		#ifdef DEBUG
 		uv_err_t err = uv_last_error(uv_default_loop());
 		ERROR_OUT("uv_poll error: %s\n", uv_err_name(err));
+		#endif
 	}
 }
 

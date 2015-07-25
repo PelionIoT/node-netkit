@@ -376,7 +376,7 @@ nft = {
 		NFTA_DATA_UNSPEC: 	0,
 		NFTA_DATA_VALUE: 	1,
 		NFTA_DATA_VERDICT: 	2,
-		NFTA_DATA_SPEC: 	['','g/8','r/nft_verdict_attributes']
+		NFTA_DATA_SPEC: 	['','g','r/nft_verdict_attributes']
 	},
 
 	/**

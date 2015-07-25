@@ -28,6 +28,7 @@ var Attribute = function(params, attr, key) {
 		" type = " + this.spec.type +
 		" size = " + this.spec.size +
 		" val = " + this.value );
+	dbg("buf --> " + this.buffer.toString('hex'))
 };
 
 Attribute.prototype.getValue = function(attrObject, key) {
@@ -83,7 +84,7 @@ Attribute.prototype.getNestedAttributes = function(that,params) {
 Attribute.prototype.incrementNestLength = function(size) {
 	var len = this.buffer.readUInt16LE(0);
 	var val = len + size;
-	console.log("curr_len = " + len + " size = " + size + " len = " + val);
+	//console.log("curr_len = " + len + " size = " + size + " len = " + val);
 	this.buffer.writeUInt16LE(size + len, 0 );
 };
 
@@ -132,22 +133,42 @@ Attribute.prototype.getStringBuffer = function() {
 };
 
 Attribute.prototype.getGenericBuffer = function() {
-	var len = this.spec.size / 8;
+
+	var len = 1;
+	var val = 0;
+	var strval = "";
+	var hex = -1;
+
+	try {
+		strval = this.value.toLowerCase();
+		hex = strval.indexOf('x');
+		if(hex !== -1) {
+			val = parseInt(strval,16);
+			len = (strval.length - (hex + 1)) / 2; // two nibbles per byte
+		} else {
+			val = parseInt(strval,10);
+			len = parseInt(strval,16).toString().length / 2;
+		}
+	} catch(err) {
+		throw new Error("no way to parse: " + this.value);
+	}
+	if(val === NaN) throw new Error("no way to parse: " + this.value);
+
 	var buf = Buffer(len);
 	switch(len) {
 		case 1:
-			buf.writeUInt8(this.value.valueOf(),0,len);
+			buf.writeUInt8(val,0,len);
 			break;
 		case 2:
-			buf.writeUInt16BE(this.value.valueOf(),0,len);
+			buf.writeUInt16BE(val,0,len);
 			break;
 		case 4:
-			buf.writeUInt32BE(this.value.valueOf(),0,len);
+			buf.writeUInt32BE(val,0,len);
 			break;
 		case 8:
 			// TODO: verify the ordering of the 4 byte chunks
-			buf.writeUInt32BE(this.value.valueOf() << 32,0,4 );
-			buf.writeUInt32BE(this.value.valueOf(),4,len);
+			buf.writeUInt32BE(val << 32,0,4 );
+			buf.writeUInt32BE(val,4,len);
 			break;
 	}
 	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
@@ -245,8 +266,8 @@ nfAttributes.prototype.writeAttributes = function(bufs) {
 };
 
 nfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
-	console.log("params");
-	console.dir(params);
+	//console.log("params");
+	//console.dir(params);
 
     var that = this;
     var keys = Object.keys(params);
@@ -282,7 +303,6 @@ nfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 			that.parseNfAttrs(a.value, expr_attrs);
 			that.updateNestHdrLen(a, estart);
 		} else if(a.isGeneric) {
-			console.log("generic!");
 			// push a normal attribute
 			that.attribute_array.push(a);
 		} else {

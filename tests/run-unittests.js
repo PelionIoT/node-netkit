@@ -21,6 +21,7 @@ reporter.run(['./tests/unit/test-ipparse.js']);
 reporter.run(['./tests/unit/test-nlprocess.js']);
 
 //run functional tests that use nodeunit
+reporter.run(['./tests/unit/test-link.js'])
 reporter.run(['./tests/unit/test-addr.js'])
 //reporter.run(['./tests/unit/test-addrlabel.js'])
 

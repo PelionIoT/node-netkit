@@ -17,6 +17,10 @@ module.exports.link = function(operation,ifname, attrs, cb) {
 	var sock_opts = {};
 	var family;
 
+	if(arguments.length < 4) {
+		cb = attrs;
+	}
+
 	if(!operation || operation === 'show') {
 		var getlink_command_opts = {
 			type: 	rt.RTM_GETLINK,

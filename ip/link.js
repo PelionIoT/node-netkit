@@ -41,7 +41,6 @@ module.exports.link = function(operation,ifname, attrs, cb) {
 		}
 	} else if(operation === 'set') {
 		if(attrs === null || typeof attrs !== 'object') {
-			console.log("BOBBY");
 			return cb(new Error("set link rquires attributes object"));
 		}
 
@@ -143,35 +142,38 @@ netlinkLinkCommand = function(opts,sock, cb) {
 	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
 	bufs.push(info_msg.pack());
 
-	try {
-		var keys = Object.keys(opts.attributes);
-	    keys.forEach(function(key) {
-	    	if(rt.link_info_attr_name_map.indexOf(key.toLowerCase()) !== -1){
-	    		var attr_num = rt.link_attributes["IFLA_" + key.toUpperCase()];
-	    		var attr_val = opts.attributes[key];
+	if(typeof opts.attributes !== 'undefined')
+	{
+		try {
+			var keys = Object.keys(opts.attributes);
+		    keys.forEach(function(key) {
+		    	if(rt.link_info_attr_name_map.indexOf(key.toLowerCase()) !== -1){
+		    		var attr_num = rt.link_attributes["IFLA_" + key.toUpperCase()];
+		    		var attr_val = opts.attributes[key];
 
-	    		if(key === 'address') {
-		    		if(typeof attr_val === 'string') {
-						var macbuf = that.util.bufferifyMacString(attr_val,6); // we want 6 bytes no matter what
-						if(!macbuf) {
+		    		if(key === 'address') {
+			    		if(typeof attr_val === 'string') {
+							var macbuf = that.util.bufferifyMacString(attr_val,6); // we want 6 bytes no matter what
+							if(!macbuf) {
 
-							if(attr_val.length === 12) {
-								macbuf = new Buffer(attr_val, 'hex');
-							} else {
-								throw(new Error("bad address, not a mac address: " + attr_val));
+								if(attr_val.length === 12) {
+									macbuf = new Buffer(attr_val, 'hex');
+								} else {
+									throw(new Error("bad address, not a mac address: " + attr_val));
+								}
 							}
-						}
 
-						dbg("info_msg---> " + asHexBuffer(macbuf));
-						bufs.push(rt.buildRtattrBuf(attr_num,macbuf));
+							dbg("info_msg---> " + asHexBuffer(macbuf));
+							bufs.push(rt.buildRtattrBuf(attr_num,macbuf));
+						}
 					}
-				}
-	    	} else {
-	    		throw(new Error(key + " is not a link attribute"));
-	    	}
-	    });
-	} catch(err) {
-		return cb(err);
+		    	} else {
+		    		throw(new Error(key + " is not a link attribute"));
+		    	}
+		    });
+		} catch(err) {
+			return cb(err);
+		}
 	}
 
 	nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);

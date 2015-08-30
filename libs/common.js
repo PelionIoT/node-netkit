@@ -42,4 +42,27 @@ module.exports = {
 		else if(str.match(ipv6)) return 'inet6';
 		else return (new Error("* Error: isaddress fail : " + str));
 	},
+
+	maskFromCidr: function (mask, ip) {
+		var bits;
+		var SIZE_BYTE = 8;
+		if(ip == 'inet')
+			var mbits = new Buffer(4);
+		else
+			var mbits = new Buffer(16);
+
+		for (var i =0; i < mbits.length; i++) {
+		    if (mask >= SIZE_BYTE) {
+		        bits = Array(SIZE_BYTE+1).join(1+'');
+		        mask -= SIZE_BYTE;
+		    } else {
+		        bits = Array(mask+1).join(1+'');
+		        bits += Array(SIZE_BYTE+1-mask).join(0+'');
+		        mask -= mask;
+		    }
+		    mbits[i] = parseInt(bits, 2);
+		}
+
+		return mbits.toString('hex');
+	}
 };

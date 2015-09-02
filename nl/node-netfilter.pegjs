@@ -9,31 +9,51 @@
 }
 
 start
-	= command:command
+	= command:command { return command; }
 
 command
-	= operation command_type family command_expression
+	= op:operation fm:family? ce:command_expression
+		{
+			var cmd = {};
+			cmd.command = op;
+			cmd.type = ce.ty;
+			cmd.family = fm;
+			cmd.params = ce.ex;
+			return cmd;
+		}
 
 operation
-	= op:("add" / "del") _ { return "command : " + op; }
+	= op:("add" / "del") _ { return op; }
 
 family
 	= family:("ip6" / "ip") _
 		{
-			console.log("family")
-			ipfamily = family; return "family : " + family;
+			cmn.dbg("family")
+			ipfamily = family;
+			return family;
 		}
 
 // expand here with table and chain
-command_type
-	= ct:("rule") _ { return "type : " + ct; }
-
-// expand here with table and chain expressions
 command_expression
-	= ce:(rule_expression) { return ce; }
+	= "table" _ tb:table_expression
+		{
+			return { ty: "table", ex:tb };
+		}
+	/ "chain" _ ch:hook_expression
+		{
+			return { ty: "chain", ex: ch };
+		}
+	/ "rule" _ ru:rule_expression
+		{
+			return { ty: "rule", ex: ru };
+		}
+
+// // expand here with table and chain expressions
+// command_expression
+// 	= ce:( hook_expression / rule_expression / table_expression ) { return ce; }
 
 rule_expression
-	= table chain pt:protocol ctr:(criteria)+ act:action
+	= tb:table ch:chain pt:protocol ctr:(rule_criteria)+ act:action
 		{
 			var exprs = [];
 
@@ -57,10 +77,21 @@ rule_expression
 
 			exprs.push(act);
 
-			return exprs;
+			var parms = {};
+			parms.table = tb;
+			parms.chain = ch;
+			parms.expressions = exprs;
+
+			return parms;
 		}
 
-criteria
+table_expression
+	= ta:table
+		{
+			return { table: ta };
+		}
+
+rule_criteria
 	= fd:field vl:value
 		{
 			// console.dir(protocol);
@@ -69,10 +100,38 @@ criteria
 			return { field : fd , value : vl };
 		}
 
-table
-	= table:[a-zA-Z]+ _
+hook_expression          //{ type filter hook input priority 0 }
+	= tb:table ch:chain "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
-			return table.join("");
+			var parms = {};
+			parms.table = tb;
+			parms.chain = ch;
+			parms.type = ht;
+
+			parms.hook = {};
+			parms.hook.hooknum = hn;
+			parms.hook.priority = hp;
+
+			return parms;
+		}
+
+hooktype
+	= "filter" / "route" / "nat"
+
+hooknum
+	= 	"prerouting"  	{ return 0; }
+	/	"input" 		{ return 1; }
+	/	"forward" 		{ return 2; }
+	/	"output" 		{ return 3; }
+	/	"postrouting"	{ return 4; }
+
+hookprio
+	= pr:[0-9]+ { return pr.join(""); }
+
+table
+	= ta:[a-zA-Z]+ __
+		{
+			return ta.join("");
 		}
 
 chain
@@ -143,7 +202,7 @@ accept
 
 protocol
 	= prot:( tcp / udp ) _
-		{ console.log("protocol");
+		{ cmn.dbg("protocol");
 			return [
 			{
 				elem:
@@ -174,7 +233,7 @@ protocol
 
 field
 	= field:(saddr / daddr / ipprotocol / dport ) _
-		{console.log("field");
+		{cmn.dbg("field");
 			payload_len = field.len;
 			return {
 				elem:
@@ -192,7 +251,7 @@ field
 
 number
 	= num:(hex / decimal) _
-		{console.log("number");
+		{cmn.dbg("number");
 		var prepend = "";
 		var numstr = num.toString(16);
 		var pad = payload_len * 2;
@@ -219,7 +278,7 @@ number
 
 ipv6addr
 	= quads:quads
-		{ console.log("ipv6addr");
+		{ cmn.dbg("ipv6addr");
 			if(ipfamily !== 'ip6') throw new Error("family != ip6 when ipv6 address detected")
 			return {
 	            elem:
@@ -239,7 +298,7 @@ ipv6addr
 
 ipv4addr
 	= octets:octets
-		{  console.log("ipv4addr");
+		{  cmn.dbg("ipv4addr");
 			if(ipfamily !== 'ip') throw new Error("family != ip when ip address detected")
 			var addr = new Buffer(4);
 			addr.writeUInt8( parseInt(octets[0], 10), 0);
@@ -264,7 +323,7 @@ ipv4addr
 
 cidr
 	= cidr:(ipv4cidr / ipv6cidr)
-		{   console.log("cidr")
+		{   cmn.dbg("cidr")
 			return {
 	            elem:
 	            {
@@ -353,6 +412,9 @@ decimal
 	= digits:[0-9]+ { return parseInt(digits.join(""), 10); }
 _
 	= ([ \t])+
+
+__
+	= ([ \t])*
 
 // Protocols
 tcp

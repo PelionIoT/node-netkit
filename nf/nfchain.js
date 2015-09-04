@@ -9,7 +9,6 @@ nfchain = {
 			if(err) {
 				cb(err);
 			} else {
-
 				var attrs = nlnf.nf.Attributes("chain", opts.params);
 				nlnf.netfilterSend.call(that, null, opts,
 					attrs, function(err,result){
@@ -34,8 +33,6 @@ nfchain = {
 	},
 
 	build_command: function(opts,cb) {
-
-		//console.dir(opts);
 
 		nfchain.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
@@ -88,7 +85,6 @@ nfchain = {
 				break;
 		}
 	},
-
 };
 
 module.exports = nfchain;

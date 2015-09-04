@@ -1,15 +1,15 @@
 var nlnf = require('./nlnetfilter.js');
 
-nfrule = {
+nfcommand = {
 
-	rule: function(opts, cb) {
+	command: function(opts, cb) {
 		var that = this;
 
-		nfrule.build_command(opts,function(err){
+		nfcommand.build_command(opts,function(err){
 			if(err) {
 				cb(err);
 			} else {
-				var attrs = nlnf.nf.Attributes("rule", opts.params);
+				var attrs = nlnf.nf.Attributes(opts.type, opts.params);
 				nlnf.netfilterSend.call(that, null, opts,
 					attrs, function(err,result){
 					if(err) {
@@ -24,27 +24,28 @@ nfrule = {
 
 	build_command: function(opts,cb) {
 
-		nfrule.set_cmd(opts,cb);
+		nfcommand.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
-		nfrule.set_type(opts,cb);
+		nfcommand.set_type(opts,cb);
 		return cb();
 	},
 
 	set_cmd: function(opts, cb) {
 
 		var command = opts['command'];
+		var type = opts['type'].toUpperCase();
 		switch(command) {
 			case "get":
-				opts['cmd'] = nf.NFT_MSG_GETRULE;
+				opts['cmd'] = nf['NFT_MSG_GET'+ type];
 				break;
 			case "add":
-				opts['cmd'] =  nf.NFT_MSG_NEWRULE ;
+				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
 				break;
 			case "del":
-				opts['cmd'] =  nf.NFT_MSG_DERULE;
+				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
 				break;
 			case "update":
-				opts['cmd'] =  nf.NFT_MSG_NEWRULE
+				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
 				break;
 			default:
 				return cb(new Error(command +
@@ -56,12 +57,27 @@ nfrule = {
 	set_type: function(opts, cb) {
 
 		var command = opts['command'];
+		var type = opts['type'];
 		switch(command) {
 			case "get":
-				opts['type_flags'] = nl.NLM_F_ACK;
+				switch(type){
+					case "table":
+						opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					default:
+						opts['type_flags'] = nl.NLM_F_ACK;
+						break;
+				}
 				break;
 			case "add":
-				opts['type_flags'] =  nl.NLM_F_APPEND | nl.NLM_F_CREATE |nl.NLM_F_ACK;
+				switch(type) {
+					case "rule":
+						opts['type_flags'] =  nl.NLM_F_APPEND | nl.NLM_F_CREATE |nl.NLM_F_ACK;
+						break;
+					default:
+						opts['type_flags'] =  nl.NLM_F_ACK;
+						break;
+				}
 				break;
 			case "del":
 				opts['type_flags'] =  nl.NLM_F_ACK;
@@ -75,6 +91,7 @@ nfrule = {
 				break;
 		}
 	},
+
 };
 
-module.exports = nfrule;
+module.exports = nfcommand;

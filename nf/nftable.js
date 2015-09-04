@@ -34,9 +34,6 @@ nftable = {
 
 		var command = opts['command'];
 		switch(command) {
-			case "list":
-				opts['cmd'] = nf.NFT_MSG_GETTABLE;
-				break;
 			case "get":
 				opts['cmd'] = nf.NFT_MSG_GETTABLE;
 				break;

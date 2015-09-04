@@ -88,7 +88,7 @@ rule_expression
 table_expression
 	= ta:table
 		{
-			return { table: ta };
+			return { name: ta };
 		}
 
 rule_criteria
@@ -105,7 +105,7 @@ hook_expression          //{ type filter hook input priority 0 }
 		{
 			var parms = {};
 			parms.table = tb;
-			parms.chain = ch;
+			parms.name = ch;
 			parms.type = ht;
 
 			parms.hook = {};
@@ -232,8 +232,32 @@ protocol
 		}
 
 field
-	= field:(saddr / daddr / ipprotocol / dport ) _
-		{cmn.dbg("field");
+ 	= hd:(transport_header / network_header)
+ 		{
+ 			return hd;
+ 		}
+
+network_header
+	= field:( saddr / daddr ) _
+		{cmn.dbg("network field");
+			payload_len = field.len;
+			return {
+				elem:
+				{
+					name: "payload",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_1,
+						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER,
+						OFFSET: 	field.offset,
+						LEN:		field.len
+	                }
+	            }
+	        };
+		}
+
+transport_header
+	= field:( ipprotocol / dport ) _
+		{cmn.dbg("transport field");
 			payload_len = field.len;
 			return {
 				elem:

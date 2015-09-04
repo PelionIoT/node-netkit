@@ -19,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/WigWagCo/node-netkit/issues"
   },
-  "gypfile": true
+  "preferGlobal": true,
+  "gypfile": true,
+  "bin": {
+    "nnf": "nnf.js"
+  }
 }

@@ -1,4 +1,5 @@
 var nlnf = require('./nlnetfilter.js');
+var util = require('util');
 
 nfcommand = {
 
@@ -6,6 +7,7 @@ nfcommand = {
 		var that = this;
 
 		nfcommand.build_command(opts,function(err){
+			console.dir(opts);
 			if(err) {
 				cb(err);
 			} else {
@@ -43,9 +45,21 @@ nfcommand = {
 				break;
 			case "del":
 				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
+			case "flush":
+				switch(type) {
+					case "TABLE":
+						opts['cmd'] =  nf.NFT_MSG_DELRULE;
+						break;
+					default:
+						opts['cmd'] =  nf['NFT_MSG_DEL' + type];
+						break;
+				}
 				break;
 			case "update":
 				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
+				break;
+			case "list":
+				opts['cmd'] =  nf['NFT_MSG_GET' + type];
 				break;
 			default:
 				return cb(new Error(command +
@@ -62,7 +76,10 @@ nfcommand = {
 			case "get":
 				switch(type){
 					case "table":
-						opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					case "rule":
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 						break;
 					default:
 						opts['type_flags'] = nl.NLM_F_ACK;
@@ -80,10 +97,21 @@ nfcommand = {
 				}
 				break;
 			case "del":
-				opts['type_flags'] =  nl.NLM_F_ACK;
+			case "flush":
+				opts['type_flags'] = nl.NLM_F_ACK;
 				break;
 			case "update":
 				opts['type_flags'] =  nl.NLM_F_ACK;
+				break;
+			case "list":
+				switch(type){
+					case "table":
+						opts['type_flags'] = nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					case "rule":
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+				}
 				break;
 			default:
 				return cb(new Error(command +

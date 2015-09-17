@@ -33,7 +33,7 @@ nlnetfilter = {
 	},
 
 	generateNetfilterResponse: function(bufs, attrs) {
-		 // console.dir(bufs);
+		//console.dir(bufs);
 
 		var result_array = []; // array if this is a multipart message
 
@@ -42,7 +42,7 @@ nlnetfilter = {
 			var data = bufs[i];
 
 			// is this the done message of a multi-part message?
-			var type = data.readUInt16LE(4);
+			var type = data.readUInt16LE(4) & 0x00FF;
 			if(type === nl.NLMSG_DONE) {
 				return result_array;
 			} else if(type === nl.NLMSG_ERROR) {
@@ -54,8 +54,9 @@ nlnetfilter = {
 
 			// get the total message length and parse all the raw attributes
 			var total_len = data.readUInt32LE(0);
-			var cur_result = attrs.parseNfAttrs(data, 20, total_len);
+			var cur_result = {}; //attrs.parseNfAttrs(data, 20, total_len);
 			cur_result['genmsg'] = nfgenmsg;
+			cur_result['payload'] = nf.parseNfattributes(data);
 
 			// get the message flags
 			var flags = data.readUInt16LE(6);

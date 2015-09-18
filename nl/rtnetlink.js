@@ -628,12 +628,12 @@ rt = {
 					ret[key] = data.slice(index, index + len);// bytes;
 				}
 				// console.log('added [' + key + '] = ' + ret[key])
-
-				// get to next attribute padding to mod 4
-		        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-		        // console.log("pad: " + pad);
-				index += (len + pad);
 			}
+
+			// get to next attribute padding to mod 4
+			var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
+			// console.log("pad: " + pad);
+			index += (len + pad);
 		};
 
 		return ret;

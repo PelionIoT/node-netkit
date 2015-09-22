@@ -1,5 +1,6 @@
 var rt = require('../nl/rtnetlink.js');
-var nativelib = require('../libs/common.js').nativelib;
+var cmn = require('../libs/common.js');
+var nativelib = cmn.nativelib;
 var util = require('util');
 
 var ipparse = {
@@ -113,7 +114,7 @@ var ipparse = {
 			try {
 				var data = boundApply(at,links);
 			} catch(err) {
-				log.err(util.inspect(err) + " attributes = " + util.inspect(at));
+				cmn.err(util.inspect(err) + " attributes = " + util.inspect(at));
 			}
 
 			 if(data === undefined) {
@@ -185,7 +186,7 @@ var ipparse = {
 				ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
 			ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
 		} catch(err) {
-			log.err("error parsing ling: " +util.inspect(err) + util.inspect(ch));
+			cmn.err("error parsing ling: " +util.inspect(err) + util.inspect(ch));
 		}
 
 		var data = {

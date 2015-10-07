@@ -10,18 +10,18 @@
 
 #include "netlinktypes.h"
 
-class NetlinkSocket : public node::ObjectWrap {
+class NetlinkSocket : public Nan::ObjectWrap {
 public:
-    static Persistent<Function> cstor_socket;
-    static Persistent<Function> cstor_sockMsgReq;
+    static Nan::Persistent<v8::Function> cstor_socket;
+    static Nan::Persistent<v8::Function> cstor_sockMsgReq;
 
 public:
 	NetlinkSocket()
-		: node::ObjectWrap()
+		: Nan::ObjectWrap()
 		, fd(0)
 		, seq(0)
 		, err()
-		, onDataCB()
+		, onDataCB(NULL)
 		, listening(false)
 		, listenReq(nullptr)
 	{
@@ -34,28 +34,27 @@ public:
 		// fprintf(stderr,"======================================================\n" );
 	}
 
-	static Handle<Value> Init(const Arguments& args);
-	static void ExtendFrom(const Arguments& args);
+	static void Init(v8::Local<v8::Object> exports);
 
 
-    static Handle<Value> New(const Arguments& args);
-    static Handle<Value> NewInstance(const Arguments& args);
+    static NAN_METHOD(New);
+    static NAN_METHOD(NewInstance);
 
-    static Handle<Value> Create(const Arguments& args);
+    static NAN_METHOD(Create);
 
 
-    static Handle<Value> Bind(const Arguments& args);
+    static NAN_METHOD(Bind);
 
-    static Handle<Value> Sendmsg(const Arguments& args);
-    static Handle<Value> OnRecv(const Arguments& args);
-    static Handle<Value> StopRecv(const Arguments& args);
-    static Handle<Value> OnError(const Arguments& args);
+    static NAN_METHOD(Sendmsg);
+    static NAN_METHOD(OnRecv);
+    static NAN_METHOD(StopRecv);
+    static NAN_METHOD(OnError);
 
-    static Handle<Value> Close(const Arguments& args);
+    static NAN_METHOD(Close);
 
 	// create + add messages to sockMsgReq from JS
-    static Handle<Value> CreateMsgReq(const Arguments& args);  // creates a sockMsgReq
-    static Handle<Value> AddMsgToReq(const Arguments& args);   // adds a Buffer -> for adding a req_generic to the sockMsgReq
+    static NAN_METHOD(CreateMsgReq);  // creates a sockMsgReq
+    static NAN_METHOD(AddMsgToReq);   // adds a Buffer -> for adding a req_generic to the sockMsgReq
 
 protected:
 	class reqWrapper {
@@ -72,7 +71,7 @@ protected:
 
 		public:
 			static void free_req_callback_buffer(char *m,void *hint); // this is the node::Buffer free callback. See node/node_buffer.h
-			v8::Persistent<Object> buffer; // Buffer object passed in. we make this Persistent until the req is fulfilled
+			Nan::Persistent<v8::Object> buffer; // Buffer object passed in. we make this Persistent until the req is fulfilled
 			char *rawMemory;
 			bool ownMemory; // true if we should free our own memory.
 			int len;
@@ -87,13 +86,13 @@ protected:
 	};
 
 protected:
-	class sockMsgReq : public node::ObjectWrap {
+	class sockMsgReq : public Nan::ObjectWrap {
 		// Follows the same pattern as TunInterface's write, except that we support
 		// scatter / gather style sendmsg semantics, so we need to have a list of reqWrappers
 		public:
 			typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> SendQueue_t;
 			typedef TWlib::tw_safeFIFOmv<reqWrapper, netkitAlloc> ReplyQueue_t;  // replies come back
-			typedef v8::Handle<v8::Object> v8obj;
+			typedef v8::Local<v8::Object> v8obj;
 
 		public:
 			// need Buffer
@@ -110,15 +109,15 @@ protected:
 		public:
 			SendQueue_t send_queue;
 			ReplyQueue_t reply_queue;  // replies come back    // but their callbacks can only be called in the v8 thread
-			static Persistent<Function> cstor;
+			Nan::Persistent<v8::Function> cstor;
 			int replies; // if non-zero there was a reply (perhaps more than one)
 			void *recvBuffer; // used to hold recv stuff before going back to v8 thread.
 			uv_work_t work;
 			uv_async_t async;
 			_net::err_ev err; // the errno that happened sendmsg if an error occurred.
-			v8::Persistent<Function> onSendCB;
-			v8::Persistent<Function> onReplyCB;       // This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
-			v8::Persistent<Object> buffer; // Buffer object passed in
+			Nan::Callback* onSendCB;
+			Nan::Callback* onReplyCB;       // This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
+			Nan::Persistent<v8::Function> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;
 			unsigned int first_seq; // sequence bounds
@@ -141,7 +140,7 @@ protected:
 	struct sockaddr_nl	addr_peer;
 
 	_net::err_ev err;
-	v8::Persistent<Function> onDataCB;
+	Nan::Callback* onDataCB;
 	bool listening;
 	Request_t* listenReq;
 	uv_poll_t handle;  // currently only one event loop supported  until we contextualize this

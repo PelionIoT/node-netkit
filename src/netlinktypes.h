@@ -8,6 +8,7 @@
 #include "node_pointer.h"
 #include "network-common.h"
 #include "error-common.h"
+#include "nan.h"
 
 #include <errno.h>
 #include <sys/types.h>

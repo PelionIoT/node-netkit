@@ -27,11 +27,6 @@
         "src/error-common.cc"
       ],
 
-      "include_dirs": [
-         "deps/twlib/include"
-      ],
-
-
     'configurations': {
       'Debug': {
         'defines': [ 'ERRCMN_DEBUG_BUILD' ],
@@ -46,6 +41,11 @@
 ##            'msvs_configuration_platform': 'x64',
 ##          }],
 ##        ]
+        "include_dirs": [
+           "deps/twlib/include",
+           "<!(node -e \"require('nan')\")"
+        ],
+
       },
       'Release': {
         "cflags": [
@@ -54,6 +54,11 @@
           "-D_POSIX_C_SOURCE=200809L",
           "-DNO_ERROR_CMN_OUTPUT=1",
           ],
+        "include_dirs": [
+           "deps/twlib/include",
+           "node_modules/nan"
+        ],
+
       }
 
     },

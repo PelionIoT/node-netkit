@@ -94,18 +94,18 @@ char *toBytesString(uint8_t *d,int n) {
 }
 
 NAN_METHOD(PackTest) {
-	DBG_OUT("PackTest\n");
+	GLOG_DEBUG("PackTest\n");
 
 	if(info.Length() > 0 && info[0]->IsObject()) {
 			char *backing = node::Buffer::Data(info[0]->ToObject());
 			packTestDat *d = (packTestDat *) backing;
-			DBG_OUT("first: 0x%02x", d->first);
-			DBG_OUT("second: %d", d->second);
-			DBG_OUT("third: 0x%04x or %d", d->third, d->third); // to check endianess
+			GLOG_DEBUG("first: 0x%02x", d->first);
+			GLOG_DEBUG("second: %d", d->second);
+			GLOG_DEBUG("third: 0x%04x or %d", d->third, d->third); // to check endianess
 			char *s = toBytesString(d->other,5);
-			DBG_OUT("other: %s", s);
+			GLOG_DEBUG("other: %s", s);
 			free(s);
-			DBG_OUT("something: %s", TAIL_DATA(packTestDat,*d));
+			GLOG_DEBUG("something: %s", TAIL_DATA(packTestDat,*d));
 	}
 
 //	__u32		nlmsg_len;	/* Length of message including header */
@@ -117,18 +117,18 @@ NAN_METHOD(PackTest) {
 	if(info.Length() > 1 && info[1]->IsObject()) {
 			char *backing = node::Buffer::Data(info[1]->ToObject());
 			nlmsghdr *d = (nlmsghdr *) backing;
-			DBG_OUT("a nlmsghdr:");
-			DBG_OUT("_len: 0x%08x", d->nlmsg_len);
-			DBG_OUT("_type: 0x%04x", d->nlmsg_type);
-			DBG_OUT("_flags: 0x%04x", d->nlmsg_flags);
-			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
-			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
+			GLOG_DEBUG("a nlmsghdr:");
+			GLOG_DEBUG("_len: 0x%08x", d->nlmsg_len);
+			GLOG_DEBUG("_type: 0x%04x", d->nlmsg_type);
+			GLOG_DEBUG("_flags: 0x%04x", d->nlmsg_flags);
+			GLOG_DEBUG("_seq: 0x%08x", d->nlmsg_seq);
+			GLOG_DEBUG("_pid: 0x%08x", d->nlmsg_pid);
 	}
 	#endif
 }
 
 void free_test_cb(char *m,void *hint) {
-	DBG_OUT("FREEING MEMORY.");
+	GLOG_DEBUG("FREEING MEMORY.");
 	free(m);
 }
 
@@ -685,6 +685,8 @@ NAN_METHOD(FromAddress) {
 	_net::err_ev err;
 
 	if(info.Length() > 1 && info[0]->IsArray() && info[1]->IsInt32()) {
+		GLOG_DEBUG3("is address");
+
 		ret = Object::New();
 		Local<Array> addr = Local<Array>::Cast(info[0]);
 		int32_t family = info[1]->ToInt32()->Int32Value();
@@ -710,11 +712,13 @@ NAN_METHOD(FromAddress) {
 			}
 		} else
 		if(family == AF_INET) {
+			GLOG_DEBUG3("is inet");
 			unsigned char addr_a[sizeof(struct in_addr)];
 
 			for (size_t i = 0; i < addr->Length(); i++) {
 				Local<Number> el = addr->Get(i)->ToUint32();
 				addr_a[i] = static_cast<uint8_t>(el->Uint32Value());
+				GLOG_DEBUG3("addr_a[i] = %d", addr_a[i]);
 			}
 
 			char str[INET6_ADDRSTRLEN];
@@ -722,6 +726,7 @@ NAN_METHOD(FromAddress) {
 			const char *r;
 			if( (r = inet_ntop(AF_INET, addr_a, str, INET_ADDRSTRLEN)) == nullptr ) {
 				if(r == nullptr) {
+					GLOG_DEBUG3("inet_ntop failed");
 					err.setError(errno,"Error on inet_ntop.");
 				}
 			} else {
@@ -735,6 +740,8 @@ NAN_METHOD(FromAddress) {
 
 	if(err.hasErr())
 		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"fromAddress: ")));
+	else
+		info.GetReturnValue().Set(Nan::New(ret));
 }
 
 
@@ -877,7 +884,7 @@ NAN_METHOD(AssignAddress) {
 							errev.setError(errno);
 							ERROR_OUT("Could not set MAC addr: %x:%x:%x:%x:%x:%x\n", mac[0], mac[1],mac[2],mac[3],mac[4],mac[5]);
 						} else {
-							DBG_OUT("Set MAC address\n");
+							GLOG_DEBUG("Set MAC address\n");
 						}
 						if(was_up)
 							set_if_flags(sockfd, ifr, flags | IFF_UP, errev);
@@ -1426,9 +1433,9 @@ NAN_METHOD(UnsetIfFlags) {
 //		    	perror("SIOCSIFFLAGS");
 		    }
 		    if(!err.hasErr()) {
-		    	DBG_OUT("Have flags: %x\n", ifr.ifr_flags);
+		    	GLOG_DEBUG("Have flags: %x\n", ifr.ifr_flags);
 				ifr.ifr_flags = ifr.ifr_flags & ~flags;
-		    	DBG_OUT("Setting to flags: %x\n", ifr.ifr_flags);
+		    	GLOG_DEBUG("Setting to flags: %x\n", ifr.ifr_flags);
 				if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
 			    	err.setError(errno);
 	//		    	perror("SIOCSIFFLAGS");
@@ -1458,45 +1465,45 @@ NAN_METHOD(UnsetIfFlags) {
 }
 
 
+void InitAll(Handle<Object> exports, Handle<Object> module){
 
-void InitAll(v8::Local<v8::Object> exports) {
-//	NodeTransactionWrapper::Init();
-//	NodeClientWrapper::Init();
-//	exports->Set(String::NewSymbol("cloneRepo"), FunctionTemplate::New(CreateClient)->GetFunction());
-	Local<FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>();
+	Nan::Set(exports, Nan::New("InitNativeTun").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(TunInterface::Init)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("InitNetlinkSocket").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(NetlinkSocket::Init)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("newTunInterface").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(TunInterface::New)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("newNetlinkSocket").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(NetlinkSocket::New)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("assignAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AssignAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("assignRoute").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AssignRoute)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("initIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(InitIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("setIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(SetIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("unsetIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(UnsetIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("ifNameToIndex").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(IfNameToIndex)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("ifIndexToName").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(IfIndexToName)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("toAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(ToAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("fromAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(FromAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("errorFromErrno").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(ErrorFromErrno)).ToLocalChecked());
 
-	TunInterface::Init(exports);
-	NetlinkSocket::Init(exports);
-	//Nan::SetPrototypeMethod(tpl, "InitNativeTun", TunInterface::Init);
-	//Nan::SetPrototypeMethod(tpl, "InitNetlinkSocket", NetlinkSocket::Init);
-	Nan::SetPrototypeMethod(tpl, "newTunInterface", TunInterface::New);
-	Nan::SetPrototypeMethod(tpl, "newNetlinkSocket", NetlinkSocket::New);
-	Nan::SetPrototypeMethod(tpl, "assignAddress", AssignAddress);
-	Nan::SetPrototypeMethod(tpl, "assignRoute", AssignRoute);
-	Nan::SetPrototypeMethod(tpl, "initIfFlags", InitIfFlags);
-	Nan::SetPrototypeMethod(tpl, "setIfFlags", SetIfFlags);
-	Nan::SetPrototypeMethod(tpl, "unsetIfFlags", UnsetIfFlags);
-	Nan::SetPrototypeMethod(tpl, "ifNameToIndex", IfNameToIndex);
-	Nan::SetPrototypeMethod(tpl, "ifIndexToName", IfIndexToName);
-	Nan::SetPrototypeMethod(tpl, "toAddress", ToAddress);
-	Nan::SetPrototypeMethod(tpl, "fromAddress", FromAddress);
-	Nan::SetPrototypeMethod(tpl, "errorFromErrno", ErrorFromErrno);
+	Nan::Set(exports, Nan::New("wrapMemBufferTest").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(WrapMemBufferTest)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("packTest").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(PackTest)).ToLocalChecked());
 
-	Nan::SetPrototypeMethod(tpl, "wrapMemBufferTest", WrapMemBufferTest);
-	Nan::SetPrototypeMethod(tpl, "packTest", PackTest);
-
-	// Local<Object> errconsts = Object::New();
+	// Handle<Object> errconsts; MaybeLocal<v8::Object> Merrs = Nan::New<v8::Object>();
 	// _errcmn::DefineConstants(errconsts);
-	// Nan::SetPrototypeMethod(exports, "ERR", errconsts);
-
-	exports->Set(Nan::New("TunInterface").ToLocalChecked(), tpl->GetFunction());
-
-//	exports->Set(String::NewSymbol("_TunInterface_cstor"), TunInterface::constructor);
-
-	//	exports->Set(String::NewSymbol("_TunInterface_proto"), TunInterface::prototype);
-
-//	exports->Set(String::NewSymbol("shutdownTunInteface"), FunctionTemplate::New(ShutdownTunInterface)->GetFunction());
-
+	// Nan::Set(exports, Nan::New("ERR"), errconsts);
 }
 
 NODE_MODULE(netkit, InitAll)

@@ -34,7 +34,7 @@ public:
 		// fprintf(stderr,"======================================================\n" );
 	}
 
-	static void Init(v8::Local<v8::Object> exports);
+	static NAN_METHOD(Init);
 
 
     static NAN_METHOD(New);

@@ -24,24 +24,25 @@ void byte_dump(char *buf, int size) {
 	}
 	sprintf(buf_ptr,"\n");
 	*(buf_ptr + 1) = '\0';
-	DBG_OUT("DUMP: %s\n", buf_str);
+	GLOG_DEBUG("DUMP: %s\n", buf_str);
 	free(buf_str);
 }
 
-void NetlinkSocket::Init(v8::Local<v8::Object> exports) {
+NAN_METHOD(NetlinkSocket::Init) {
+	INIT_GLOG;
 
-	Nan::HandleScope scope;
 	Local<FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
 
 	tpl->SetClassName(Nan::New("NetlinkSocket").ToLocalChecked());
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	if(exports->IsObject()) {
-		Local<Object> base = exports->ToObject();
+	Nan::MaybeLocal<Object> Mobj = info[0]->ToObject();
+	if(!Mobj.IsEmpty()) {
+		Local<Object> base = Mobj.ToLocalChecked();
 		Local<Array> keys = base->GetPropertyNames();
 		for(unsigned int n=0;n<keys->Length();n++) {
-			Local<String> keyname = Nan::New(keys->Get(n)->ToString());
+			Local<String> keyname = keys->Get(n)->ToString();
 			String::Utf8Value utf8_keyname(keyname);
 			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname));
 		}
@@ -61,10 +62,12 @@ void NetlinkSocket::Init(v8::Local<v8::Object> exports) {
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	Nan::SetPrototypeMethod(tpl, "addMsg", AddMsgToReq);
+	tpl->InstanceTemplate()->Set(Nan::New("addMsg").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AddMsgToReq)).ToLocalChecked());
 
 	cstor_sockMsgReq.Reset(tpl->GetFunction());
-	exports->Set(Nan::New("NetlinkSocket").ToLocalChecked(), tpl->GetFunction());
+
+	info.GetReturnValue().Set(tpl->GetFunction());
 }
 
 /** netlinkSocket(opts)
@@ -80,10 +83,15 @@ NAN_METHOD(NetlinkSocket::New) {
 	    // Invoked as constructor: `new MyObject(...)`
 //	    double value = args[0]->IsUndefined() ? 0 : args[0]->NumberValue();
 		if(info.Length() > 0) {
-			if(!info[0]->IsObject()) {
-				Nan::ThrowTypeError("Improper first arg to TunInterface cstor. Must be an object.");
-				return;
-			}
+			// if(!info[0]->IsObject()) {
+			// 	Local<String> value = info[0]->ToString();
+			// 	String::Utf8Value utf8_value(value);
+
+			// 	DBG_OUT("info[0]=%s\n", *utf8_value);
+
+			// 	Nan::ThrowTypeError("Improper first arg to NetlinkSocket cstor. Must be an object.");
+			// 	return;
+			// }
 
 			obj = new NetlinkSocket();
 
@@ -138,28 +146,28 @@ NAN_METHOD(NetlinkSocket::Create) {
 	int type_flags = SOCK_RAW | SOCK_CLOEXEC;
 	int netlink_class = NETLINK_ROUTE;
 	if(info.Length() > 0 && info[0]->IsObject()) {
-		Nan::MaybeLocal<Value> MVal;
+		Nan::MaybeLocal<Value> Mval;
 
-		Local<Object> o = info[0]->ToObject();
-		Local<Value> js_flags; MVal = Nan::Get(o, Nan::New("type").ToLocalChecked());
-		if(MVal.ToLocal<Value>(&js_flags)) {
-			if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
-				type_flags = (int) js_flags->Int32Value();
-			}
-		}
-		Local<Value> js_netclass; MVal = Nan::Get(o, Nan::New("sock_class").ToLocalChecked());
-		if(MVal.ToLocal<Value>(&js_flags)) {
-			if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
-				netlink_class = (int) js_netclass->Int32Value();
-			}
-		}
-		Local<Value> js_subs; MVal = Nan::Get(o, Nan::New("subscriptions").ToLocalChecked());
-		if(MVal.ToLocal<Value>(&js_flags)) {
-			if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
-				subscription = (uint32_t) js_subs->IntegerValue();
+		// Local<Object> o = info[0]->ToObject();
+		// Local<Value> js_flags; Mval = Nan::Get(o, Nan::New("type").ToLocalChecked());
+		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
+		// 	if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
+		// 		type_flags = (int) js_flags->Int32Value();
+		// 	}
+		// }
+		// Local<Value> js_netclass; Mval = Nan::Get(o, Nan::New("sock_class").ToLocalChecked());
+		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
+		// 	if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
+		// 		netlink_class = (int) js_netclass->Int32Value();
+		// 	}
+		// }
+		// Local<Value> js_subs; Mval = Nan::Get(o, Nan::New("subscriptions").ToLocalChecked());
+		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
+		// 	if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
+		// 		subscription = (uint32_t) js_subs->IntegerValue();
 
-			}
-		}
+		// 	}
+		// }
 	}
 	//DBG_OUT("type_flags = %x", type_flags);
 	//DBG_OUT("netlink_class = %d", netlink_class);
@@ -223,6 +231,8 @@ NAN_METHOD(NetlinkSocket::CreateMsgReq) {  // creates a sockMsgReq
 	// in the case this is a listening socket who's request is not unRef'ed by the port_recv function.
 	sock->saveReqRef(new Request_t(sock,v8req));
 	// ignore warning, this is fine. It's wrapped in the cstor of sockMsgReq
+
+	info.GetReturnValue().Set(v8req);
 }
 
 NAN_METHOD(NetlinkSocket::AddMsgToReq) {   // adds a Buffer -> for adding a req_generic to the sockMsgReq
@@ -271,9 +281,13 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 			req->reqRef();  // nor the request object
 			if(info.Length() > 0 && info[1]->IsFunction())
 				req->onSendCB = new Nan::Callback(Local<Function>::Cast(info[1]));
+			else
+				req->onSendCB = new Nan::Callback();
 
 			if(info.Length() > 1 && info[2]->IsFunction())
 				req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[2]));
+			else
+				req->onReplyCB = new Nan::Callback();
 
 			void (*post_process_func)(uv_work_s*, int) = NULL;
 			if(!sock->listening)

@@ -72,7 +72,8 @@ Nan::Persistent<Function> TunInterface::constructor;
 
 //Nan::Persistent<ObjectTemplate> TunInterface::prototype;
 
-void TunInterface::Init(v8::Local<v8::Object> exports) {
+NAN_METHOD(TunInterface::Init) {
+	INIT_GLOG;
 
 	Local<FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
 
@@ -80,11 +81,13 @@ void TunInterface::Init(v8::Local<v8::Object> exports) {
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	if(exports->IsObject()) {
-		Local<Object> base = exports->ToObject();
+
+	Nan::MaybeLocal<Object> Mobj = info[0]->ToObject();
+	if(!Mobj.IsEmpty()) {
+		Local<Object> base = Mobj.ToLocalChecked();
 		Local<Array> keys = base->GetPropertyNames();
 		for(unsigned int n=0;n<keys->Length();n++) {
-			Local<String> keyname = Nan::New(keys->Get(n)->ToString());
+			Local<String> keyname = keys->Get(n)->ToString();
 			String::Utf8Value utf8_keyname(keyname);
 			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname));
 		}
@@ -103,10 +106,9 @@ void TunInterface::Init(v8::Local<v8::Object> exports) {
 	Nan::SetAccessor(otpl, Nan::New("flags").ToLocalChecked(), GetIfFlags, SetIfFlags);
 	Nan::SetAccessor(otpl, Nan::New("lastError").ToLocalChecked(), GetLastError, SetLastError);
 	Nan::SetAccessor(otpl, Nan::New("_readChunkSize").ToLocalChecked(), GetReadChunkSize, SetReadChunkSize);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("lastErrorStr"), GetLastErrorStr, SetLastErrorStr);
 
-//	TunInterface::prototype = Nan::Persistent<ObjectTemplate>::New(tpl->PrototypeTemplate());
 	TunInterface::constructor.Reset(tpl->GetFunction());
+	info.GetReturnValue().Set(tpl->GetFunction());
 }
 
 /** TunInterface(opts)
@@ -332,7 +334,11 @@ NAN_METHOD(TunInterface::SendData) {
 		req->onSendSuccessCB = new Nan::Callback(Local<Function>::Cast(info[1]));
 		if(info.Length() > 2 && info[2]->IsFunction()) {
 			req->onSendFailureCB = new Nan::Callback(Local<Function>::Cast(info[2]));
+		} else {
+			req->onSendFailureCB = new Nan::Callback();
 		}
+
+
 		// queue up read job...
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_write, TunInterface::post_write);
 

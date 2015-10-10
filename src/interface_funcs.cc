@@ -14,19 +14,18 @@
 #include <errno.h>
 
 #include "network-common.h"
+#include "nan.h"
 
 using namespace v8;
 
 // These are in their own file because net/if.h conflicts with kernel defintions.
 
-Handle<Value> IfNameToIndex(const Arguments &args) {
-	HandleScope scope;
-
+NAN_METHOD(IfNameToIndex) {
 	_net::err_ev err;
 
 	int i = 0;
-	if(args.Length() > 0 && args[0]->IsString()) {
-		v8::String::Utf8Value ifname(args[0]->ToString());
+	if(info.Length() > 0 && info[0]->IsString()) {
+		v8::String::Utf8Value ifname(info[0]->ToString());
 		i = if_nametoindex(ifname.operator *());
 		if(i == 0)
 			err.setError(errno);
@@ -35,21 +34,19 @@ Handle<Value> IfNameToIndex(const Arguments &args) {
 	}
 
 	if(err.hasErr())
-		return scope.Close(_net::err_ev_to_JS(err,"ifNameToIndex: "));
+		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"ifNameToIndex: ")));
 	else
-		return scope.Close(Int32::New(i));
+		info.GetReturnValue().Set(Nan::New(i));
 };
 
-Handle<Value> IfIndexToName(const Arguments &args) {
-	HandleScope scope;
-
+NAN_METHOD(IfIndexToName) {
 	_net::err_ev err;
 
 	char s[IF_NAMESIZE];
 	Local<String> ret;
 
-	if(args.Length() > 0 && args[0]->IsInt32()) {
-		char *r = if_indextoname((unsigned int) args[0]->ToInt32()->Int32Value(), s);
+	if(info.Length() > 0 && info[0]->IsInt32()) {
+		char *r = if_indextoname((unsigned int) info[0]->ToInt32()->Int32Value(), s);
 		if(!r)
 			err.setError(errno);
 		else {
@@ -61,7 +58,7 @@ Handle<Value> IfIndexToName(const Arguments &args) {
 	}
 
 	if(err.hasErr())
-		return scope.Close(_net::err_ev_to_JS(err,"ifIndexToName: "));
+		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"ifIndexToName: ")));
 	else
-		return scope.Close(ret);
+		info.GetReturnValue().Set(ret);
 };

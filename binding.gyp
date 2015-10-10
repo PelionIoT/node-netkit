@@ -19,12 +19,18 @@
         [
           "OS=='linux'", {
       "sources": [
+        "src/grease_client.c",
         "src/tuninterface.cc",
         "src/network.cc",
         "src/network-common.cc",
         "src/netlinksocket.cc",
         "src/interface_funcs.cc",
         "src/error-common.cc"
+      ],
+
+      "include_dirs": [
+         "deps/twlib/include",
+         "<!(node -e \"require('nan')\")"
       ],
 
     'configurations': {
@@ -41,11 +47,6 @@
 ##            'msvs_configuration_platform': 'x64',
 ##          }],
 ##        ]
-        "include_dirs": [
-           "deps/twlib/include",
-           "<!(node -e \"require('nan')\")"
-        ],
-
       },
       'Release': {
         "cflags": [
@@ -55,8 +56,7 @@
           "-DNO_ERROR_CMN_OUTPUT=1",
           ],
         "include_dirs": [
-           "deps/twlib/include",
-           "node_modules/nan"
+           "deps/twlib/include"
         ],
 
       }

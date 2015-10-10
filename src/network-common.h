@@ -20,6 +20,7 @@
 
 #include "netkit_err.h"
 #include "error-common.h"
+#include "grease_client.h"
 
 /**
  * LICENSE_IMPORT_BEGIN 9/7/14

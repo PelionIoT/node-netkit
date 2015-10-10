@@ -103,7 +103,7 @@ protected:
 	static void post_write(uv_work_t *req, int status);
 
 public:
-	static void Init(v8::Local<v8::Object> exports);
+    static NAN_METHOD(Init);
     static void Shutdown();
 
     static NAN_METHOD(New);

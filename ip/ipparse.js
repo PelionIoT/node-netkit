@@ -109,7 +109,7 @@ var ipparse = {
 		if(typeof(at['operation']) !== 'undefined') {
 			//console.dir(at);
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
-			console.log("handler_name = " + handler_name);
+			//console.log("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 
 			try {
@@ -373,9 +373,6 @@ var ipparse = {
 		if(typeof(address) !== 'undefined') {
 			var addr_a = rt.bufToArray(address, 0, address.length);
 			var addr = nativelib.fromAddress(addr_a, family);
-
-			console.log("aadr_a = " + addr_a);
-			console.log("addr = " + addr);
 
 			if(len != this.calcHostLen(family)) {
 				return addr['address'] + '/' + len;

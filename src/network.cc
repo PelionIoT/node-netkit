@@ -666,6 +666,9 @@ NAN_METHOD(ToAddress) {
 
 	if(err.hasErr())
 		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"toAddress: ")));
+	else
+		info.GetReturnValue().Set(Nan::New(ret));
+
 }
 
 /**

@@ -902,7 +902,7 @@ _ERRCMN_DEFINE_CONSTANT_WREV(target, EMEDIUMTYPE);
 		char *get_error_str(int _errno) {
 			char *ret = (char *) malloc(max_error_buf);
 			int r = strerror_r(_errno,ret,max_error_buf);
-			if ( r != 0 ) DBG_OUT("strerror_r bad return: %d\n",r);
+			if ( r != 0 ) GLOG_ERROR("strerror_r bad return: %d\n",r);
 			return ret;
 		}
 

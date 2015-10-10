@@ -148,30 +148,30 @@ NAN_METHOD(NetlinkSocket::Create) {
 	if(info.Length() > 0 && info[0]->IsObject()) {
 		Nan::MaybeLocal<Value> Mval;
 
-		// Local<Object> o = info[0]->ToObject();
-		// Local<Value> js_flags; Mval = Nan::Get(o, Nan::New("type").ToLocalChecked());
-		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
-		// 	if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
-		// 		type_flags = (int) js_flags->Int32Value();
-		// 	}
-		// }
-		// Local<Value> js_netclass; Mval = Nan::Get(o, Nan::New("sock_class").ToLocalChecked());
-		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
-		// 	if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
-		// 		netlink_class = (int) js_netclass->Int32Value();
-		// 	}
-		// }
-		// Local<Value> js_subs; Mval = Nan::Get(o, Nan::New("subscriptions").ToLocalChecked());
-		// if(!Mval.IsEmpty() && Mval.ToLocal<Value>(&js_flags)) {
-		// 	if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
-		// 		subscription = (uint32_t) js_subs->IntegerValue();
+		Local<Object> o = info[0]->ToObject();
+		Local<Value> js_flags; Mval = Nan::Get(o, Nan::New("type").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_flags)) {
+			if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
+				type_flags = (int) js_flags->Int32Value();
+			}
+		}
+		Local<Value> js_netclass; Mval = Nan::Get(o, Nan::New("sock_class").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_netclass)) {
+			if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
+				netlink_class = (int) js_netclass->Int32Value();
+			}
+		}
+		Local<Value> js_subs; Mval = Nan::Get(o, Nan::New("subscriptions").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_subs)) {
+			if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
+				subscription = (uint32_t) js_subs->IntegerValue();
 
-		// 	}
-		// }
+			}
+		}
 	}
-	//DBG_OUT("type_flags = %x", type_flags);
-	//DBG_OUT("netlink_class = %d", netlink_class);
-	//DBG_OUT("subscription = %x", subscription);
+	GLOG_DEBUG("type_flags = %x", type_flags);
+	GLOG_DEBUG("netlink_class = %d", netlink_class);
+	GLOG_DEBUG("subscription = %x", subscription);
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
@@ -293,7 +293,7 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 			if(!sock->listening)
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
-			DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
+			GLOG_DEBUG("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 
 
@@ -380,6 +380,7 @@ NAN_METHOD(NetlinkSocket::StopRecv) {
 		}
 	} else {
 		Nan::ThrowTypeError("onRecv() -> bad parameters. sockMsgReq Object and callback required.");
+		return;
 	}
 }
 
@@ -395,7 +396,7 @@ NAN_METHOD(NetlinkSocket::Close) {
 
 
 void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
-	DBG_OUT("FREEING MEMORY.");
+	GLOG_DEBUG("FREEING MEMORY.");
 	free(m);
 }
 
@@ -545,7 +546,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			// to what we sent
 			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
 					nlhdr->nlmsg_seq > req->last_seq) ) {
-				// DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
+					GLOG_WARNING("Warning. Ignore inbound NETLINK_ROUTE message.");
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.

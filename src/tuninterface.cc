@@ -120,28 +120,30 @@ NAN_METHOD(TunInterface::Init) {
  **/
 NAN_METHOD(TunInterface::New) {
 	TunInterface* obj = NULL;
+	GLOG("TunInterface::New");
 
 	if (info.IsConstructCall()) {
 	    // Invoked as constructor: `new MyObject(...)`
 //	    double value = info[0]->IsUndefined() ? 0 : info[0]->NumberValue();
-		if(info.Length() > 0) {
-			if(!info[0]->IsObject()) {
-				Nan::ThrowTypeError("Improper first arg to TunInterface cstor. Must be an object.");
+		GLOG("IsConstructCall - info.Length() = %d", info.Length());
+		if(info.Length() > 0  && info[0]->IsObject()) {
+			Nan::MaybeLocal<Value> Mval;
+			Local<Object> o = info[0]->ToObject();
+
+			Local<Value> doTap;
+			Mval = Nan::Get(info[0]->ToObject(), Nan::New("tap").ToLocalChecked());
+
+			if(Mval.ToLocal<Value>(&doTap) && !doTap->IsUndefined() && !doTap->IsNull()) {
+				GLOG("TAP TAP TAP");
+				obj = TunInterface::createTapInterface();
+			} else {
+				obj = new TunInterface();
 			}
 
-			Nan::MaybeLocal<Value> Mval;
-			Local<Value> ifname; Mval = Nan::Get(info[0]->ToObject(), Nan::New("ifname").ToLocalChecked());
-			Mval.ToLocal<Value>(&ifname);
-			Local<Value> doTap; Mval = Nan::Get(info[0]->ToObject(), Nan::New("tap").ToLocalChecked());
-			Mval.ToLocal<Value>(&ifname);
+			Local<Value> ifname;
+			Mval = Nan::Get(o, Nan::New("ifname").ToLocalChecked());
 
-			if(!doTap->IsUndefined() && !doTap->IsNull()) {
-//				DBG_OUT("TAP TAP TAP");
-				obj = TunInterface::createTapInterface();
-			} else
-				obj = new TunInterface();
-
-			if(!ifname->IsUndefined()) {
+			if(Mval.ToLocal<Value>(&ifname) && !ifname->IsUndefined()) {
 				v8::String::Utf8Value v8str(ifname);
 				obj->setIfName(v8str.operator *(),v8str.length());
 			}
@@ -268,7 +270,7 @@ NAN_METHOD(TunInterface::GetData) {
 		req->len = sizereq;
 		req->completeCB = new Nan::Callback(Local<Function>::Cast(info[0]));
 		// queue up read job...
-		DBG_OUT("Queuing work for read()\n");
+		GLOG_DEBUG3("Queuing work for read()\n");
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_read, TunInterface::post_read);
 	} else {
 		ThrowException(Exception::TypeError(String::New("send() -> Need at least two params: getData([int32], [function])")));
@@ -278,11 +280,11 @@ NAN_METHOD(TunInterface::GetData) {
 
 void TunInterface::do_read(uv_work_t *req) {
 	readReq *job = (readReq *) req->data;
-	DBG_OUT("do_read()\n");
+	GLOG_DEBUG3("do_read()\n");
 
 	if(job->self->_if_fd) {
 		int ret = read(job->self->_if_fd,job->_backing,job->len);
-		DBG_OUT("ret = %d\n", ret);
+		GLOG_DEBUG3("ret = %d\n", ret);
 		if(ret < 0) {
 			job->_errno = errno;  // an error occurred, so record error info
 			job->len = 0;
@@ -326,7 +328,7 @@ NAN_METHOD(TunInterface::SendData) {
 		TunInterface::writeReq *req = new TunInterface::writeReq(obj);
 		req->buffer.Reset(info[0]->ToObject()); // keep the Buffer persistent until the write is done...
 		if(!Buffer::HasInstance(info[0])) {
-			Nan::ThrowTypeError("send() -> passed in Buffer has no backing!");
+			return Nan::ThrowTypeError("send() -> passed in Buffer has no backing!");
 		}
 
 		req->_backing = node::Buffer::Data(info[0]->ToObject());
@@ -343,7 +345,7 @@ NAN_METHOD(TunInterface::SendData) {
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_write, TunInterface::post_write);
 
 	} else {
-		Nan::ThrowTypeError("send() -> Need at least two params: send(Buffer, successCallback)");
+		return Nan::ThrowTypeError("send() -> Need at least two params: send(Buffer, successCallback)");
 	}
 }
 

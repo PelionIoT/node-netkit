@@ -1400,7 +1400,7 @@ NAN_METHOD(SetIfFlags) {
     	}
 
 	} else {
-		Nan::ThrowTypeError("Bad arguments. Proper call is setIfFlags(string,flags,[callback])");
+		return Nan::ThrowTypeError("Bad arguments. Proper call is setIfFlags(string,flags,[callback])");
 	}
 }
 
@@ -1466,6 +1466,9 @@ NAN_METHOD(UnsetIfFlags) {
 
 
 void InitAll(Handle<Object> exports, Handle<Object> module){
+	INIT_GLOG;
+
+	GLOG_DEBUG("InitAll");
 
 	Nan::Set(exports, Nan::New("InitNativeTun").ToLocalChecked(),
 		Nan::GetFunction(Nan::New<FunctionTemplate>(TunInterface::Init)).ToLocalChecked());

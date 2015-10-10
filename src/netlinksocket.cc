@@ -87,7 +87,7 @@ NAN_METHOD(NetlinkSocket::New) {
 			// 	Local<String> value = info[0]->ToString();
 			// 	String::Utf8Value utf8_value(value);
 
-			// 	DBG_OUT("info[0]=%s\n", *utf8_value);
+			// 	GLOG_DEBUG3("info[0]=%s\n", *utf8_value);
 
 			// 	Nan::ThrowTypeError("Improper first arg to NetlinkSocket cstor. Must be an object.");
 			// 	return;
@@ -337,7 +337,7 @@ NAN_METHOD(NetlinkSocket::OnRecv) {
 		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
 		(recvmsg_req->self->handle).data = recvmsg_req;
 		uv_os_sock_t S = sock->fd;
-		// DBG_OUT("sock->fd = %d", sock->fd);
+		// GLOG_DEBUG3("sock->fd = %d", sock->fd);
 		int events = uv_poll_event::UV_READABLE;
 
 		int init_ret = uv_poll_init_socket(uv_default_loop(), &recvmsg_req->self->handle, S);
@@ -402,7 +402,7 @@ void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
 
 
 void NetlinkSocket::do_sendmsg(uv_work_t *work) {
-	//DBG_OUT("NetlinkSocket::do_sendmsg");
+	//GLOG_DEBUG3("NetlinkSocket::do_sendmsg");
 
 	Request_t *req = (Request_t *) work->data;
 	if(req->self->fd != 0) {
@@ -474,7 +474,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 }
 
 int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
-	//DBG_OUT("NetlinkSocket::do_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::do_recvmsg");
 
 	struct msghdr msg;         // used by sendmsg / recvmsg
 	struct sockaddr_nl nladdr; // NETLINK address
@@ -546,7 +546,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			// to what we sent
 			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
 					nlhdr->nlmsg_seq > req->last_seq) ) {
-					GLOG_WARNING("Warning. Ignore inbound NETLINK_ROUTE message.");
+					GLOG_WARN("Warning. Ignore inbound NETLINK_ROUTE message.");
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
@@ -582,7 +582,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 }
 
 void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
-	//DBG_OUT("NetlinkSocket::on_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::on_recvmsg");
 	if(events && UV_READABLE && status == 0)
 	{
 		HandleScope scope;
@@ -606,7 +606,7 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	//DBG_OUT("NetlinkSocket::post_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
 	HandleScope scope;
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
@@ -725,7 +725,7 @@ Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
 		//				return scope.Close(UNI_BUFFER_FROM_CPOINTER(buf));
 		// -----------------------------------------------------
 		// so we will just copy it for now...
-		//DBG_OUT("len=%d",len);
+		//GLOG_DEBUG3("len=%d",len);
 		Nan::MaybeLocal<v8::Object> buf = Nan::CopyBuffer(rawMemory,len);
 		::free(rawMemory); rawMemory=NULL; ownMemory=false;
 		return scope.Close(buf.ToLocalChecked());

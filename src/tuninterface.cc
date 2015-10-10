@@ -263,6 +263,7 @@ NAN_METHOD(TunInterface::GetData) {
 		// make new Buffer object. Make it Persistent to keep it around after the HandleScope closes.
 		// we will do the read in a different thread. We don't want to call v8 in another thread, so just do the unwrapping here before we do the work..
 		// in the work we will just copy stuff to the _backing store.
+		req->_backing = (char *) ::malloc(sizereq);
 		Nan::MaybeLocal<v8::Object> buf = Nan::NewBuffer(req->_backing, sizereq);
 		req->buffer.Reset(buf.ToLocalChecked());
 
@@ -284,6 +285,8 @@ void TunInterface::do_read(uv_work_t *req) {
 
 	if(job->self->_if_fd) {
 		int ret = read(job->self->_if_fd,job->_backing,job->len);
+
+		GLOG_DEBUG3("job->_backing = %p", job->_backing);
 		GLOG_DEBUG3("ret = %d\n", ret);
 		if(ret < 0) {
 			job->_errno = errno;  // an error occurred, so record error info
@@ -305,6 +308,7 @@ void TunInterface::post_read(uv_work_t *req, int status) {
 	if(job->_errno == 0) {
 
 		if(!job->completeCB->IsEmpty()) {
+			GLOG_DEBUG3("Returning buffer");
 			job->completeCB->Call(Context::GetCurrent()->Global(),2,argv);
 		}
 	} else { // failure

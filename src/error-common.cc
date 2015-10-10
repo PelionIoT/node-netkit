@@ -21,6 +21,7 @@
 
 
 #include "error-common.h"
+#include "grease_client.h"
 
 
 

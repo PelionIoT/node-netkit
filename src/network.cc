@@ -1364,6 +1364,8 @@ NAN_METHOD(SetIfFlags) {
 
 		short int flags = info[1]->Int32Value();
 
+		GLOG_DEBUG3("ifname = %s flags = %d", *v8ifname, flags);
+
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
 		Local<Value> v8err;

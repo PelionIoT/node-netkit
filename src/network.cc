@@ -685,7 +685,7 @@ NAN_METHOD(FromAddress) {
 	_net::err_ev err;
 
 	if(info.Length() > 1 && info[0]->IsArray() && info[1]->IsInt32()) {
-		GLOG_DEBUG3("is address");
+		//GLOG_DEBUG3("is address");
 
 		ret = Object::New();
 		Local<Array> addr = Local<Array>::Cast(info[0]);
@@ -712,13 +712,13 @@ NAN_METHOD(FromAddress) {
 			}
 		} else
 		if(family == AF_INET) {
-			GLOG_DEBUG3("is inet");
+			//GLOG_DEBUG3("is inet");
 			unsigned char addr_a[sizeof(struct in_addr)];
 
 			for (size_t i = 0; i < addr->Length(); i++) {
 				Local<Number> el = addr->Get(i)->ToUint32();
 				addr_a[i] = static_cast<uint8_t>(el->Uint32Value());
-				GLOG_DEBUG3("addr_a[i] = %d", addr_a[i]);
+				//GLOG_DEBUG3("addr_a[i] = %d", addr_a[i]);
 			}
 
 			char str[INET6_ADDRSTRLEN];

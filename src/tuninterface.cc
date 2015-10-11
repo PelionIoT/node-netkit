@@ -68,104 +68,82 @@ int TunInterface::tun_create() {
   return _if_fd;
 }
 
-Persistent<Function> TunInterface::constructor;
+Nan::Persistent<Function> TunInterface::constructor;
 
-//Persistent<ObjectTemplate> TunInterface::prototype;
+//Nan::Persistent<ObjectTemplate> TunInterface::prototype;
 
-Handle<Value> TunInterface::Init(const Arguments& args) {
+NAN_METHOD(TunInterface::Init) {
+	INIT_GLOG;
 
-	HandleScope scope;
-//	uv_mutex_init(&(ClonedPackage::workIdMutex));
-	// Prepare constructor template
+	Local<FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
 
-//	tpl->SetCallHandler()
-	// Prototype
-//	tpl->PrototypeTemplate()->Set(String::NewSymbol("connect"), FunctionTemplate::New(Connect)->GetFunction());
-
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("cloneRemote"), FunctionTemplate::New(CloneRemote)->GetFunction());
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("checkoutRev"), FunctionTemplate::New(CheckoutRev)->GetFunction());
-
-	// .repo = null
-//	tpl->InstanceTemplate()->Set(String::NewSymbol("repo"), Local<Value>::New(Null()));
-//	NODE_SET_PROTOTYPE_METHOD
-
-	ExtendFrom(args);
-
-	return scope.Close(Undefined());
-
-//  target->Set(NanNew<String>("Checkout"), object);
-}
-
-
-void TunInterface::ExtendFrom(const Arguments& args) {
-	Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-	tpl->SetClassName(String::NewSymbol("TunInterface"));
+	tpl->SetClassName(Nan::New("TunInterface").ToLocalChecked());
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
-
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	if(args.Length() > 0) {
-		if(args[0]->IsObject()) {
-			Local<Object> base = args[0]->ToObject();
-			Local<Array> keys = base->GetPropertyNames();
-			for(unsigned int n=0;n<keys->Length();n++) {
-				Local<String> keyname = keys->Get(n)->ToString();
-				tpl->InstanceTemplate()->Set(keyname, base->Get(keyname));
-			}
+
+	Nan::MaybeLocal<Object> Mobj = info[0]->ToObject();
+	if(!Mobj.IsEmpty()) {
+		Local<Object> base = Mobj.ToLocalChecked();
+		Local<Array> keys = base->GetPropertyNames();
+		for(unsigned int n=0;n<keys->Length();n++) {
+			Local<String> keyname = keys->Get(n)->ToString();
+			String::Utf8Value utf8_keyname(keyname);
+			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname));
 		}
 	}
 
+	Nan::SetPrototypeMethod(tpl,"isCreated",IsCreated);
+	Nan::SetPrototypeMethod(tpl,"create",Create);
+	Nan::SetPrototypeMethod(tpl,"_open",Open);
+	Nan::SetPrototypeMethod(tpl,"_close",Close);
+	Nan::SetPrototypeMethod(tpl,"_getData",GetData);
+	Nan::SetPrototypeMethod(tpl,"_sendData",SendData);
 
-	tpl->InstanceTemplate()->Set(String::NewSymbol("isCreated"), FunctionTemplate::New(IsCreated)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("create"), FunctionTemplate::New(Create)->GetFunction());
-	tpl->InstanceTemplate()->SetAccessor(String::New("ifname"), GetIfName, SetIfName);
-	tpl->InstanceTemplate()->SetAccessor(String::New("fd"), GetIfFD, SetIfFD);
-	tpl->InstanceTemplate()->SetAccessor(String::New("flags"), GetIfFlags, SetIfFlags);
-	tpl->InstanceTemplate()->SetAccessor(String::New("lastError"), GetLastError, SetLastError);
-//	tpl->InstanceTemplate()->SetAccessor(String::New("lastErrorStr"), GetLastErrorStr, SetLastErrorStr);
+	Local<ObjectTemplate> otpl = Nan::New<v8::ObjectTemplate>();
+	Nan::SetAccessor(otpl, Nan::New("ifname").ToLocalChecked(), GetIfName, SetIfName);
+	Nan::SetAccessor(otpl, Nan::New("fd").ToLocalChecked(), GetIfFD, SetIfFD);
+	Nan::SetAccessor(otpl, Nan::New("flags").ToLocalChecked(), GetIfFlags, SetIfFlags);
+	Nan::SetAccessor(otpl, Nan::New("lastError").ToLocalChecked(), GetLastError, SetLastError);
+	Nan::SetAccessor(otpl, Nan::New("_readChunkSize").ToLocalChecked(), GetReadChunkSize, SetReadChunkSize);
 
-	tpl->InstanceTemplate()->SetAccessor(String::New("_readChunkSize"), GetReadChunkSize, SetReadChunkSize);
-	tpl->InstanceTemplate()->Set(String::NewSymbol("_open"), FunctionTemplate::New(Open)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("_close"), FunctionTemplate::New(Close)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("_getData"), FunctionTemplate::New(GetData)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("_sendData"), FunctionTemplate::New(SendData)->GetFunction());
-
-
-//	TunInterface::prototype = Persistent<ObjectTemplate>::New(tpl->PrototypeTemplate());
-	TunInterface::constructor = Persistent<Function>::New(tpl->GetFunction());
-
+	TunInterface::constructor.Reset(tpl->GetFunction());
+	info.GetReturnValue().Set(tpl->GetFunction());
 }
-
 
 /** TunInterface(opts)
  * opts {
  * 	    ifname: "tun77"
  * }
- * @param args
+ * @param info
  * @return
  **/
-Handle<Value> TunInterface::New(const Arguments& args) {
-	HandleScope scope;
-
+NAN_METHOD(TunInterface::New) {
 	TunInterface* obj = NULL;
+	GLOG("TunInterface::New");
 
-	if (args.IsConstructCall()) {
+	if (info.IsConstructCall()) {
 	    // Invoked as constructor: `new MyObject(...)`
-//	    double value = args[0]->IsUndefined() ? 0 : args[0]->NumberValue();
-		if(args.Length() > 0) {
-			if(!args[0]->IsObject()) {
-				return ThrowException(Exception::TypeError(String::New("Improper first arg to TunInterface cstor. Must be an object.")));
-			}
-			Local<Value> ifname = args[0]->ToObject()->Get(String::New("ifname"));
+//	    double value = info[0]->IsUndefined() ? 0 : info[0]->NumberValue();
+		GLOG("IsConstructCall - info.Length() = %d", info.Length());
+		if(info.Length() > 0  && info[0]->IsObject()) {
+			Nan::MaybeLocal<Value> Mval;
+			Local<Object> o = info[0]->ToObject();
 
-			Local<Value> doTap = args[0]->ToObject()->Get(String::New("tap"));
-			if(!doTap->IsUndefined() && !doTap->IsNull()) {
-//				DBG_OUT("TAP TAP TAP");
+			Local<Value> doTap;
+			Mval = Nan::Get(info[0]->ToObject(), Nan::New("tap").ToLocalChecked());
+
+			if(Mval.ToLocal<Value>(&doTap) && !doTap->IsUndefined() && !doTap->IsNull()) {
+				GLOG("TAP TAP TAP");
 				obj = TunInterface::createTapInterface();
-			} else
+			} else {
 				obj = new TunInterface();
+			}
 
-			if(!ifname->IsUndefined()) {
+			Local<Value> ifname;
+			Mval = Nan::Get(o, Nan::New("ifname").ToLocalChecked());
+
+			if(Mval.ToLocal<Value>(&ifname) && !ifname->IsUndefined()) {
 				v8::String::Utf8Value v8str(ifname);
 				obj->setIfName(v8str.operator *(),v8str.length());
 			}
@@ -173,41 +151,23 @@ Handle<Value> TunInterface::New(const Arguments& args) {
 			obj = new TunInterface();
 		}
 
-		obj->Wrap(args.This());
-	    return args.This();
+		obj->Wrap(info.This());
+	    info.GetReturnValue().Set(info.This());
 	} else {
 	    // Invoked as plain function `MyObject(...)`, turn into construct call.
 	    const int argc = 1;
-	    Local<Value> argv[argc] = { args[0] };
-	    return scope.Close(constructor->NewInstance(argc, argv));
+	    Local<Value> argv[argc] = { info[0] };
+	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
+	    info.GetReturnValue().Set(cons->NewInstance(argc, argv));
 	  }
 
 }
 
-Handle<Value> TunInterface::NewInstance(const Arguments& args) {
-	HandleScope scope;
-	int n = args.Length();
-	Local<Object> instance;
-
-	if(args.Length() > 0) {
-		Handle<Value> argv[n];
-		for(int x=0;x<n;x++)
-			argv[x] = args[x];
-		instance = TunInterface::constructor->NewInstance(n, argv);
-	} else {
-		instance = TunInterface::constructor->NewInstance();
-	}
-
-	return scope.Close(instance);
-}
-
-
-void TunInterface::SetIfName(Local<String> property, Local<Value> val, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_SETTER(TunInterface::SetIfName) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
-	if(val->IsString()) {
-		v8::String::Utf8Value v8str(val);
+	if(value->IsString()) {
+		v8::String::Utf8Value v8str(value);
 		obj->setIfName(v8str.operator *(),v8str.length());
 	} else {
 		ERROR_OUT( "Invalid assignment to TunInterface object->ifname\n");
@@ -215,82 +175,70 @@ void TunInterface::SetIfName(Local<String> property, Local<Value> val, const Acc
 //	obj->SetIfName()
 }
 
-Handle<Value> TunInterface::GetIfName(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_GETTER(TunInterface::GetIfName) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->_if_name)
-		return scope.Close(String::New(obj->_if_name, strlen(obj->_if_name)));
-	else
-		return scope.Close(Undefined());
+	  info.GetReturnValue().Set(Nan::New(obj->_if_name, strlen(obj->_if_name)).ToLocalChecked());
 }
 
-void TunInterface::SetIfFD(Local<String> property, Local<Value> val, const AccessorInfo &info) {
+NAN_SETTER(TunInterface::SetIfFD) {
 	// does nothing - read only
 }
 
-Handle<Value> TunInterface::GetIfFD(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_GETTER(TunInterface::GetIfFD) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->_if_fd) // 0 is default which is nothing (no device created)
-		return scope.Close(Integer::New(obj->_if_fd));
-	else
-		return scope.Close(Undefined());
+		info.GetReturnValue().Set(Nan::New(obj->_if_fd));
 }
 
-void TunInterface::SetReadChunkSize(Local<String> property, Local<Value> val, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_SETTER(TunInterface::SetReadChunkSize) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	if(val->IsInt32()) {
-		obj->read_chunk_size = (int) val->Int32Value();
+	if(value->IsInt32()) {
+		obj->read_chunk_size = (int) value->Int32Value();
 	} else {
 		ERROR_OUT("Assignment to ->read_chunk_size with non Int32 type.");
 	}
 
 }
 
-Handle<Value> TunInterface::GetReadChunkSize(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_GETTER(TunInterface::GetReadChunkSize) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	return scope.Close(Integer::New(obj->read_chunk_size));
+	info.GetReturnValue().Set(Nan::New(obj->read_chunk_size));
 }
 
 
-void TunInterface::SetLastError(Local<String> property, Local<Value> val, const AccessorInfo &info) {
+NAN_SETTER(TunInterface::SetLastError) {
 	// does nothing - read only
 }
 
-Handle<Value> TunInterface::GetLastError(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_GETTER(TunInterface::GetLastError) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->err.hasErr()) {
-		return scope.Close(_net::err_ev_to_JS(obj->err, "TunInterface: "));
-	} else
-		return scope.Close(Undefined());
+		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(obj->err, "TunInterface: ")));
+	}
 }
 
-void TunInterface::SetIfFlags(Local<String> property, Local<Value> val, const AccessorInfo &info) {
+NAN_SETTER(TunInterface::SetIfFlags) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	if(val->IsInt32()) {
-		obj->_if_flags = (int) val->ToInt32()->Int32Value();
+	if(value->IsInt32()) {
+		obj->_if_flags = (int) value->ToInt32()->Int32Value();
 	} else {
 		ERROR_OUT("Assignment to ->_if_flags with non Int32 type.");
 	}
 }
 
-Handle<Value> TunInterface::GetIfFlags(Local<String> property, const AccessorInfo &info) {
-	HandleScope scope;
+NAN_GETTER(TunInterface::GetIfFlags) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	return scope.Close(Integer::New(obj->_if_flags));
+	info.GetReturnValue().Set(Nan::New(obj->_if_flags));
 }
 
 
-Handle<Value> TunInterface::IsCreated(const Arguments &args) {
-	HandleScope scope;
-	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+NAN_METHOD(TunInterface::IsCreated) {
+	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->_if_fd) // 0 is default which is nothing (no device created)
-		return scope.Close(Boolean::New(true));
+		info.GetReturnValue().Set(Nan::True());
 	else
-		return scope.Close(Boolean::New(false));
+		info.GetReturnValue().Set(Nan::False());
 }
 
 
@@ -302,45 +250,44 @@ Handle<Value> TunInterface::IsCreated(const Arguments &args) {
  * size is 'advisory' -->  http://nodejs.org/api/stream.html#stream_readable_read_size_1
  * callback = function(Buffer,amountread,error) {}
  */
-Handle<Value> TunInterface::GetData(const Arguments& args) {
-	HandleScope scope;
-	if(args.Length() > 0 && args[0]->IsFunction()) {
+NAN_METHOD(TunInterface::GetData) {
+	if(info.Length() > 0 && info[0]->IsFunction()) {
 		int sizereq = 0;
-		if(args.Length() > 1 && args[1]->IsInt32())
-			sizereq = (int) args[1]->Int32Value();
-		TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+		if(info.Length() > 1 && info[1]->IsInt32())
+			sizereq = (int) info[1]->Int32Value();
+		TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
 		TunInterface::readReq *req = new TunInterface::readReq(obj);
 		if(sizereq < obj->read_chunk_size) sizereq = obj->read_chunk_size; // read at least the MTU, regardless of req read size
-		// FIXME for node 0.12 this will change. Take note.
-		Handle<Object> buf = UNI_BUFFER_NEW(sizereq);
+
 		// make new Buffer object. Make it Persistent to keep it around after the HandleScope closes.
 		// we will do the read in a different thread. We don't want to call v8 in another thread, so just do the unwrapping here before we do the work..
 		// in the work we will just copy stuff to the _backing store.
-		req->buffer = Persistent<Object>::New(buf);
+		req->_backing = (char *) ::malloc(sizereq);
+		Nan::MaybeLocal<v8::Object> buf = Nan::NewBuffer(req->_backing, sizereq);
+		req->buffer.Reset(buf.ToLocalChecked());
 
 //		buf->Ref();
-		req->_backing = node::Buffer::Data(buf);
 		req->len = sizereq;
-		req->completeCB = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+		req->completeCB = new Nan::Callback(Local<Function>::Cast(info[0]));
 		// queue up read job...
-		DBG_OUT("Queuing work for read()\n");
+		GLOG_DEBUG3("Queuing work for read()\n");
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_read, TunInterface::post_read);
-
-		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("send() -> Need at least two params: getData([int32], [function])")));
+	        Nan::ThrowTypeError("send() -> Need at least two params: getData([int32], [function])");
 	}
 }
 
 
 void TunInterface::do_read(uv_work_t *req) {
 	readReq *job = (readReq *) req->data;
-	DBG_OUT("do_read()\n");
+	GLOG_DEBUG3("do_read()\n");
 
 	if(job->self->_if_fd) {
 		int ret = read(job->self->_if_fd,job->_backing,job->len);
-		DBG_OUT("ret = %d\n", ret);
+
+		GLOG_DEBUG3("job->_backing = %p", job->_backing);
+		GLOG_DEBUG3("ret = %d\n", ret);
 		if(ret < 0) {
 			job->_errno = errno;  // an error occurred, so record error info
 			job->len = 0;
@@ -355,22 +302,19 @@ void TunInterface::post_read(uv_work_t *req, int status) {
 
 	const unsigned argc = 3;
 	Local<Value> argv[argc];
-	if(job->buffer->IsUndefined()) {
-		ERROR_OUT("**** Failure on read: Why is buffer not defined??\n");
-	} else
-		argv[0] = job->buffer->ToObject();
-	argv[1] = Integer::New(job->len);
+	argv[0] = Nan::New(job->buffer);
+	argv[1] = Nan::New(job->len);
 
 	if(job->_errno == 0) {
-//		Buffer* rawbuffer = ObjectWrap<Buffer>(job->buffer);
 
-		if(!job->completeCB->IsUndefined()) {
-			job->completeCB->Call(Context::GetCurrent()->Global(),2,argv);
+		if(!job->completeCB->IsEmpty()) {
+			GLOG_DEBUG3("Returning buffer");
+			job->completeCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 		}
 	} else { // failure
-		if(!job->completeCB->IsUndefined()) {
-			argv[2] = _net::errno_to_JS(job->_errno,"Error in read(): ");
-			job->completeCB->Call(Context::GetCurrent()->Global(),3,argv);
+		if(!job->completeCB->IsEmpty()) {
+			argv[2] = Nan::New(_net::errno_to_JS(job->_errno,"Error in read(): "));
+			job->completeCB->Call(Nan::GetCurrentContext()->Global(),3,argv);
 		}
 	}
 
@@ -381,29 +325,31 @@ void TunInterface::post_read(uv_work_t *req, int status) {
  * Sends data to the TUN interface:
  * send(Buffer, CallbackSuccess, CallbackError) { }
  */
-Handle<Value> TunInterface::SendData(const Arguments& args) {
-	HandleScope scope;
-	if(args.Length() > 2 && args[1]->IsFunction() && args[0]->IsObject()) {
-		TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+NAN_METHOD(TunInterface::SendData) {
+	if(info.Length() > 2 && info[1]->IsFunction() && info[0]->IsObject()) {
+		TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
 		TunInterface::writeReq *req = new TunInterface::writeReq(obj);
-		req->buffer = Persistent<Object>::New(args[0]->ToObject()); // keep the Buffer persistent until the write is done...
-		if(!Buffer::HasInstance(args[0])) {
-			return ThrowException(Exception::TypeError(String::New("send() -> passed in Buffer has no backing!")));
+		req->buffer.Reset(info[0]->ToObject()); // keep the Buffer persistent until the write is done...
+		if(!Buffer::HasInstance(info[0])) {
+			return Nan::ThrowTypeError("send() -> passed in Buffer has no backing!");
 		}
 
-		req->_backing = node::Buffer::Data(args[0]->ToObject());
-		req->len = node::Buffer::Length(args[0]->ToObject());
-		req->onSendSuccessCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
-		if(args.Length() > 2 && args[2]->IsFunction()) {
-			req->onSendFailureCB = Persistent<Function>::New(Local<Function>::Cast(args[2]));
+		req->_backing = node::Buffer::Data(info[0]->ToObject());
+		req->len = node::Buffer::Length(info[0]->ToObject());
+		req->onSendSuccessCB = new Nan::Callback(Local<Function>::Cast(info[1]));
+		if(info.Length() > 2 && info[2]->IsFunction()) {
+			req->onSendFailureCB = new Nan::Callback(Local<Function>::Cast(info[2]));
+		} else {
+			req->onSendFailureCB = new Nan::Callback();
 		}
+
+
 		// queue up read job...
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_write, TunInterface::post_write);
 
-		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("send() -> Need at least two params: send(Buffer, successCallback)")));
+		return Nan::ThrowTypeError("send() -> Need at least two params: send(Buffer, successCallback)");
 	}
 }
 
@@ -435,17 +381,17 @@ void TunInterface::post_write(uv_work_t *req, int status) {
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
-	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
+	argv[0] =Nan::New(job->len); // first param to call back is always amount of bytes written
 
 	if(job->_errno == 0) {
 //		Buffer* rawbuffer = ObjectWrap<Buffer>(job->buffer);
-		if(!job->onSendSuccessCB->IsUndefined()) {
-			job->onSendSuccessCB->Call(Context::GetCurrent()->Global(),1,argv);
+		if(!job->onSendSuccessCB->IsEmpty()) {
+			job->onSendSuccessCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
 		}
 	} else { // failure
-		if(!job->onSendFailureCB->IsUndefined()) {
+		if(!job->onSendFailureCB->IsEmpty()) {
 			argv[1] = _net::errno_to_JS(job->_errno,"Error in write(): ");
-			job->onSendFailureCB->Call(Context::GetCurrent()->Global(),2,argv);
+			job->onSendFailureCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 		}
 	}
 
@@ -454,31 +400,29 @@ void TunInterface::post_write(uv_work_t *req, int status) {
 
 
 
-Handle<Value> TunInterface::Open(const Arguments& args) {
-	HandleScope scope;
-	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+NAN_METHOD(TunInterface::Open) {
+	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
 	// FIXME - this only uses the fd created by Create() - we later should try to reopen a closed TUN device.
 
 	if(obj->_if_fd > 0) {
-		return scope.Close(Boolean::New(true));
+		info.GetReturnValue().Set(Nan::True());
 	} else
-		return scope.Close(Boolean::New(false));
+		info.GetReturnValue().Set(Nan::False());
 
 }
 
-Handle<Value> TunInterface::Close(const Arguments& args) {
-	HandleScope scope;
-	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+NAN_METHOD(TunInterface::Close) {
+	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
 	if(obj->_if_fd > 0) {
 		if(close(obj->_if_fd) < 0) {
-			return scope.Close(Boolean::New(false));
+			info.GetReturnValue().Set(Nan::False());
 		} else
-			return scope.Close(Boolean::New(true));
+			info.GetReturnValue().Set(Nan::True());
 	} else {
 		obj->err.setError(_net::OTHER_ERROR, "not open!");
-		return scope.Close(Boolean::New(false));
+		info.GetReturnValue().Set(Nan::False());
 	}
 }
 
@@ -487,17 +431,16 @@ Handle<Value> TunInterface::Close(const Arguments& args) {
 /**
  * Creates the TUN interface.
  */
-Handle<Value> TunInterface::Create(const Arguments& args) {
-	HandleScope scope;
-	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+NAN_METHOD(TunInterface::Create) {
+	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 
 	obj->err.clear();
 	obj->tun_create();
 
 	if(!obj->err.hasErr())
-		return scope.Close(Boolean::New(true));
+		info.GetReturnValue().Set(Nan::True());
 	else {
-		return scope.Close(Boolean::New(false));
+		info.GetReturnValue().Set(Nan::False());
 	}
 }
 
@@ -517,9 +460,9 @@ Handle<Value> TunInterface::Create(const Arguments& args) {
 ///**
 // * Bring the interface up
 // */
-//Handle<Value> TunInterface::IfUp(const Arguments& args) {
+//Handle<Value> TunInterface::IfUp(const Arguments& info) {
 //	HandleScope scope;
-//	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+//	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 //
 //	char if_tmp_buf[255];
 //
@@ -540,9 +483,9 @@ Handle<Value> TunInterface::Create(const Arguments& args) {
 ///**
 // * Bring the interface down
 // */
-//Handle<Value> TunInterface::IfDown(const Arguments& args) {
+//Handle<Value> TunInterface::IfDown(const Arguments& info) {
 //	HandleScope scope;
-//	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(args.This());
+//	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 //
 //	char if_tmp_buf[255];
 //

@@ -19,6 +19,7 @@
         [
           "OS=='linux'", {
       "sources": [
+        "src/grease_client.c",
         "src/tuninterface.cc",
         "src/network.cc",
         "src/network-common.cc",
@@ -28,9 +29,9 @@
       ],
 
       "include_dirs": [
-         "deps/twlib/include"
+         "deps/twlib/include",
+         "<!(node -e \"require('nan')\")"
       ],
-
 
     'configurations': {
       'Debug': {
@@ -54,6 +55,10 @@
           "-D_POSIX_C_SOURCE=200809L",
           "-DNO_ERROR_CMN_OUTPUT=1",
           ],
+        "include_dirs": [
+           "deps/twlib/include"
+        ],
+
       }
 
     },

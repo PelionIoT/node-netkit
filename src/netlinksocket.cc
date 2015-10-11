@@ -274,7 +274,7 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
 
 		Local <Object> v8req = info[0]->ToObject();
-		if(v8req->GetConstructor()->StrictEquals(cons)) {
+		if(v8req->GetConstructorName()->StrictEquals(cons->GetName())) {
 			Request_t *req =  Nan::ObjectWrap::Unwrap<Request_t>(v8req);
 
 			sock->Ref();    // don't let the socket get garbage collected yet
@@ -366,7 +366,7 @@ NAN_METHOD(NetlinkSocket::StopRecv) {
 	if(info.Length() > 0 && info[0]->IsObject()) {
 	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
 		Local <Object> v8req = info[0]->ToObject();
-		if(v8req->GetConstructor()->StrictEquals(cons)) {
+		if(v8req->GetConstructorName()->StrictEquals(cons)) {
 			Request_t *req =  Nan::ObjectWrap::Unwrap<Request_t>(v8req);
 
 			uv_poll_stop(&req->self->handle);
@@ -385,7 +385,6 @@ NAN_METHOD(NetlinkSocket::StopRecv) {
 }
 
 NAN_METHOD(NetlinkSocket::Close) {
-	HandleScope scope;
 
 	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 
@@ -585,7 +584,6 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 	//GLOG_DEBUG3("NetlinkSocket::on_recvmsg");
 	if(events && UV_READABLE && status == 0)
 	{
-		HandleScope scope;
 		Request_t *recvmsg_req = (Request_t *) handle->data;
 
 		// Service the ready socket, loop on EGAGAIN as socket ready may not produce on first read
@@ -598,29 +596,29 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 
 		post_recvmsg(&work, status);
 	} else if(status < 0) {
-		#ifdef DEBUG
+#if (UV_VERSION_MAJOR > 0)	  
+	        GLOG_ERROR("uv_poll error: %s\n", uv_err_name(status));
+#else
 		uv_err_t err = uv_last_error(uv_default_loop());
-		ERROR_OUT("uv_poll error: %s\n", uv_err_name(err));
-		#endif
+		GLOG_ERROR("uv_poll error: %s\n", uv_err_name(err));
+#endif		
 	}
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
-	HandleScope scope;
-
 	sockMsgReq *job = (sockMsgReq *) work->data;
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
-	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
+	argv[0] = Nan::New<v8::Integer>(job->len); // first param to call back is always amount of bytes written
 	Handle<Value> v8err;
 
 	 if(!job->self->listening)
 		job->self->Unref();
 
-	Handle<Boolean> fals = Boolean::New(false);
-	Handle<Boolean> tru = Boolean::New(true);
+	Handle<Boolean> fals = Nan::False();
+	Handle<Boolean> tru = Nan::True();
 
 	// TODO: go through all of the FIFO, empty and DetachBuffer all items
 
@@ -629,7 +627,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		bool nlError = false;
 		reqWrapper req;
 
-		Handle<Object> retbufs = Object::New();
+		Handle<Object> retbufs = Nan::New<v8::Object>();
 		int n = 0;
 		while(job->replies && job->reply_queue.remove(req)) {
 			if(req.iserr) nlError = true;
@@ -638,7 +636,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 			}
 			n++; job->replies--;
 		}
-		retbufs->Set(Nan::New("length").ToLocalChecked(),Integer::New(n));
+		retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
 
 		if(job->onReplyCB->IsEmpty() && !job->onSendCB->IsEmpty()) {
 			// if we don't have a reply callback,
@@ -714,7 +712,6 @@ void NetlinkSocket::reqWrapper::AttachBuffer(Local<Object> b) {
 }
 
 Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
-	HandleScope scope;
 	if(rawMemory && ownMemory) {
 		// OK - this method currently does not work, because node::Buffer::New(rawMemory,len,free_req_callback_buffer,0) does
 		// not seem to actually call it's 'free_callback'
@@ -728,9 +725,9 @@ Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
 		//GLOG_DEBUG3("len=%d",len);
 		Nan::MaybeLocal<v8::Object> buf = Nan::CopyBuffer(rawMemory,len);
 		::free(rawMemory); rawMemory=NULL; ownMemory=false;
-		return scope.Close(buf.ToLocalChecked());
+		return buf.ToLocalChecked();
 	} else {
-		return scope.Close(Object::New());
+	        return Nan::New<Object>();
 	}
 }
 

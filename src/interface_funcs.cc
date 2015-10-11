@@ -50,7 +50,7 @@ NAN_METHOD(IfIndexToName) {
 		if(!r)
 			err.setError(errno);
 		else {
-			ret = String::New(s);
+		  ret = Nan::New(s).ToLocalChecked();
 		}
 
 	} else {

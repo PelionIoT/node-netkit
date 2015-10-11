@@ -139,10 +139,10 @@ void free_test_cb(char *m,void *hint) {
 NAN_METHOD(WrapMemBufferTest) {
 	char *mem = (char *) ::malloc(100);
 	memset(mem,'A',100);
-	node::Buffer *buf = node::Buffer::New(mem,100,free_test_cb,0);
+	Nan::MaybeLocal<v8::Object> Mbuf = Nan::NewBuffer(mem,100,free_test_cb,0);
 //	node::Buffer *buf = UNI_BUFFER_NEW_WRAP(mem,100,free_test_cb,NULL);
 //	buf->handle_.MakeWeak(NULL, weak_cb);
-	info.GetReturnValue().Set(Nan::New(buf->handle_));
+	info.GetReturnValue().Set(Mbuf.ToLocalChecked());
 }
 
 /// END TESTS
@@ -604,7 +604,7 @@ NAN_METHOD(ToAddress) {
 	_net::err_ev err;
 
 	if(info.Length() > 1 && info[0]->IsString() && info[1]->IsInt32()) {
-		ret = Object::New();
+	        ret = Nan::New<v8::Object>();
 		v8::String::Utf8Value addr(info[0]->ToString());
 
 		int32_t family = info[1]->ToInt32()->Int32Value();
@@ -612,7 +612,7 @@ NAN_METHOD(ToAddress) {
 			int mask = -1;
 			char *addrstr = addr.operator *();
 			if(_net::quickParseIPv6Mask(addrstr,mask)) {
-				ret->Set(Nan::New("mask").ToLocalChecked(), Int32::New(mask));
+				ret->Set(Nan::New("mask").ToLocalChecked(), Nan::New(mask));
 			}
 
 			struct sockaddr_in6 sai;
@@ -627,18 +627,18 @@ NAN_METHOD(ToAddress) {
 					err.setError(errno,"Error on inet_pton.");
 				}
 			} else {
-				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in6_addr));
+			        Local<Object> buf = Nan::NewBuffer(sizeof(struct in6_addr)).ToLocalChecked();
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin6_addr,sizeof(struct in6_addr));
 				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
-				ret->Set(Nan::New("len").ToLocalChecked(), Int32::New(sizeof(struct in6_addr)));
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New(sizeof(struct in6_addr)));
 			}
 		} else
 		if(family == AF_INET) {
 			int mask = -1;
 			char *addrstr = addr.operator *();
 			if(_net::quickParseIPv6Mask(addrstr,mask)) {
-				ret->Set(Nan::New("mask").ToLocalChecked(), Int32::New(mask));
+				ret->Set(Nan::New("mask").ToLocalChecked(), Nan::New(mask));
 			}
 
 			struct sockaddr_in sai;
@@ -653,11 +653,11 @@ NAN_METHOD(ToAddress) {
 					err.setError(errno,"Error on inet_pton.");
 				}
 			} else {
-				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in_addr));
+			        Local<Object> buf = Nan::NewBuffer(sizeof(struct in_addr)).ToLocalChecked();
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin_addr,sizeof(struct in_addr));
 				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
-				ret->Set(Nan::New("len").ToLocalChecked(), Int32::New(sizeof(struct in_addr)));
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New(sizeof(struct in_addr)));
 			}
 		}
 	} else {
@@ -690,7 +690,7 @@ NAN_METHOD(FromAddress) {
 	if(info.Length() > 1 && info[0]->IsArray() && info[1]->IsInt32()) {
 		//GLOG_DEBUG3("is address");
 
-		ret = Object::New();
+	        ret = Nan::New<v8::Object>();
 		Local<Array> addr = Local<Array>::Cast(info[0]);
 		int32_t family = info[1]->ToInt32()->Int32Value();
 
@@ -710,8 +710,8 @@ NAN_METHOD(FromAddress) {
 					err.setError(errno,"Error on inet_ntop.");
 				}
 			} else {
-				ret->Set(Nan::New("address").ToLocalChecked(), v8::String::New(r) );
-				ret->Set(Nan::New("family").ToLocalChecked(), Int32::New(AF_INET6));
+			        ret->Set(Nan::New("address").ToLocalChecked(), Nan::New(r).ToLocalChecked());
+			        ret->Set(Nan::New("family").ToLocalChecked(), Nan::New<v8::Int32>(AF_INET6));
 			}
 		} else
 		if(family == AF_INET) {
@@ -733,8 +733,8 @@ NAN_METHOD(FromAddress) {
 					err.setError(errno,"Error on inet_ntop.");
 				}
 			} else {
-				ret->Set(Nan::New("address").ToLocalChecked(), v8::String::New(r) );
-				ret->Set(Nan::New("family").ToLocalChecked(), Int32::New(AF_INET));
+			        ret->Set(Nan::New("address").ToLocalChecked(), Nan::New(r).ToLocalChecked() );
+				ret->Set(Nan::New("family").ToLocalChecked(), Nan::New<v8::Int32>(AF_INET));
 			}
 		}
 	} else {
@@ -811,7 +811,7 @@ NAN_METHOD(AssignAddress) {
 		errev.setError(_net::OTHER_ERROR,"Wrong params. No ifname provided. Doing nothing.\n");
 	} else {
 		params = info[0]->ToObject();
-		Mval = Nan::Get(params, String::New("ifname"));
+		Mval = Nan::Get(params, Nan::New("ifname").ToLocalChecked());
 		Mval.ToLocal(&js_ifname);
 	}
 
@@ -858,7 +858,7 @@ NAN_METHOD(AssignAddress) {
 
 		// ******************** MAC address *********************
 
-		Local<Value> js_mac; Mval = Nan::Get(params, String::New("mac"));
+		Local<Value> js_mac; Mval = Nan::Get(params, Nan::New("mac").ToLocalChecked());
 		if(Mval.ToLocal(&js_mac) && !errev.hasErr() && js_mac->IsString()) {
 			uint8_t mac[6];
 			memset(mac,0,6);
@@ -1144,9 +1144,9 @@ NAN_METHOD(AssignAddress) {
 		Nan::Callback cb(Local<Function>::Cast(info[1]));
 		if(!v8err.IsEmpty()) {
 			outargv[0] = v8err->ToObject();
-			cb.Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
 		} else {
-			cb.Call(Context::GetCurrent()->Global(),0,NULL);
+			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
 		}
 	}
 
@@ -1297,9 +1297,9 @@ NAN_METHOD(AssignRoute) {
 		Nan::Callback cb(Local<Function>::Cast(info[1]));
 		if(!v8err.IsEmpty()) {
 			outargv[0] = v8err->ToObject();
-			cb.Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
 		} else {
-			cb.Call(Context::GetCurrent()->Global(),0,NULL);
+			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
 		}
 	}
 }
@@ -1341,9 +1341,9 @@ NAN_METHOD(InitIfFlags) {
     		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb.Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb.Call(Context::GetCurrent()->Global(),0,NULL);
+		        cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 
@@ -1398,9 +1398,9 @@ NAN_METHOD(SetIfFlags) {
     		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb.Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb.Call(Context::GetCurrent()->Global(),0,NULL);
+    			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 
@@ -1458,9 +1458,9 @@ NAN_METHOD(UnsetIfFlags) {
     		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb.Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb.Call(Context::GetCurrent()->Global(),0,NULL);
+    			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 

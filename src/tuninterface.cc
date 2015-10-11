@@ -178,7 +178,7 @@ NAN_SETTER(TunInterface::SetIfName) {
 NAN_GETTER(TunInterface::GetIfName) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->_if_name)
-		info.GetReturnValue().Set(String::New(obj->_if_name, strlen(obj->_if_name)));
+	  info.GetReturnValue().Set(Nan::New(obj->_if_name, strlen(obj->_if_name)).ToLocalChecked());
 }
 
 NAN_SETTER(TunInterface::SetIfFD) {
@@ -188,7 +188,7 @@ NAN_SETTER(TunInterface::SetIfFD) {
 NAN_GETTER(TunInterface::GetIfFD) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->_if_fd) // 0 is default which is nothing (no device created)
-		info.GetReturnValue().Set(Integer::New(obj->_if_fd));
+		info.GetReturnValue().Set(Nan::New(obj->_if_fd));
 }
 
 NAN_SETTER(TunInterface::SetReadChunkSize) {
@@ -203,7 +203,7 @@ NAN_SETTER(TunInterface::SetReadChunkSize) {
 
 NAN_GETTER(TunInterface::GetReadChunkSize) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	info.GetReturnValue().Set(Integer::New(obj->read_chunk_size));
+	info.GetReturnValue().Set(Nan::New(obj->read_chunk_size));
 }
 
 
@@ -229,7 +229,7 @@ NAN_SETTER(TunInterface::SetIfFlags) {
 
 NAN_GETTER(TunInterface::GetIfFlags) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
-	info.GetReturnValue().Set(Integer::New(obj->_if_flags));
+	info.GetReturnValue().Set(Nan::New(obj->_if_flags));
 }
 
 
@@ -274,7 +274,7 @@ NAN_METHOD(TunInterface::GetData) {
 		GLOG_DEBUG3("Queuing work for read()\n");
 		uv_queue_work(uv_default_loop(), &(req->work), TunInterface::do_read, TunInterface::post_read);
 	} else {
-		ThrowException(Exception::TypeError(String::New("send() -> Need at least two params: getData([int32], [function])")));
+	        Nan::ThrowTypeError("send() -> Need at least two params: getData([int32], [function])");
 	}
 }
 
@@ -309,12 +309,12 @@ void TunInterface::post_read(uv_work_t *req, int status) {
 
 		if(!job->completeCB->IsEmpty()) {
 			GLOG_DEBUG3("Returning buffer");
-			job->completeCB->Call(Context::GetCurrent()->Global(),2,argv);
+			job->completeCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 		}
 	} else { // failure
 		if(!job->completeCB->IsEmpty()) {
 			argv[2] = Nan::New(_net::errno_to_JS(job->_errno,"Error in read(): "));
-			job->completeCB->Call(Context::GetCurrent()->Global(),3,argv);
+			job->completeCB->Call(Nan::GetCurrentContext()->Global(),3,argv);
 		}
 	}
 
@@ -381,7 +381,7 @@ void TunInterface::post_write(uv_work_t *req, int status) {
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
-	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
+	argv[0] =Nan::New(job->len); // first param to call back is always amount of bytes written
 
 	if(job->_errno == 0) {
 //		Buffer* rawbuffer = ObjectWrap<Buffer>(job->buffer);

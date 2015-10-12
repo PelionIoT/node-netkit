@@ -631,7 +631,7 @@ NAN_METHOD(ToAddress) {
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin6_addr,sizeof(struct in6_addr));
 				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
-				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New(sizeof(struct in6_addr)));
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New<v8::Number>(sizeof(struct in6_addr)));
 			}
 		} else
 		if(family == AF_INET) {
@@ -657,7 +657,7 @@ NAN_METHOD(ToAddress) {
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin_addr,sizeof(struct in_addr));
 				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
-				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New(sizeof(struct in_addr)));
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New<v8::Number>(sizeof(struct in_addr)));
 			}
 		}
 	} else {

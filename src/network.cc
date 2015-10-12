@@ -151,7 +151,7 @@ NAN_METHOD(WrapMemBufferTest) {
 NAN_METHOD(ErrorFromErrno) {
 
 	if(info.Length() > 0 && info[0]->Int32Value()) {
-		Local<Value> err = Nan::New(_net::errno_to_JS(info[0]->Int32Value(),"netkit: "));
+		Local<Value> err = _net::errno_to_JS(info[0]->Int32Value(),"netkit: ");
 		info.GetReturnValue().Set(err);
 	}
 }
@@ -665,9 +665,9 @@ NAN_METHOD(ToAddress) {
 	}
 
 	if(err.hasErr())
-		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"toAddress: ")));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"toAddress: "));
 	else
-		info.GetReturnValue().Set(Nan::New(ret));
+		info.GetReturnValue().Set(ret);
 
 }
 
@@ -742,9 +742,9 @@ NAN_METHOD(FromAddress) {
 	}
 
 	if(err.hasErr())
-		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"fromAddress: ")));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"fromAddress: "));
 	else
-		info.GetReturnValue().Set(Nan::New(ret));
+		info.GetReturnValue().Set(ret);
 }
 
 
@@ -1135,7 +1135,7 @@ NAN_METHOD(AssignAddress) {
 	} // if has no error
 
 	if(errev.hasErr()) {
-		v8err = Nan::New(_net::err_ev_to_JS(errev, "assignAddress: "));
+		v8err = _net::err_ev_to_JS(errev, "assignAddress: ");
 	}
 
 	if(info.Length() > 1 && info[1]->IsFunction()) {
@@ -1288,7 +1288,7 @@ NAN_METHOD(AssignRoute) {
 	}
 
 	if(err.hasErr()) {
-		v8err = Nan::New(_net::err_ev_to_JS(err, "assignRoute: "));
+		v8err = _net::err_ev_to_JS(err, "assignRoute: ");
 	}
 
 	if(info.Length() > 1 && info[1]->IsFunction()) {
@@ -1332,7 +1332,7 @@ NAN_METHOD(InitIfFlags) {
 		}
 
 		if(err.hasErr()) {
-			v8err = Nan::New(_net::err_ev_to_JS(err, "initIfFlags: "));
+			v8err = _net::err_ev_to_JS(err, "initIfFlags: ");
 		}
 
     	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided
@@ -1389,7 +1389,7 @@ NAN_METHOD(SetIfFlags) {
 		}
 
 		if(err.hasErr()) {
-			v8err = Nan::New(_net::err_ev_to_JS(err, "setIfFlags: "));
+			v8err = _net::err_ev_to_JS(err, "setIfFlags: ");
 		}
 
     	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided
@@ -1449,7 +1449,7 @@ NAN_METHOD(UnsetIfFlags) {
 		}
 
 		if(err.hasErr()) {
-			v8err = Nan::New(_net::err_ev_to_JS(err, "unsetIfFlags: "));
+			v8err = _net::err_ev_to_JS(err, "unsetIfFlags: ");
 		}
 
     	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided

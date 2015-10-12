@@ -214,7 +214,7 @@ NAN_SETTER(TunInterface::SetLastError) {
 NAN_GETTER(TunInterface::GetLastError) {
 	TunInterface* obj = ObjectWrap::Unwrap<TunInterface>(info.This());
 	if(obj->err.hasErr()) {
-		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(obj->err, "TunInterface: ")));
+	       info.GetReturnValue().Set(_net::err_ev_to_JS(obj->err, "TunInterface: "));
 	}
 }
 
@@ -313,7 +313,7 @@ void TunInterface::post_read(uv_work_t *req, int status) {
 		}
 	} else { // failure
 		if(!job->completeCB->IsEmpty()) {
-			argv[2] = Nan::New(_net::errno_to_JS(job->_errno,"Error in read(): "));
+		        argv[2] = _net::errno_to_JS(job->_errno,"Error in read(): ");
 			job->completeCB->Call(Nan::GetCurrentContext()->Global(),3,argv);
 		}
 	}

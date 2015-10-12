@@ -34,7 +34,7 @@ NAN_METHOD(IfNameToIndex) {
 	}
 
 	if(err.hasErr())
-		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"ifNameToIndex: ")));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"ifNameToIndex: "));
 	else
 		info.GetReturnValue().Set(Nan::New(i));
 };
@@ -58,7 +58,7 @@ NAN_METHOD(IfIndexToName) {
 	}
 
 	if(err.hasErr())
-		info.GetReturnValue().Set(Nan::New(_net::err_ev_to_JS(err,"ifIndexToName: ")));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"ifIndexToName: "));
 	else
 		info.GetReturnValue().Set(ret);
 };

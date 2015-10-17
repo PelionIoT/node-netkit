@@ -322,6 +322,7 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
  *
  */
 NAN_METHOD(NetlinkSocket::OnRecv) {
+	//GLOG_DEBUG("NetlinkSocket::OnRecv");
 	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 	sock->Ref();
 
@@ -596,17 +597,22 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 
 		post_recvmsg(&work, status);
 	} else if(status < 0) {
-#if (UV_VERSION_MAJOR > 0)	  
+#if (UV_VERSION_MAJOR > 0)
 	        GLOG_ERROR("uv_poll error: %s\n", uv_err_name(status));
 #else
 		uv_err_t err = uv_last_error(uv_default_loop());
 		GLOG_ERROR("uv_poll error: %s\n", uv_err_name(err));
-#endif		
+#endif
 	}
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
+
+	// This is needed so we can access the v8 code through the HandleScope
+	auto isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+
 	sockMsgReq *job = (sockMsgReq *) work->data;
 
 	const unsigned argc = 2;
@@ -743,5 +749,3 @@ void NetlinkSocket::reqWrapper::DetachBuffer() {
 	if(!buffer.IsEmpty()) buffer.Reset();
 	rawMemory = NULL; ownMemory = false; len = 0;
 }
-
-

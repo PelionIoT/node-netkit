@@ -812,11 +812,9 @@ NAN_METHOD(AssignAddress) {
 	} else {
 		params = info[0]->ToObject();
 		Mval = Nan::Get(params, Nan::New("ifname").ToLocalChecked());
-		Mval.ToLocal(&js_ifname);
 	}
 
-
-	if(Mval.IsEmpty() || (!errev.hasErr() && !js_ifname->IsString())) {
+	if(!Mval.ToLocal(&js_ifname) ||  Mval.IsEmpty() || (!errev.hasErr() && !js_ifname->IsString())) {
 		errev.setError(_net::OTHER_ERROR,"No ifname provided in object. Doing nothing.\n");
 		ERROR_OUT("No ifname provided. Doing nothing.\n");
 	} else {

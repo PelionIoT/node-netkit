@@ -300,6 +300,10 @@ void TunInterface::do_read(uv_work_t *req) {
 void TunInterface::post_read(uv_work_t *req, int status) {
 	readReq *job = (readReq *) req->data;
 
+    // This is needed so we can access the v8 code through the HandleScope
+	auto isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+
 	const unsigned argc = 3;
 	Local<Value> argv[argc];
 	argv[0] = Nan::New(job->buffer);
@@ -378,6 +382,10 @@ void TunInterface::do_write(uv_work_t *req) {
 
 void TunInterface::post_write(uv_work_t *req, int status) {
 	writeReq *job = (writeReq *) req->data;
+
+    // This is needed so we can access the v8 code through the HandleScope
+	auto isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];

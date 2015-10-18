@@ -279,15 +279,17 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 
 			sock->Ref();    // don't let the socket get garbage collected yet
 			req->reqRef();  // nor the request object
-			if(info.Length() > 0 && info[1]->IsFunction())
+			if(info.Length() > 0 && info[1]->IsFunction()) {
 				req->onSendCB = new Nan::Callback(Local<Function>::Cast(info[1]));
-			else
+			} else {
 				req->onSendCB = new Nan::Callback();
+			}
 
-			if(info.Length() > 1 && info[2]->IsFunction())
+			if(info.Length() > 1 && info[2]->IsFunction()) {
 				req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[2]));
-			else
+			} else {
 				req->onReplyCB = new Nan::Callback();
+			}
 
 			void (*post_process_func)(uv_work_s*, int) = NULL;
 			if(!sock->listening)
@@ -667,7 +669,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 	} else { // failure on job creation. we did not get to the point of sending a packet.
 		if(!job->onSendCB->IsEmpty()) {
-//			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();
+			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();
 			job->onSendCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
 		}
 	}

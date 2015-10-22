@@ -14,7 +14,6 @@
     }
   ],
   "dependencies": {
-    "grease-log": "git://github.com/WigWagCo/greaseLog#nan",
     "nan": "^2.1.0"
   },
   "repository": {

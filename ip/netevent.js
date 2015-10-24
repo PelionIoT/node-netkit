@@ -77,11 +77,10 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 	};
 
 	ipcommand.netlinkInfoCommand.call(this,command_opts, sock, function(err,bufs) {
-		if(err)
-			console.error("** Error: " + util.inspect(err));
+		if(err) {
+				cb(err,null);
+		}
 		else {
-
-
 			// get the attributes of all the links first for later reference
 			for(var i = 0; i < bufs.length; i++) {
 				var l = rt.parseRtattributes(bufs[i]);
@@ -91,17 +90,16 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 
 			sock.onRecv(function(err,bufs) {
 				if(err) {
-					console.error("ERROR: ** Bad parameters to buildRtattrBuf() **");
+					cb(err, null);
 				} else {
 					var filters = {};
 					if(ifname) filters['ifname'] = ifname;
 					var mObject = ipparse.parseAttributes(filters,links,bufs[0]);
 					if(typeof(mObject) != 'undefined') {
-						cb(mObject);
+							cb(null, mObject);
 					}
 				}
 			});
 		}
 	});
 };
-

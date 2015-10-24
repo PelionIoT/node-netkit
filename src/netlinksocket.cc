@@ -169,9 +169,9 @@ NAN_METHOD(NetlinkSocket::Create) {
 			}
 		}
 	}
-	GLOG_DEBUG("type_flags = %x", type_flags);
-	GLOG_DEBUG("netlink_class = %d", netlink_class);
-	GLOG_DEBUG("subscription = %x", subscription);
+	//GLOG_DEBUG("type_flags = %x", type_flags);
+	//GLOG_DEBUG("netlink_class = %d", netlink_class);
+	//GLOG_DEBUG("subscription = %x", subscription);
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
@@ -295,7 +295,7 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 			if(!sock->listening)
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
-			GLOG_DEBUG("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
+			//GLOG_DEBUG("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 
 

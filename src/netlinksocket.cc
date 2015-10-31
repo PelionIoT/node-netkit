@@ -11,8 +11,8 @@
 
 #include <sys/uio.h>
 
-Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
-Persistent<Function> NetlinkSocket::cstor_socket;
+Nan::Persistent<Function> NetlinkSocket::cstor_sockMsgReq;
+Nan::Persistent<Function> NetlinkSocket::cstor_socket;
 
 void byte_dump(char *buf, int size) {
 	int i;
@@ -24,53 +24,50 @@ void byte_dump(char *buf, int size) {
 	}
 	sprintf(buf_ptr,"\n");
 	*(buf_ptr + 1) = '\0';
-	DBG_OUT("DUMP: %s\n", buf_str);
+	GLOG_DEBUG("DUMP: %s\n", buf_str);
 	free(buf_str);
 }
 
-void NetlinkSocket::ExtendFrom(const Arguments& args) {
-	Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-	tpl->SetClassName(String::NewSymbol("NetlinkSocket"));
-	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+NAN_METHOD(NetlinkSocket::Init) {
+	INIT_GLOG;
 
+	Local<FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
+
+	tpl->SetClassName(Nan::New("NetlinkSocket").ToLocalChecked());
+	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	if(args.Length() > 0) {        // merge in the fields we want to extend from...
-		if(args[0]->IsObject()) {
-			Local<Object> base = args[0]->ToObject();
-			Local<Array> keys = base->GetPropertyNames();
-			for(unsigned int n=0;n<keys->Length();n++) {
-				Local<String> keyname = keys->Get(n)->ToString();
-				tpl->InstanceTemplate()->Set(keyname, base->Get(keyname));
-			}
+	Nan::MaybeLocal<Object> Mobj = info[0]->ToObject();
+	if(!Mobj.IsEmpty()) {
+		Local<Object> base = Mobj.ToLocalChecked();
+		Local<Array> keys = base->GetPropertyNames();
+		for(unsigned int n=0;n<keys->Length();n++) {
+			Local<String> keyname = keys->Get(n)->ToString();
+			String::Utf8Value utf8_keyname(keyname);
+			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname));
 		}
 	}
 
-	tpl->InstanceTemplate()->Set(String::NewSymbol("create"), FunctionTemplate::New(Create)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("close"), FunctionTemplate::New(Close)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("createMsgReq"), FunctionTemplate::New(CreateMsgReq)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("onRecv"), FunctionTemplate::New(OnRecv)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("stopRecv"), FunctionTemplate::New(StopRecv)->GetFunction());
-	tpl->InstanceTemplate()->Set(String::NewSymbol("sendMsg"), FunctionTemplate::New(Sendmsg)->GetFunction());
+	Nan::SetPrototypeMethod(tpl,"create",Create);
+	Nan::SetPrototypeMethod(tpl,"close",Close);
+	Nan::SetPrototypeMethod(tpl,"createMsgReq",CreateMsgReq);
+	Nan::SetPrototypeMethod(tpl,"onRecv",OnRecv);
+	Nan::SetPrototypeMethod(tpl,"stopRecv",StopRecv);
+	Nan::SetPrototypeMethod(tpl,"sendMsg",Sendmsg);
 
-	NetlinkSocket::cstor_socket = Persistent<Function>::New(tpl->GetFunction());
+	cstor_socket.Reset(tpl->GetFunction());
 
-	tpl = FunctionTemplate::New(New);
-	tpl->SetClassName(String::NewSymbol("sockMsgReq"));
+	tpl = Nan::New<v8::FunctionTemplate>(New);
+	tpl->SetClassName(Nan::New("sockMsgReq").ToLocalChecked());
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	tpl->InstanceTemplate()->Set(String::NewSymbol("addMsg"), FunctionTemplate::New(AddMsgToReq)->GetFunction());
+	tpl->InstanceTemplate()->Set(Nan::New("addMsg").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AddMsgToReq)).ToLocalChecked());
 
-	NetlinkSocket::cstor_sockMsgReq = Persistent<Function>::New(tpl->GetFunction());
-}
+	cstor_sockMsgReq.Reset(tpl->GetFunction());
 
-Handle<Value> NetlinkSocket::Init(const Arguments& args) {
-
-	HandleScope scope;
-	ExtendFrom(args);
-
-	return scope.Close(Undefined());
+	info.GetReturnValue().Set(tpl->GetFunction());
 }
 
 /** netlinkSocket(opts)
@@ -79,18 +76,22 @@ Handle<Value> NetlinkSocket::Init(const Arguments& args) {
  * @param args
  * @return
  **/
-Handle<Value> NetlinkSocket::New(const Arguments& args) {
-	HandleScope scope;
-
+NAN_METHOD(NetlinkSocket::New) {
 	NetlinkSocket* obj = NULL;
 
-	if (args.IsConstructCall()) {
+	if (info.IsConstructCall()) {
 	    // Invoked as constructor: `new MyObject(...)`
 //	    double value = args[0]->IsUndefined() ? 0 : args[0]->NumberValue();
-		if(args.Length() > 0) {
-			if(!args[0]->IsObject()) {
-				return ThrowException(Exception::TypeError(String::New("Improper first arg to TunInterface cstor. Must be an object.")));
-			}
+		if(info.Length() > 0) {
+			// if(!info[0]->IsObject()) {
+			// 	Local<String> value = info[0]->ToString();
+			// 	String::Utf8Value utf8_value(value);
+
+			// 	GLOG_DEBUG3("info[0]=%s\n", *utf8_value);
+
+			// 	Nan::ThrowTypeError("Improper first arg to NetlinkSocket cstor. Must be an object.");
+			// 	return;
+			// }
 
 			obj = new NetlinkSocket();
 
@@ -98,32 +99,31 @@ Handle<Value> NetlinkSocket::New(const Arguments& args) {
 			obj = new NetlinkSocket();
 		}
 
-		obj->Wrap(args.This());
-	    return args.This();
+		obj->Wrap(info.This());
+	    info.GetReturnValue().Set(info.This());
+
 	} else {
 	    // Invoked as plain function `MyObject(...)`, turn into construct call.
 	    const int argc = 1;
-	    Local<Value> argv[argc] = { args[0] };
-	    return scope.Close(cstor_socket->NewInstance(argc, argv));
+	    Local<Value> argv[argc] = { info[0] };
+	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_socket);
+	    info.GetReturnValue().Set(cons->NewInstance(argc,argv));
 	}
 }
 
-Handle<Value> NetlinkSocket::NewInstance(const Arguments& args) {
-	HandleScope scope;
-	int n = args.Length();
-	Local<Object> instance;
+// NAN_METHOD(NetlinkSocket::NewInstance) {
+// 	int n = info.Length();
+// 	Local<Object> instance;
 
-	if(args.Length() > 0) {
-		Handle<Value> argv[n];
-		for(int x=0;x<n;x++)
-			argv[x] = args[x];
-		instance = NetlinkSocket::cstor_socket->NewInstance(n, argv);
-	} else {
-		instance = NetlinkSocket::cstor_socket->NewInstance();
-	}
-
-	return scope.Close(instance);
-}
+// 	if(n > 0) {
+// 		Handle<Value> argv[n];
+// 		for(int x=0;x<n;x++)
+// 			argv[x] = args[x];
+// 		instance = NetlinkSocket::cstor_socket->NewInstance(n, argv);
+// 	} else {
+// 		instance = NetlinkSocket::cstor_socket->NewInstance();
+// 	}
+// }
 
 /**
  * @method create
@@ -136,35 +136,42 @@ Handle<Value> NetlinkSocket::NewInstance(const Arguments& args) {
  * @param callback {function} func(err) {}
  * @return
  **/
-Handle<Value> NetlinkSocket::Create(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(NetlinkSocket::Create) {
 
 	Handle<Value> v8err;
 
-	NetlinkSocket* obj = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+	NetlinkSocket* obj = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 	uint32_t subscription = 0;
 
 	int type_flags = SOCK_RAW | SOCK_CLOEXEC;
 	int netlink_class = NETLINK_ROUTE;
-	if(args.Length() > 0 && args[0]->IsObject()) {
-		Local<Object> o = args[0]->ToObject();
-		Local<Value> js_flags = o->Get(String::New("type"));
-		if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
-			type_flags = (int) js_flags->Int32Value();
-		}
-		Local<Value> js_netclass = o->Get(String::New("sock_class"));
-		if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
-			netlink_class = (int) js_netclass->Int32Value();
-		}
-		Local<Value> js_subs = o->Get(String::New("subscriptions"));  // not supported yet
-		if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
-			subscription = (uint32_t) js_subs->IntegerValue();
+	if(info.Length() > 0 && info[0]->IsObject()) {
+		Nan::MaybeLocal<Value> Mval;
 
+		Local<Object> o = info[0]->ToObject();
+		Local<Value> js_flags; Mval = Nan::Get(o, Nan::New("type").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_flags)) {
+			if(!js_flags->IsUndefined() && js_flags->IsInt32()) {
+				type_flags = (int) js_flags->Int32Value();
+			}
+		}
+		Local<Value> js_netclass; Mval = Nan::Get(o, Nan::New("sock_class").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_netclass)) {
+			if(!js_netclass->IsUndefined() && js_netclass->IsInt32()) {
+				netlink_class = (int) js_netclass->Int32Value();
+			}
+		}
+		Local<Value> js_subs; Mval = Nan::Get(o, Nan::New("subscriptions").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_subs)) {
+			if(!js_subs->IsUndefined() && js_subs->IsNumber()) {
+				subscription = (uint32_t) js_subs->IntegerValue();
+
+			}
 		}
 	}
-	//DBG_OUT("type_flags = %x", type_flags);
-	//DBG_OUT("netlink_class = %d", netlink_class);
-	//DBG_OUT("subscription = %x", subscription);
+	//GLOG_DEBUG("type_flags = %x", type_flags);
+	//GLOG_DEBUG("netlink_class = %d", netlink_class);
+	//GLOG_DEBUG("subscription = %x", subscription);
 
 	obj->err.clear();
 	obj->fd = socket(AF_NETLINK, type_flags, netlink_class);
@@ -198,74 +205,53 @@ Handle<Value> NetlinkSocket::Create(const Arguments& args) {
 	}
 
 	if(obj->err.hasErr()) {
-		v8err = _net::err_ev_to_JS(obj->err, "socket()/bind(): ");
+//		v8err = _net::err_ev_to_JS(obj->err, "socket()/bind(): ");
 	}
 
-	if(args.Length() > 1 && args[1]->IsFunction()) {
+	if(info.Length() > 1 && info[1]->IsFunction()) {
 		const unsigned outargc = 1;
 		Local<Value> outargv[outargc];
-		Local<Function> cb = Local<Function>::Cast(args[1]);
+		Local<Function> cb = Local<Function>::Cast(info[1]);
 		if(!v8err.IsEmpty()) {
 			outargv[0] = v8err->ToObject();
-			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+			cb->Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
 		} else {
-			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+			cb->Call(Nan::GetCurrentContext()->Global(),0,NULL);
 		}
 	}
-
-
-//	if (setsockopt(rth->fd,SOL_SOCKET,SO_SNDBUF,&sndbuf,sizeof(sndbuf)) < 0) {
-//		perror("SO_SNDBUF");
-//		return -1;
-//	}
-//
-//	if (setsockopt(rth->fd,SOL_SOCKET,SO_RCVBUF,&rcvbuf,sizeof(rcvbuf)) < 0) {
-//		perror("SO_RCVBUF");
-//		return -1;
-//	}
-//
-//	addr_len = sizeof(rth->local);
-//	if (getsockname(rth->fd, (struct sockaddr*)&rth->local, &addr_len) < 0) {
-//		perror("Cannot getsockname");
-//		return -1;
-//	}
-
-
-	return scope.Close(Undefined());
 }
 
-Handle<Value> NetlinkSocket::CreateMsgReq(const Arguments& args) {  // creates a sockMsgReq
-	HandleScope scope;
-	NetlinkSocket* sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+NAN_METHOD(NetlinkSocket::CreateMsgReq) {  // creates a sockMsgReq
+	NetlinkSocket* sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 
-	Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
+    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
+	v8::Local<v8::Object> v8req = cons->NewInstance();
 
 	// Save a reference so the request will get unRef'ed in during socket closure
 	// in the case this is a listening socket who's request is not unRef'ed by the port_recv function.
 	sock->saveReqRef(new Request_t(sock,v8req));
 	// ignore warning, this is fine. It's wrapped in the cstor of sockMsgReq
 
-	return scope.Close(v8req);
+	info.GetReturnValue().Set(v8req);
 }
 
-Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Buffer -> for adding a req_generic to the sockMsgReq
-	HandleScope scope;
+NAN_METHOD(NetlinkSocket::AddMsgToReq) {   // adds a Buffer -> for adding a req_generic to the sockMsgReq
 
-	if(args.Length() > 0 && args[0]->IsObject()) {
+	if(info.Length() > 0 && info[0]->IsObject()) {
 
-		Request_t *obj = ObjectWrap::Unwrap<Request_t>(args.This());
+		Request_t *obj = Nan::ObjectWrap::Unwrap<Request_t>(info.This());
 
-		if(!Buffer::HasInstance(args[0])) {
-			return ThrowException(Exception::TypeError(String::New("send() -> passed in Buffer has no backing!")));
+		if(!Buffer::HasInstance(info[0])) {
+			Nan::ThrowTypeError("send() -> passed in Buffer has no backing!");
+			return;
 		}
 		reqWrapper *req = obj->send_queue.addEmpty();
-		req->AttachBuffer(args[0]->ToObject());  // keep the Buffer persistent until the write is done...
+		req->AttachBuffer(info[0]->ToObject());  // keep the Buffer persistent until the write is done...
 
 	} else {
-		return ThrowException(Exception::TypeError(String::New("addMsg() -> bad parameters.")));
+		Nan::ThrowTypeError("addMsg() -> bad parameters.");
+		return;
 	}
-
-	return scope.Close(Undefined());
 }
 
 
@@ -279,32 +265,37 @@ Handle<Value> NetlinkSocket::AddMsgToReq(const Arguments& args) {   // adds a Bu
  * @param replycb {Function} the reply callback. cb(err,bufs)
  *
  */
-Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
-	// TODO queue with uv_work() stuff
-	HandleScope scope;
-
+NAN_METHOD(NetlinkSocket::Sendmsg) {
 	_net::err_ev err;
 
-	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 
-	if(args.Length() > 0 && args[0]->IsObject()) {
-		Local <Object> v8req = args[0]->ToObject();
-		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
-			Request_t *req =  ObjectWrap::Unwrap<Request_t>(v8req);
+	if(info.Length() > 0 && info[0]->IsObject()) {
+	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
+
+		Local <Object> v8req = info[0]->ToObject();
+		if(v8req->GetConstructorName()->StrictEquals(cons->GetName())) {
+			Request_t *req =  Nan::ObjectWrap::Unwrap<Request_t>(v8req);
 
 			sock->Ref();    // don't let the socket get garbage collected yet
 			req->reqRef();  // nor the request object
-			if(args.Length() > 0 && args[1]->IsFunction())
-				req->onSendCB = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+			if(info.Length() > 0 && info[1]->IsFunction()) {
+				req->onSendCB = new Nan::Callback(Local<Function>::Cast(info[1]));
+			} else {
+				req->onSendCB = new Nan::Callback();
+			}
 
-			if(args.Length() > 1 && args[2]->IsFunction())
-				req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[2]));
+			if(info.Length() > 1 && info[2]->IsFunction()) {
+				req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[2]));
+			} else {
+				req->onReplyCB = new Nan::Callback();
+			}
 
 			void (*post_process_func)(uv_work_s*, int) = NULL;
 			if(!sock->listening)
 				post_process_func = &NetlinkSocket::post_recvmsg;
 
-			DBG_OUT("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
+			//GLOG_DEBUG("uv_backend_fd(uv_default_loop()) = %d", uv_backend_fd(uv_default_loop()));
 			uv_queue_work(uv_default_loop(), &(req->work), NetlinkSocket::do_sendmsg, post_process_func);
 
 
@@ -315,14 +306,13 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
 			// post_recvmsg(&work,0);
 
 		} else {
-			return ThrowException(Exception::TypeError(String::New("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.")));
+			Nan::ThrowTypeError("sendMsg() -> bad parameters. Passed in Object is not sockMsgReq.");
+			return;
 		}
 
 	} else {
 
 	}
-
-	return scope.Close(Undefined());
 }
 
 /**
@@ -333,24 +323,24 @@ Handle<Value> NetlinkSocket::Sendmsg(const Arguments& args) {
  * @param replycb {Function} the reply callback. cb(err,bufs)
  *
  */
-Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
-	HandleScope scope;
-
-	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+NAN_METHOD(NetlinkSocket::OnRecv) {
+	//GLOG_DEBUG("NetlinkSocket::OnRecv");
+	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 	sock->Ref();
 
-	if(args.Length() > 0 && args[0]->IsFunction()) {
+	if(info.Length() > 0 && info[0]->IsFunction()) {
 
-		// WHY THIS?
-		Handle<Object> v8req = NetlinkSocket::cstor_sockMsgReq->NewInstance();
+		v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
+		v8::Local<v8::Object> v8req = cons->NewInstance();
+
 		Request_t* recvmsg_req = new Request_t(sock,v8req); // new request sequnce starts at zero
 		recvmsg_req->reqRef();
-		recvmsg_req->onReplyCB = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+		recvmsg_req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[0]));
 
 		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
 		(recvmsg_req->self->handle).data = recvmsg_req;
 		uv_os_sock_t S = sock->fd;
-		// DBG_OUT("sock->fd = %d", sock->fd);
+		// GLOG_DEBUG3("sock->fd = %d", sock->fd);
 		int events = uv_poll_event::UV_READABLE;
 
 		int init_ret = uv_poll_init_socket(uv_default_loop(), &recvmsg_req->self->handle, S);
@@ -358,15 +348,14 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
 		if(init_ret >= 0 && start_ret >= 0) {
 			recvmsg_req->self->listening = true;
 		} else {
-			return ThrowException(Exception::TypeError(
-				String::New("onRecv() -> scoket polling failed.")));
+			Nan::ThrowTypeError("onRecv() -> scoket polling failed.");
+			return;
 		}
 
 	} else {
-		return ThrowException(Exception::TypeError(
-			String::New("onRecv() -> bad parameters. Callback required.")));
+		Nan::ThrowTypeError("onRecv() -> bad parameters. Callback required.");
+		return;
 	}
-	return scope.Close(Undefined());
 }
 
 /**
@@ -374,15 +363,14 @@ Handle<Value> NetlinkSocket::OnRecv(const Arguments& args) {
  * @method stopRecv
  *
  */
-Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(NetlinkSocket::StopRecv) {
+	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 
-	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
-
-	if(args.Length() > 0 && args[0]->IsObject()) {
-		Local <Object> v8req = args[0]->ToObject();
-		if(v8req->GetConstructor()->StrictEquals(NetlinkSocket::cstor_sockMsgReq)) {
-			Request_t *req =  ObjectWrap::Unwrap<Request_t>(v8req);
+	if(info.Length() > 0 && info[0]->IsObject()) {
+	    v8::Local<v8::Function> cons = Nan::New<v8::Function>(cstor_sockMsgReq);
+		Local <Object> v8req = info[0]->ToObject();
+		if(v8req->GetConstructorName()->StrictEquals(cons)) {
+			Request_t *req =  Nan::ObjectWrap::Unwrap<Request_t>(v8req);
 
 			uv_poll_stop(&req->self->handle);
 			req->self->listening = false;
@@ -390,35 +378,33 @@ Handle<Value> NetlinkSocket::StopRecv(const Arguments& args) {
 			req->reqUnref();
 
 		} else {
-			return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.")));
+			Nan::ThrowTypeError("onRecv() -> bad parameters. Passed in Object is not sockMsgReq.");
+			return;
 		}
 	} else {
-		return ThrowException(Exception::TypeError(String::New("onRecv() -> bad parameters. sockMsgReq Object and callback required.")));
+		Nan::ThrowTypeError("onRecv() -> bad parameters. sockMsgReq Object and callback required.");
+		return;
 	}
-	return scope.Close(Undefined());
 }
 
-Handle<Value> NetlinkSocket::Close(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(NetlinkSocket::Close) {
 
-	NetlinkSocket *sock = ObjectWrap::Unwrap<NetlinkSocket>(args.This());
+	NetlinkSocket *sock = Nan::ObjectWrap::Unwrap<NetlinkSocket>(info.This());
 
 	if(sock->fd > 0) {
 		close(sock->fd);
 	}
-
-	return scope.Close(Undefined());
 }
 
 
 void NetlinkSocket::reqWrapper::free_req_callback_buffer(char *m,void *hint) {
-	DBG_OUT("FREEING MEMORY.");
+	GLOG_DEBUG("FREEING MEMORY.");
 	free(m);
 }
 
 
 void NetlinkSocket::do_sendmsg(uv_work_t *work) {
-	//DBG_OUT("NetlinkSocket::do_sendmsg");
+	//GLOG_DEBUG3("NetlinkSocket::do_sendmsg");
 
 	Request_t *req = (Request_t *) work->data;
 	if(req->self->fd != 0) {
@@ -490,7 +476,7 @@ void NetlinkSocket::do_sendmsg(uv_work_t *work) {
 }
 
 int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
-	//DBG_OUT("NetlinkSocket::do_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::do_recvmsg");
 
 	struct msghdr msg;         // used by sendmsg / recvmsg
 	struct sockaddr_nl nladdr; // NETLINK address
@@ -562,7 +548,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			// to what we sent
 			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
 					nlhdr->nlmsg_seq > req->last_seq) ) {
-				// DBG_OUT("Warning. Ignore inbound NETLINK_ROUTE message.");
+					GLOG_WARN("Warning. Ignore inbound NETLINK_ROUTE message.");
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.
@@ -598,10 +584,9 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 }
 
 void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
-	//DBG_OUT("NetlinkSocket::on_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::on_recvmsg");
 	if(events && UV_READABLE && status == 0)
 	{
-		HandleScope scope;
 		Request_t *recvmsg_req = (Request_t *) handle->data;
 
 		// Service the ready socket, loop on EGAGAIN as socket ready may not produce on first read
@@ -614,29 +599,34 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 
 		post_recvmsg(&work, status);
 	} else if(status < 0) {
-		#ifdef DEBUG
+#if (UV_VERSION_MAJOR > 0)
+	        GLOG_ERROR("uv_poll error: %s\n", uv_err_name(status));
+#else
 		uv_err_t err = uv_last_error(uv_default_loop());
-		ERROR_OUT("uv_poll error: %s\n", uv_err_name(err));
-		#endif
+		GLOG_ERROR("uv_poll error: %s\n", uv_err_name(err));
+#endif
 	}
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	//DBG_OUT("NetlinkSocket::post_recvmsg");
-	HandleScope scope;
+	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
+
+	// This is needed so we can access the v8 code through the HandleScope
+	auto isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
 
 	sockMsgReq *job = (sockMsgReq *) work->data;
 
 	const unsigned argc = 2;
 	Local<Value> argv[argc];
-	argv[0] = Integer::New(job->len); // first param to call back is always amount of bytes written
+	argv[0] = Nan::New<v8::Integer>(job->len); // first param to call back is always amount of bytes written
 	Handle<Value> v8err;
 
 	 if(!job->self->listening)
 		job->self->Unref();
 
-	Handle<Boolean> fals = Boolean::New(false);
-	Handle<Boolean> tru = Boolean::New(true);
+	Handle<Boolean> fals = Nan::False();
+	Handle<Boolean> tru = Nan::True();
 
 	// TODO: go through all of the FIFO, empty and DetachBuffer all items
 
@@ -645,7 +635,7 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		bool nlError = false;
 		reqWrapper req;
 
-		Handle<Object> retbufs = Object::New();
+		Handle<Object> retbufs = Nan::New<v8::Object>();
 		int n = 0;
 		while(job->replies && job->reply_queue.remove(req)) {
 			if(req.iserr) nlError = true;
@@ -654,33 +644,33 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 			}
 			n++; job->replies--;
 		}
-		retbufs->Set(String::New("length"),Integer::New(n));
+		retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
 
-		if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
+		if(job->onReplyCB->IsEmpty() && !job->onSendCB->IsEmpty()) {
 			// if we don't have a reply callback,
 			if(!nlError) {
 				argv[0] = fals->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onSendCB->Call(Context::GetCurrent()->Global(),2,argv);
+				job->onSendCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 			} else {
 				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
-				job->onSendCB->Call(Context::GetCurrent()->Global(),1,argv);
+				job->onSendCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
 			}
-		} else if (!job->onReplyCB.IsEmpty()) {
+		} else if (!job->onReplyCB->IsEmpty()) {
 			if(!nlError) {
 				argv[0] = fals->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onReplyCB->Call(Context::GetCurrent()->Global(),2,argv);
+				job->onReplyCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 			} else {
 				argv[0] = tru->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onReplyCB->Call(Context::GetCurrent()->Global(),2,argv);
+				job->onReplyCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
 			}
 		}
 	} else { // failure on job creation. we did not get to the point of sending a packet.
-		if(!job->onSendCB.IsEmpty()) {
+		if(!job->onSendCB->IsEmpty()) {
 			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();
-			job->onSendCB->Call(Context::GetCurrent()->Global(),1,argv);
+			job->onSendCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
 		}
 	}
 
@@ -704,14 +694,14 @@ NetlinkSocket::reqWrapper::reqWrapper()
 
 NetlinkSocket::reqWrapper::~reqWrapper() {
 	if(rawMemory && ownMemory) ::free(rawMemory);
-	buffer.Dispose();
+	buffer.Reset();
 //			buffer.Clear(); // remove any Persistent references
 }
 
 
 NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) {
-	this->buffer = o.buffer;
-	o.buffer.Clear();
+	this->buffer.Reset(o.buffer);
+	o.buffer.Reset();
 	if(this->rawMemory && this->ownMemory) free(this->rawMemory);
 	this->rawMemory = o.rawMemory; o.rawMemory = NULL;
 	this->ownMemory = o.ownMemory; o.ownMemory = false;
@@ -723,14 +713,13 @@ NetlinkSocket::reqWrapper& NetlinkSocket::reqWrapper::operator=(reqWrapper &&o) 
 void NetlinkSocket::reqWrapper::AttachBuffer(Local<Object> b) {
 	// must be called in v8 thread
 	// keep the Buffer persistent until the write is done...
-	buffer = Persistent<Object>::New(b);
+	buffer.Reset(b);
 	if(rawMemory && ownMemory) free(rawMemory); rawMemory = NULL; ownMemory = false;
 	rawMemory = node::Buffer::Data(b);
 	len = node::Buffer::Length(b);
 }
 
 Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
-	HandleScope scope;
 	if(rawMemory && ownMemory) {
 		// OK - this method currently does not work, because node::Buffer::New(rawMemory,len,free_req_callback_buffer,0) does
 		// not seem to actually call it's 'free_callback'
@@ -741,19 +730,17 @@ Handle<Object> NetlinkSocket::reqWrapper::ExportBuffer() {
 		//				return scope.Close(UNI_BUFFER_FROM_CPOINTER(buf));
 		// -----------------------------------------------------
 		// so we will just copy it for now...
-		//DBG_OUT("len=%d",len);
-		Handle<Object> buf = UNI_BUFFER_NEW(len);
-		char *backing = node::Buffer::Data(buf);
-		memcpy(backing,rawMemory,len);
+		//GLOG_DEBUG3("len=%d",len);
+		Nan::MaybeLocal<v8::Object> buf = Nan::CopyBuffer(rawMemory,len);
 		::free(rawMemory); rawMemory=NULL; ownMemory=false;
-		return scope.Close(buf);
+		return buf.ToLocalChecked();
 	} else {
-		return scope.Close(Object::New());
+	        return Nan::New<Object>();
 	}
 }
 
 void NetlinkSocket::reqWrapper::malloc(int c) {
-	buffer.Dispose(); buffer.Clear();
+	buffer.Reset();
 	if(rawMemory && ownMemory) ::free(rawMemory);
 	rawMemory = (char *) ::malloc(c);
 	ownMemory = true;
@@ -761,8 +748,6 @@ void NetlinkSocket::reqWrapper::malloc(int c) {
 }
 
 void NetlinkSocket::reqWrapper::DetachBuffer() {
-	if(!buffer.IsEmpty()) buffer.Dispose();
+	if(!buffer.IsEmpty()) buffer.Reset();
 	rawMemory = NULL; ownMemory = false; len = 0;
 }
-
-

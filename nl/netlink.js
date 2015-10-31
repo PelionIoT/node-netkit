@@ -176,6 +176,7 @@ nl = {
 			len += bufs[n].length;
 		nl_hdr._len = nl_hdr._length + len;
 		bufs.unshift(nl_hdr.pack());
+
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
 		dbg("Adding---> " + asHexBuffer(all));

@@ -72,7 +72,7 @@ nk.getAddresses(afilter, function(err,addrs){
 
 
 console.log('listening...')
-nk.onNetworkChange("eth2", "all", function (data) {
+nk.onNetworkChange("eth2", "all", function (err, data) {
 	console.log("changed...");
 	console.dir(data);
 });
@@ -82,22 +82,34 @@ child = exec('ip addr add 10.10.20.17/32 dev eth2', function(error, stdout,stder
 });
 
 
-nk.onNetworkChange("eth2", "link", function (data) {
+nk.onNetworkChange("eth2", "link", function (err, data) {
+	if(err) {
+		return console.log("Error with onNetworkChange: " + util.inspect(err));
+	}
 	console.log("changed...");
 	console.dir(data);
 });
 
-nk.onNetworkChange("eth2", "address", function (data) {
+nk.onNetworkChange("eth2", "address", function (err, data) {
+	if(err) {
+		return console.log("Error with onNetworkChange: " + util.inspect(err));
+	}
 	console.log("changed...");
 	console.dir(data);
 });
 
-nk.onNetworkChange("eth2", "route", function (data) {
+nk.onNetworkChange("eth2", "route", function (err, data) {
+	if(err) {
+		return console.log("Error with onNetworkChange: " + util.inspect(err));
+	}
 	console.log("changed...");
 	console.dir(data);
 });
 
-nk.onNetworkChange("eth2", "neigh", function (data) {
+nk.onNetworkChange("eth2", "neigh", function (err, data) {
+	if(err) {
+		return console.log("Error with onNetworkChange: " + util.inspect(err));
+	}
 	console.log("changed...");
 	console.dir(data);
 });

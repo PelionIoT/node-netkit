@@ -43,6 +43,8 @@
 #include "netlinksocket.h"
 #include "error-common.h"
 
+#include "nan.h"
+
 using namespace node;
 using namespace v8;
 
@@ -54,8 +56,8 @@ using namespace v8;
 //
 //}
 
-extern Handle<Value> IfNameToIndex(const Arguments &args);
-extern Handle<Value> IfIndexToName(const Arguments &args);
+extern NAN_METHOD(IfNameToIndex);
+extern NAN_METHOD(IfIndexToName);
 
 
 // BEGIN TESTS
@@ -91,21 +93,19 @@ char *toBytesString(uint8_t *d,int n) {
 	return ret;
 }
 
-Handle<Value> PackTest(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(PackTest) {
+	GLOG_DEBUG("PackTest\n");
 
-	DBG_OUT("PackTest\n");
-
-	if(args.Length() > 0 && args[0]->IsObject()) {
-			char *backing = node::Buffer::Data(args[0]->ToObject());
+	if(info.Length() > 0 && info[0]->IsObject()) {
+			char *backing = node::Buffer::Data(info[0]->ToObject());
 			packTestDat *d = (packTestDat *) backing;
-			DBG_OUT("first: 0x%02x", d->first);
-			DBG_OUT("second: %d", d->second);
-			DBG_OUT("third: 0x%04x or %d", d->third, d->third); // to check endianess
+			GLOG_DEBUG("first: 0x%02x", d->first);
+			GLOG_DEBUG("second: %d", d->second);
+			GLOG_DEBUG("third: 0x%04x or %d", d->third, d->third); // to check endianess
 			char *s = toBytesString(d->other,5);
-			DBG_OUT("other: %s", s);
+			GLOG_DEBUG("other: %s", s);
 			free(s);
-			DBG_OUT("something: %s", TAIL_DATA(packTestDat,*d));
+			GLOG_DEBUG("something: %s", TAIL_DATA(packTestDat,*d));
 	}
 
 //	__u32		nlmsg_len;	/* Length of message including header */
@@ -114,23 +114,21 @@ Handle<Value> PackTest(const Arguments& args) {
 //		__u32		nlmsg_seq;	/* Sequence number */
 //		__u32		nlmsg_pid;
 	#ifdef DEBUG
-	if(args.Length() > 1 && args[1]->IsObject()) {
-			char *backing = node::Buffer::Data(args[1]->ToObject());
+	if(info.Length() > 1 && info[1]->IsObject()) {
+			char *backing = node::Buffer::Data(info[1]->ToObject());
 			nlmsghdr *d = (nlmsghdr *) backing;
-			DBG_OUT("a nlmsghdr:");
-			DBG_OUT("_len: 0x%08x", d->nlmsg_len);
-			DBG_OUT("_type: 0x%04x", d->nlmsg_type);
-			DBG_OUT("_flags: 0x%04x", d->nlmsg_flags);
-			DBG_OUT("_seq: 0x%08x", d->nlmsg_seq);
-			DBG_OUT("_pid: 0x%08x", d->nlmsg_pid);
+			GLOG_DEBUG("a nlmsghdr:");
+			GLOG_DEBUG("_len: 0x%08x", d->nlmsg_len);
+			GLOG_DEBUG("_type: 0x%04x", d->nlmsg_type);
+			GLOG_DEBUG("_flags: 0x%04x", d->nlmsg_flags);
+			GLOG_DEBUG("_seq: 0x%08x", d->nlmsg_seq);
+			GLOG_DEBUG("_pid: 0x%08x", d->nlmsg_pid);
 	}
 	#endif
-
-	return scope.Close(Undefined());
 }
 
 void free_test_cb(char *m,void *hint) {
-	DBG_OUT("FREEING MEMORY.");
+	GLOG_DEBUG("FREEING MEMORY.");
 	free(m);
 }
 
@@ -138,43 +136,24 @@ void free_test_cb(char *m,void *hint) {
 //	object.Dispose();
 //}
 
-Handle<Value> WrapMemBufferTest(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(WrapMemBufferTest) {
 	char *mem = (char *) ::malloc(100);
 	memset(mem,'A',100);
-	node::Buffer *buf = node::Buffer::New(mem,100,free_test_cb,0);
+	Nan::MaybeLocal<v8::Object> Mbuf = Nan::NewBuffer(mem,100,free_test_cb,0);
 //	node::Buffer *buf = UNI_BUFFER_NEW_WRAP(mem,100,free_test_cb,NULL);
 //	buf->handle_.MakeWeak(NULL, weak_cb);
-	return scope.Close(buf->handle_);
+	info.GetReturnValue().Set(Mbuf.ToLocalChecked());
 }
 
 /// END TESTS
 
 
-Handle<Value> ErrorFromErrno(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(ErrorFromErrno) {
 
-	if(args.Length() > 0 && args[0]->Int32Value()) {
-		Local<Value> err = _net::errno_to_JS(args[0]->Int32Value(),"netkit: ");
-		return scope.Close(err);
-	} else {
-		return scope.Close(Undefined());
+	if(info.Length() > 0 && info[0]->Int32Value()) {
+		Local<Value> err = _net::errno_to_JS(info[0]->Int32Value(),"netkit: ");
+		info.GetReturnValue().Set(err);
 	}
-
-}
-
-Handle<Value> NewTunInterface(const Arguments& args) {
-	HandleScope scope;
-
-	return scope.Close(TunInterface::NewInstance(args));
-
-}
-
-Handle<Value> NewNetlinkSocket(const Arguments& args) {
-	HandleScope scope;
-
-	return scope.Close(NetlinkSocket::NewInstance(args));
-
 }
 
 // this is not a standard module thing, called internally
@@ -619,23 +598,21 @@ bool set_inet6route(char *route, char *devname, char *hostnet, uint32_t metric, 
  *   family  // a String stating the family
  * }
  */
-Handle<Value> ToAddress(const Arguments& args) {
-	HandleScope scope;
-
+NAN_METHOD(ToAddress) {
 	Local<Object> ret;
 
 	_net::err_ev err;
 
-	if(args.Length() > 1 && args[0]->IsString() && args[1]->IsInt32()) {
-		ret = Object::New();
-		v8::String::Utf8Value addr(args[0]->ToString());
+	if(info.Length() > 1 && info[0]->IsString() && info[1]->IsInt32()) {
+	        ret = Nan::New<v8::Object>();
+		v8::String::Utf8Value addr(info[0]->ToString());
 
-		int32_t family = args[1]->ToInt32()->Int32Value();
+		int32_t family = info[1]->ToInt32()->Int32Value();
 		if(family == AF_INET6) {
 			int mask = -1;
 			char *addrstr = addr.operator *();
 			if(_net::quickParseIPv6Mask(addrstr,mask)) {
-				ret->Set(String::New("mask"), Int32::New(mask));
+				ret->Set(Nan::New("mask").ToLocalChecked(), Nan::New(mask));
 			}
 
 			struct sockaddr_in6 sai;
@@ -650,18 +627,18 @@ Handle<Value> ToAddress(const Arguments& args) {
 					err.setError(errno,"Error on inet_pton.");
 				}
 			} else {
-				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in6_addr));
+			        Local<Object> buf = Nan::NewBuffer(sizeof(struct in6_addr)).ToLocalChecked();
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin6_addr,sizeof(struct in6_addr));
-				ret->Set(String::New("bytes"), buf);
-				ret->Set(String::New("len"), Int32::New(sizeof(struct in6_addr)));
+				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New<v8::Number>(sizeof(struct in6_addr)));
 			}
 		} else
 		if(family == AF_INET) {
 			int mask = -1;
 			char *addrstr = addr.operator *();
 			if(_net::quickParseIPv6Mask(addrstr,mask)) {
-				ret->Set(String::New("mask"), Int32::New(mask));
+				ret->Set(Nan::New("mask").ToLocalChecked(), Nan::New(mask));
 			}
 
 			struct sockaddr_in sai;
@@ -676,11 +653,11 @@ Handle<Value> ToAddress(const Arguments& args) {
 					err.setError(errno,"Error on inet_pton.");
 				}
 			} else {
-				Local<Object> buf = UNI_BUFFER_NEW(sizeof(struct in_addr));
+			        Local<Object> buf = Nan::NewBuffer(sizeof(struct in_addr)).ToLocalChecked();
 				char *area = node::Buffer::Data(buf);
 				memcpy(area,&sai.sin_addr,sizeof(struct in_addr));
-				ret->Set(String::New("bytes"), buf);
-				ret->Set(String::New("len"), Int32::New(sizeof(struct in_addr)));
+				ret->Set(Nan::New("bytes").ToLocalChecked(), buf);
+				ret->Set(Nan::New("len").ToLocalChecked(), Nan::New<v8::Number>(sizeof(struct in_addr)));
 			}
 		}
 	} else {
@@ -688,9 +665,10 @@ Handle<Value> ToAddress(const Arguments& args) {
 	}
 
 	if(err.hasErr())
-		return scope.Close(_net::err_ev_to_JS(err,"toAddress: "));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"toAddress: "));
 	else
-		return scope.Close(ret);
+		info.GetReturnValue().Set(ret);
+
 }
 
 /**
@@ -704,17 +682,17 @@ Handle<Value> ToAddress(const Arguments& args) {
  *   family  // a String stating the family
  * }
  */
-Handle<Value> FromAddress(const Arguments& args) {
-	HandleScope scope;
-
+NAN_METHOD(FromAddress) {
 	Local<Object> ret;
 
 	_net::err_ev err;
 
-	if(args.Length() > 1 && args[0]->IsArray() && args[1]->IsInt32()) {
-		ret = Object::New();
-		Local<Array> addr = Local<Array>::Cast(args[0]);
-		int32_t family = args[1]->ToInt32()->Int32Value();
+	if(info.Length() > 1 && info[0]->IsArray() && info[1]->IsInt32()) {
+		//GLOG_DEBUG3("is address");
+
+	        ret = Nan::New<v8::Object>();
+		Local<Array> addr = Local<Array>::Cast(info[0]);
+		int32_t family = info[1]->ToInt32()->Int32Value();
 
 		if(family == AF_INET6) {
 			unsigned char addr_a[sizeof(struct in6_addr)];
@@ -732,16 +710,18 @@ Handle<Value> FromAddress(const Arguments& args) {
 					err.setError(errno,"Error on inet_ntop.");
 				}
 			} else {
-				ret->Set(String::New("address"), v8::String::New(r) );
-				ret->Set(String::New("family"), Int32::New(AF_INET6));
+			        ret->Set(Nan::New("address").ToLocalChecked(), Nan::New(r).ToLocalChecked());
+			        ret->Set(Nan::New("family").ToLocalChecked(), Nan::New<v8::Int32>(AF_INET6));
 			}
 		} else
 		if(family == AF_INET) {
+			//GLOG_DEBUG3("is inet");
 			unsigned char addr_a[sizeof(struct in_addr)];
 
 			for (size_t i = 0; i < addr->Length(); i++) {
 				Local<Number> el = addr->Get(i)->ToUint32();
 				addr_a[i] = static_cast<uint8_t>(el->Uint32Value());
+				//GLOG_DEBUG3("addr_a[i] = %d", addr_a[i]);
 			}
 
 			char str[INET6_ADDRSTRLEN];
@@ -749,11 +729,12 @@ Handle<Value> FromAddress(const Arguments& args) {
 			const char *r;
 			if( (r = inet_ntop(AF_INET, addr_a, str, INET_ADDRSTRLEN)) == nullptr ) {
 				if(r == nullptr) {
+					GLOG_DEBUG3("inet_ntop failed");
 					err.setError(errno,"Error on inet_ntop.");
 				}
 			} else {
-				ret->Set(String::New("address"), v8::String::New(r) );
-				ret->Set(String::New("family"), Int32::New(AF_INET));
+			        ret->Set(Nan::New("address").ToLocalChecked(), Nan::New(r).ToLocalChecked() );
+				ret->Set(Nan::New("family").ToLocalChecked(), Nan::New<v8::Int32>(AF_INET));
 			}
 		}
 	} else {
@@ -761,9 +742,9 @@ Handle<Value> FromAddress(const Arguments& args) {
 	}
 
 	if(err.hasErr())
-		return scope.Close(_net::err_ev_to_JS(err,"fromAddress: "));
+		info.GetReturnValue().Set(_net::err_ev_to_JS(err,"fromAddress: "));
 	else
-		return scope.Close(ret);
+		info.GetReturnValue().Set(ret);
 }
 
 
@@ -815,29 +796,27 @@ void toBytesMACAddr(char *mac, uint8_t *bytes, _net::err_ev &err) {
  *   }
  * }
  */
-Handle<Value> AssignAddress(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(AssignAddress) {
 
 	char _ifname[IFNAMSIZ]; // IFNAMSIZ is defined in net/if.h
 
 	_net::err_ev errev;
-	Handle<Value> v8err;
+	Local<Value> v8err;
 
-	Handle<Object> params;
-	Handle<Value> js_ifname;
+	Local<Object> params;
+	Local<Value> js_ifname;
+	Nan::MaybeLocal<Value> Mval;
 
-	if(args.Length() < 1 || !args[0]->IsObject()) {
+	if(info.Length() < 1 || !info[0]->IsObject()) {
 		errev.setError(_net::OTHER_ERROR,"Wrong params. No ifname provided. Doing nothing.\n");
 	} else {
-		params = args[0]->ToObject();
-		js_ifname = params->Get(String::New("ifname"));
+		params = info[0]->ToObject();
+		Mval = Nan::Get(params, Nan::New("ifname").ToLocalChecked());
 	}
 
-
-	if(js_ifname.IsEmpty() || (!errev.hasErr() && !js_ifname->IsString())) {
+	if(!Mval.ToLocal(&js_ifname) ||  Mval.IsEmpty() || (!errev.hasErr() && !js_ifname->IsString())) {
 		errev.setError(_net::OTHER_ERROR,"No ifname provided in object. Doing nothing.\n");
 		ERROR_OUT("No ifname provided. Doing nothing.\n");
-//		return scope.Close(Boolean::New(false));
 	} else {
 
 		v8::String::Utf8Value v8ifname(js_ifname->ToString());
@@ -859,8 +838,8 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 
 		// ****************** MTU assignment **********************
-		Handle<Value> js_mtu = params->Get(String::New("mtu"));
-		if(!errev.hasErr() && js_mtu->IsUint32()) {
+		Local<Value> js_mtu; Mval = Nan::Get(params, Nan::New("mtu").ToLocalChecked());
+		if(Mval.ToLocal(&js_mtu) && !errev.hasErr() && js_mtu->IsUint32()) {
 			int sockfd = _net::get_generic_ipv6_sock(errev);
 			if(!have_index) have_index = _net::get_index_if6(ifr, errev);
 			if(!errev.hasErr()) {
@@ -877,8 +856,8 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 		// ******************** MAC address *********************
 
-		Handle<Value> js_mac = params->Get(String::New("mac"));
-		if(!errev.hasErr() && js_mac->IsString()) {
+		Local<Value> js_mac; Mval = Nan::Get(params, Nan::New("mac").ToLocalChecked());
+		if(Mval.ToLocal(&js_mac) && !errev.hasErr() && js_mac->IsString()) {
 			uint8_t mac[6];
 			memset(mac,0,6);
 			v8::String::Utf8Value v8mac(js_mac->ToString());
@@ -906,7 +885,7 @@ Handle<Value> AssignAddress(const Arguments& args) {
 							errev.setError(errno);
 							ERROR_OUT("Could not set MAC addr: %x:%x:%x:%x:%x:%x\n", mac[0], mac[1],mac[2],mac[3],mac[4],mac[5]);
 						} else {
-							DBG_OUT("Set MAC address\n");
+							GLOG_DEBUG("Set MAC address\n");
 						}
 						if(was_up)
 							set_if_flags(sockfd, ifr, flags | IFF_UP, errev);
@@ -920,8 +899,8 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 
 		// ****************** IPv6 address **********************
-		Handle<Value> js_inet6val = params->Get(String::New("inet6"));
-		if(!errev.hasErr() && js_inet6val->IsObject()) { // IPv6 assignment!
+		Local<Value> js_inet6val; Mval = Nan::Get(params, Nan::New("inet6").ToLocalChecked());
+		if(Mval.ToLocal(&js_inet6val) && !errev.hasErr() && js_inet6val->IsObject()) { // IPv6 assignment!
 			int sockfd = _net::get_generic_ipv6_sock(errev);
 
 	//		sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);  // open a generic IPv6 sock
@@ -932,13 +911,14 @@ Handle<Value> AssignAddress(const Arguments& args) {
 				}
 			}
 
-			Handle<Object> js_inet6 = js_inet6val->ToObject();
+			Local<Object> js_inet6 = js_inet6val->ToObject();
 
 			// ------------------ inet6.addr ---------------------------------------------
 			// do we have an IP to assign?
-			Handle<Value> js_inet6addr = js_inet6->Get(String::New("addr"));
+			Local<Value> js_inet6addr; Mval = Nan::Get(js_inet6, Nan::New("addr").ToLocalChecked());
 
-			if(!errev.hasErr() && js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
+			if(Mval.ToLocal(&js_inet6addr) && !errev.hasErr()
+				&& js_inet6addr->IsString() && js_inet6addr->ToString()->Length() > 4) {
 
 
 				struct sockaddr_in6 sai;
@@ -971,9 +951,9 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 			// ------------------ inet6.remove_addr ---------------------------------------------
 
-			Handle<Value> js_inet6rm = js_inet6->Get(String::New("remove_addr"));
+			Local<Value> js_inet6rm; Mval = Nan::Get(js_inet6, Nan::New("remove_addr").ToLocalChecked());
 
-			if(!errev.hasErr() && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
+			if(Mval.ToLocal(&js_inet6rm) && !errev.hasErr() && (js_inet6rm->IsArray() || js_inet6rm->IsString())) {
 
 				struct sockaddr_in6 sai;
 				struct _net::in6_ifreq ifr6;
@@ -1001,11 +981,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 				} else { // it's an Array
 					if(!errev.hasErr()) {
 
-						Handle<Object> arrayAddr = js_inet6rm->ToObject();
+						Local<Array> arrayAddr = Local<Array>::Cast(js_inet6rm);
 
-						uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-						for(uint32_t n=0;n<len;n++) {
-							Handle<Value> el = arrayAddr->Get(n);
+						for(uint32_t n=0;n<arrayAddr->Length();n++) {
+							Local<Value> el = arrayAddr->Get(n);
 
 							if(el->IsString()) {
 								v8::String::Utf8Value v8ip6hostaddr(el->ToString());
@@ -1028,9 +1007,9 @@ Handle<Value> AssignAddress(const Arguments& args) {
 
 			// ------------------ inet6.add_addr ---------------------------------------------
 
-			Handle<Value> js_inet6add = js_inet6->Get(String::New("add_addr"));
+			Local<Value> js_inet6add; Mval = Nan::Get(js_inet6, Nan::New("add_addr").ToLocalChecked());
 
-			if(!errev.hasErr() && (js_inet6add->IsArray() || js_inet6add->IsString())) {
+			if(Mval.ToLocal(&js_inet6add) && !errev.hasErr() && (js_inet6add->IsArray() || js_inet6add->IsString())) {
 
 				struct sockaddr_in6 sai;
 				struct _net::in6_ifreq ifr6;
@@ -1057,11 +1036,10 @@ Handle<Value> AssignAddress(const Arguments& args) {
 				} else { // it's an Array
 					if(!errev.hasErr()) {
 
-						Handle<Object> arrayAddr = js_inet6add->ToObject();
+						Local<Array> arrayAddr = Local<Array>::Cast(js_inet6add);
 
-						uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-						for(uint32_t n=0;n<len;n++) {
-							Handle<Value> el = arrayAddr->Get(n);
+						for(uint32_t n=0;n<arrayAddr->Length();n++) {
+							Local<Value> el = arrayAddr->Get(n);
 
 							if(el->IsString()) {
 								v8::String::Utf8Value v8ip6hostaddr(el->ToString());
@@ -1089,9 +1067,9 @@ Handle<Value> AssignAddress(const Arguments& args) {
 			// on the unicast IP. Still figuring this out for multicast...
 			// http://serverfault.com/questions/182881/why-add-an-ipv6-address-as-64
 
-			Handle<Value> js_inet6mask = js_inet6->Get(String::New("mask"));
+			Local<Value> js_inet6mask; Mval = Nan::Get(js_inet6, Nan::New("mask").ToLocalChecked());
 
-			if(js_inet6mask->IsString() && js_inet6mask->ToString()->Length() > 4) {
+			if(Mval.ToLocal(&js_inet6mask) && js_inet6mask->IsString() && js_inet6mask->ToString()->Length() > 4) {
 
 	//			struct ifreq ifr;
 				struct sockaddr_in6 sai;
@@ -1158,24 +1136,26 @@ Handle<Value> AssignAddress(const Arguments& args) {
 		v8err = _net::err_ev_to_JS(errev, "assignAddress: ");
 	}
 
-	if(args.Length() > 1 && args[1]->IsFunction()) {
+	if(info.Length() > 1 && info[1]->IsFunction()) {
 		const unsigned outargc = 1;
 		Local<Value> outargv[outargc];
-		Local<Function> cb = Local<Function>::Cast(args[1]);
+		Nan::Callback cb(Local<Function>::Cast(info[1]));
 		if(!v8err.IsEmpty()) {
 			outargv[0] = v8err->ToObject();
-			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
 		} else {
-			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
 		}
 	}
 
-	return scope.Close(Boolean::New(!errev.hasErr())); // return false if error
+	info.GetReturnValue().Set(!errev.hasErr()); // return false if error
 }
 
-void process_route(Handle<Object> obj, _net::err_ev &err, int action) {
-	Handle<Value> js_dest = obj->Get(String::New("dest"));
-	if(js_dest->IsString()) {
+void process_route(Local<Object> obj, _net::err_ev &err, int action) {
+	Nan::MaybeLocal<Value> Mval;
+	Local<Value> js_dest; Mval = obj->Get(Nan::New("dest").ToLocalChecked());
+
+	if(Mval.ToLocal(&js_dest) && js_dest->IsString()) {
 		uint32_t metric = 1;
 		uint32_t flags = 0;
 		if(action == RTACTION_IN6_ADD) {
@@ -1187,22 +1167,22 @@ void process_route(Handle<Object> obj, _net::err_ev &err, int action) {
 		char _netname[INET6_ADDRSTRLEN*2];
 
 		v8::String::Utf8Value v8_dest(js_dest->ToString());
-		Handle<Value> js_via_if = obj->Get(String::New("via_if"));
-		if(!js_via_if->IsUndefined() && js_via_if->IsString()) {
+		Local<Value> js_via_if; Mval = Nan::Get(obj, Nan::New("via_if").ToLocalChecked());
+		if(Mval.ToLocal(&js_via_if) && js_via_if->IsString()) {
 			v8::String::Utf8Value v8_if(js_via_if->ToString());
 			strncpy(_ifname, v8_if.operator *(), IFNAMSIZ);
 			_if = _ifname;
 		}
 
-		Handle<Value> js_via_net = obj->Get(String::New("via_network"));
-		if(!js_via_net->IsUndefined() && js_via_net->IsString()) {
+		Local<Value> js_via_net; Mval = Nan::Get(obj, Nan::New("via_network").ToLocalChecked());
+		if(Mval.ToLocal(&js_via_net) && js_via_net->IsString()) {
 			v8::String::Utf8Value v8_netname(js_via_net->ToString());
 			strncpy(_netname, v8_netname.operator *(), INET6_ADDRSTRLEN*2);
 			_net = _netname;
 		}
 
-		Handle<Value> js_metric = obj->Get(String::New("metric"));
-		if(!js_metric->IsUndefined()) {
+		Local<Value> js_metric; Mval = Nan::Get(obj, Nan::New("metric").ToLocalChecked());
+		if(Mval.ToLocal(&js_metric)) {
 			if(!js_metric->IsUint32()) {
 				ERROR_OUT("route entry has invalid 'metric' key. Needs UInt32. Skipping route entry.\n");
 				return;
@@ -1210,8 +1190,8 @@ void process_route(Handle<Object> obj, _net::err_ev &err, int action) {
 				metric = js_metric->Uint32Value();
 			}
 		}
-		Handle<Value> js_flags = obj->Get(String::New("flags"));
-		if(action != RTACTION_IN6_DEL && !js_flags->IsUndefined()) { // skip flags if removing route
+		Local<Value> js_flags; Mval = Nan::Get(obj, Nan::New("flags").ToLocalChecked());
+		if(action != RTACTION_IN6_DEL && Mval.ToLocal(&js_flags)) { // skip flags if removing route
 			if(!js_flags->IsUint32()) {
 				ERROR_OUT("route entry has invalid 'metric' key. Needs UInt32. Skipping route entry.\n");
 				return;
@@ -1231,94 +1211,77 @@ void process_route(Handle<Object> obj, _net::err_ev &err, int action) {
 	}
 }
 
-Handle<Value> AssignRoute(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(AssignRoute) {
 
 	// TODO need IPv4 support
 
-//	char _ifname[IFNAMSIZ]; // IFNAMSIZ is defined in net/if.h
-
-	if(args.Length() < 1 || !args[0]->IsObject()) {
-		return scope.Close(Boolean::New(false));
+	if(info.Length() < 1 || !info[0]->IsObject()) {
+		return info.GetReturnValue().Set(Nan::New(false));
 	}
 
-	Handle<Object> params = args[0]->ToObject();
-
-//	Handle<Value> js_ifname = params->Get(String::New("ifname"));
-//	if(!js_ifname->IsString()) {
-//		ERROR_OUT("No ifname provided. Doing nothing.\n");
-//		return scope.Close(Boolean::New(false));
-//	}
-//
-//	v8::String::Utf8Value v8ifname(js_ifname->ToString());
-//	_net::jsToIfName(_ifname,v8ifname.operator *(),v8ifname.length());
-
+	Local<Object> params = info[0]->ToObject();
 
 	_net::err_ev err;
-	Handle<Value> v8err;
-//	struct ifreq ifr;
-	// the ifr struct will be used to get the ifname and map it to an 'ifindex' used by the kernel
-//	strncpy(ifr.ifr_name, _ifname, IFNAMSIZ);
-	// but we need a socket (really an fd to an interface) to do this - so we will defer until we open one..
-//	bool have_index = false;
+	Local<Value> v8err;
 
-	// ok... now let's see what we need to set
+	Nan::MaybeLocal<v8::Value> Mval;
+	Local<v8::Value> js_addroute; Mval = Nan::Get(params, Nan::New("add_route6").ToLocalChecked());
+	if(Mval.ToLocal<v8::Value>(&js_addroute)){
+		if(js_addroute->IsObject() || js_addroute->IsArray()) {
 
-	Handle<Value> js_addroute = params->Get(String::New("add_route6"));
-	if(js_addroute->IsObject() || js_addroute->IsArray()) {
+			if(js_addroute->IsArray()) {
+				Local<Array> arrayAddr = Local<Array>::Cast(js_addroute);
 
-		if(js_addroute->IsArray()) {
-			Handle<Object> arrayAddr = js_addroute->ToObject();
-
-			uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-			for(uint32_t n=0;n<len;n++) {
-				Handle<Value> el = arrayAddr->Get(n)->ToObject();
-				if(el->IsObject()) {
-					process_route(el->ToObject(),err, RTACTION_IN6_ADD);
-				} else {
-					ERROR_OUT("Array in add_route6 has a non-object! Invalid. Skipping.\n");
+				for(uint32_t n=0;n<arrayAddr->Length();n++) {
+					Local<Object> el = arrayAddr->Get(n)->ToObject();
+					if(el->IsObject()) {
+						process_route(el->ToObject(),err, RTACTION_IN6_ADD);
+					} else {
+						ERROR_OUT("Array in add_route6 has a non-object! Invalid. Skipping.\n");
+					}
 				}
+			} else {  // object
+				process_route(js_addroute->ToObject(),err, RTACTION_IN6_ADD);
 			}
-		} else {  // object
-			process_route(js_addroute->ToObject(),err, RTACTION_IN6_ADD);
 		}
-	}
-	Handle<Value> js_delroute = params->Get(String::New("del_route6"));
-	if(js_delroute->IsObject() || js_delroute->IsArray()) {
 
-		if(js_delroute->IsArray()) {
-			Handle<Object> arrayAddr = js_delroute->ToObject();
+		Local<Value> js_delroute; Mval = Nan::Get(params, Nan::New("del_route6").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_delroute)) {
+			if(js_delroute->IsObject() || js_delroute->IsArray()) {
 
-			uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-			for(uint32_t n=0;n<len;n++) {
-				Handle<Value> el = arrayAddr->Get(n)->ToObject();
-				if(el->IsObject()) {
-					process_route(el->ToObject(),err, RTACTION_IN6_DEL);
-				} else {
-					ERROR_OUT("Array in del_route6 has a non-object! Invalid. Skipping.\n");
+				if(js_delroute->IsArray()) {
+					Local<Array> arrayAddr = Local<Array>::Cast(js_delroute);
+
+					for(uint32_t n=0;n<arrayAddr->Length();n++) {
+						Local<Value> el = arrayAddr->Get(n)->ToObject();
+						if(el->IsObject()) {
+							process_route(el->ToObject(),err, RTACTION_IN6_DEL);
+						} else {
+							ERROR_OUT("Array in del_route6 has a non-object! Invalid. Skipping.\n");
+						}
+					}
+				} else {  // object
+					process_route(js_delroute->ToObject(),err, RTACTION_IN6_DEL);
 				}
 			}
-		} else {  // object
-			process_route(js_delroute->ToObject(),err, RTACTION_IN6_DEL);
 		}
-	}
-	Handle<Value> js_msgroute = params->Get(String::New("msg_route6"));
-	if(js_msgroute->IsObject() || js_msgroute->IsArray()) {
 
-		if(js_delroute->IsArray()) {
-			Handle<Object> arrayAddr = js_msgroute->ToObject();
+		Local<Value> js_msgroute; Mval = Nan::Get(params, Nan::New("msg_route6").ToLocalChecked());
+		if(Mval.ToLocal<Value>(&js_msgroute)) {
+			if(js_msgroute->IsObject() || js_msgroute->IsArray()) {
+				if(js_delroute->IsArray()) {
+					Local<Array> arrayAddr = Local<Array>::Cast(js_msgroute);
 
-			uint32_t len = arrayAddr->Get(v8::String::New("length"))->ToObject()->Uint32Value();
-			for(uint32_t n=0;n<len;n++) {
-				Handle<Value> el = arrayAddr->Get(n)->ToObject();
-				if(el->IsObject()) {
-					process_route(el->ToObject(),err, RTACTION_IN6_MESSAGE);
-				} else {
-					ERROR_OUT("Array in msg_route6 has a non-object! Invalid. Skipping.\n");
+					for(uint32_t n=0;n<arrayAddr->Length();n++) {
+						Local<Value> el = arrayAddr->Get(n)->ToObject();
+						if(el->IsObject()) {
+							process_route(el->ToObject(),err, RTACTION_IN6_MESSAGE);
+						} else {
+							ERROR_OUT("Array in msg_route6 has a non-object! Invalid. Skipping.\n");
+						}
+					}
 				}
 			}
-		} else {  // object
-			process_route(js_msgroute->ToObject(),err, RTACTION_IN6_MESSAGE);
 		}
 	}
 
@@ -1326,23 +1289,17 @@ Handle<Value> AssignRoute(const Arguments& args) {
 		v8err = _net::err_ev_to_JS(err, "assignRoute: ");
 	}
 
-
-	if(args.Length() > 1 && args[1]->IsFunction()) {
+	if(info.Length() > 1 && info[1]->IsFunction()) {
 		const unsigned outargc = 1;
 		Local<Value> outargv[outargc];
-		Local<Function> cb = Local<Function>::Cast(args[1]);
+		Nan::Callback cb(Local<Function>::Cast(info[1]));
 		if(!v8err.IsEmpty()) {
 			outargv[0] = v8err->ToObject();
-//			fprintf(stderr,"PRE CALL!!");
-			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
-//			fprintf(stderr,"POST CALL!!");
+			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
 		} else {
-			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
 		}
 	}
-
-//	fprintf(stderr,"At .Close() !!");
-	return scope.Close(Undefined());
 }
 
 
@@ -1351,18 +1308,17 @@ Handle<Value> AssignRoute(const Arguments& args) {
  * @param callback {Function} is of the form: cb(err) {}
  * @param ifname {string} Interface name as a string
  */
-Handle<Value> InitIfFlags(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(InitIfFlags) {
 	struct ifreq ifr;
 
-	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
-		v8::String::Utf8Value v8ifname(args[0]->ToString());
+	if((info.Length() > 1) && info[0]->IsString() && info[1]->Int32Value()) {
+		v8::String::Utf8Value v8ifname(info[0]->ToString());
 
-		short int flags = args[1]->Int32Value();
+		short int flags = info[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
-		Handle<Value> v8err;
+		Local<Value> v8err;
 		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
@@ -1377,21 +1333,20 @@ Handle<Value> InitIfFlags(const Arguments& args) {
 			v8err = _net::err_ev_to_JS(err, "initIfFlags: ");
 		}
 
-    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided
     		const unsigned outargc = 1;
     		Local<Value> outargv[outargc];
-    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+		        cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 
-		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is setIfFlags(string,flags,[callback])")));
+		return Nan::ThrowTypeError("Bad arguments. Proper call is setIfFlags(string,flags,[callback])");
 	}
 }
 
@@ -1402,18 +1357,19 @@ Handle<Value> InitIfFlags(const Arguments& args) {
  * @param callback {Function} is of the form: cb(err) {}
  * @param ifname {string} Interface name as a string
  */
-Handle<Value> SetIfFlags(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(SetIfFlags) {
 	struct ifreq ifr;
 
-	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
-		v8::String::Utf8Value v8ifname(args[0]->ToString());
+	if((info.Length() > 1) && info[0]->IsString() && info[1]->Int32Value()) {
+		v8::String::Utf8Value v8ifname(info[0]->ToString());
 
-		short int flags = args[1]->Int32Value();
+		short int flags = info[1]->Int32Value();
+
+		GLOG_DEBUG3("ifname = %s flags = %d", *v8ifname, flags);
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		_net::err_ev err;
-		Handle<Value> v8err;
+		Local<Value> v8err;
 		int fd = _net::get_generic_packet_sock(err);
 
 		if(fd > 0 && _net::get_index_if_generic(ifr,err)) {
@@ -1434,21 +1390,20 @@ Handle<Value> SetIfFlags(const Arguments& args) {
 			v8err = _net::err_ev_to_JS(err, "setIfFlags: ");
 		}
 
-    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided
     		const unsigned outargc = 1;
     		Local<Value> outargv[outargc];
-    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+    			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 
-		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is setIfFlags(string,flags,[callback])")));
+		return Nan::ThrowTypeError("Bad arguments. Proper call is setIfFlags(string,flags,[callback])");
 	}
 }
 
@@ -1457,21 +1412,20 @@ Handle<Value> SetIfFlags(const Arguments& args) {
  * ifUp = function(string,flags) {}
  * @param ifname {string} Interface name as a string
  */
-Handle<Value> UnsetIfFlags(const Arguments& args) {
-	HandleScope scope;
+NAN_METHOD(UnsetIfFlags) {
 	struct ifreq ifr;
 
-	if((args.Length() > 1) && args[0]->IsString() && args[1]->Int32Value()) {
-		v8::String::Utf8Value v8ifname(args[0]->ToString());
+	if((info.Length() > 1) && info[0]->IsString() && info[1]->Int32Value()) {
+		v8::String::Utf8Value v8ifname(info[0]->ToString());
 
 //		int len = v8ifname.length() + 1;
 //		if(v8ifname.length() > IFNAMSIZ) {
 //			len = IFNAMSIZ;
 //		}
 		_net::err_ev err;
-		Handle<Value> v8err;
+		Local<Value> v8err;
 
-		short int flags = (short int) args[1]->Int32Value();
+		short int flags = (short int) info[1]->Int32Value();
 
 		strncpy(ifr.ifr_name, v8ifname.operator *(), IFNAMSIZ);
 		int fd = _net::get_generic_packet_sock(err);
@@ -1482,9 +1436,9 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 //		    	perror("SIOCSIFFLAGS");
 		    }
 		    if(!err.hasErr()) {
-		    	DBG_OUT("Have flags: %x\n", ifr.ifr_flags);
+		    	GLOG_DEBUG("Have flags: %x\n", ifr.ifr_flags);
 				ifr.ifr_flags = ifr.ifr_flags & ~flags;
-		    	DBG_OUT("Setting to flags: %x\n", ifr.ifr_flags);
+		    	GLOG_DEBUG("Setting to flags: %x\n", ifr.ifr_flags);
 				if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
 			    	err.setError(errno);
 	//		    	perror("SIOCSIFFLAGS");
@@ -1496,61 +1450,66 @@ Handle<Value> UnsetIfFlags(const Arguments& args) {
 			v8err = _net::err_ev_to_JS(err, "unsetIfFlags: ");
 		}
 
-    	if(args.Length() > 2 && args[2]->IsFunction()) { // if callback was provided
+    	if(info.Length() > 2 && info[2]->IsFunction()) { // if callback was provided
     		const unsigned outargc = 1;
     		Local<Value> outargv[outargc];
-    		Local<Function> cb = Local<Function>::Cast(args[2]);
+    		Nan::Callback cb(Local<Function>::Cast(info[2]));
     		if(!v8err.IsEmpty()) {
     			outargv[0] = v8err->ToObject();
-    			cb->Call(Context::GetCurrent()->Global(),1,outargv); // w/ error
+    			cb.Call(Nan::GetCurrentContext()->Global(),1,outargv); // w/ error
     		} else {
-    			cb->Call(Context::GetCurrent()->Global(),0,NULL);
+    			cb.Call(Nan::GetCurrentContext()->Global(),0,NULL);
     		}
     	}
 
-		return scope.Close(Undefined());
 	} else {
-		return ThrowException(Exception::TypeError(String::New("Bad arguments. Proper call is unsetIfFlags(string,flags,[callback])")));
+		return Nan::ThrowTypeError("Bad arguments. Proper call is unsetIfFlags(string,flags,[callback])");
 	}
 }
 
 
+void InitAll(Handle<Object> exports, Handle<Object> module){
+	INIT_GLOG;
 
-void InitAll(Handle<Object> exports, Handle<Object> module) {
-//	NodeTransactionWrapper::Init();
-//	NodeClientWrapper::Init();
-//	exports->Set(String::NewSymbol("cloneRepo"), FunctionTemplate::New(CreateClient)->GetFunction());
+	GLOG_DEBUG("InitAll");
 
+	Nan::Set(exports, Nan::New("InitNativeTun").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(TunInterface::Init)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("InitNetlinkSocket").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(NetlinkSocket::Init)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("newTunInterface").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(TunInterface::New)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("newNetlinkSocket").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(NetlinkSocket::New)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("assignAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AssignAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("assignRoute").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(AssignRoute)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("initIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(InitIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("setIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(SetIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("unsetIfFlags").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(UnsetIfFlags)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("ifNameToIndex").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(IfNameToIndex)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("ifIndexToName").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(IfIndexToName)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("toAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(ToAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("fromAddress").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(FromAddress)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("errorFromErrno").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(ErrorFromErrno)).ToLocalChecked());
 
-//	TunInterface::Init();
-	exports->Set(String::NewSymbol("InitNativeTun"), FunctionTemplate::New(TunInterface::Init)->GetFunction());
-	exports->Set(String::NewSymbol("InitNetlinkSocket"), FunctionTemplate::New(NetlinkSocket::Init)->GetFunction());
-	exports->Set(String::NewSymbol("newTunInterface"), FunctionTemplate::New(NewTunInterface)->GetFunction());
-	exports->Set(String::NewSymbol("newNetlinkSocket"), FunctionTemplate::New(NewNetlinkSocket)->GetFunction());
-	exports->Set(String::NewSymbol("assignAddress"), FunctionTemplate::New(AssignAddress)->GetFunction());
-	exports->Set(String::NewSymbol("assignRoute"), FunctionTemplate::New(AssignRoute)->GetFunction());
-	exports->Set(String::NewSymbol("initIfFlags"), FunctionTemplate::New(InitIfFlags)->GetFunction());
-	exports->Set(String::NewSymbol("setIfFlags"), FunctionTemplate::New(SetIfFlags)->GetFunction());
-	exports->Set(String::NewSymbol("unsetIfFlags"), FunctionTemplate::New(UnsetIfFlags)->GetFunction());
-	exports->Set(String::NewSymbol("ifNameToIndex"), FunctionTemplate::New(IfNameToIndex)->GetFunction());
-	exports->Set(String::NewSymbol("ifIndexToName"), FunctionTemplate::New(IfIndexToName)->GetFunction());
-	exports->Set(String::NewSymbol("toAddress"), FunctionTemplate::New(ToAddress)->GetFunction());
-	exports->Set(String::NewSymbol("fromAddress"), FunctionTemplate::New(FromAddress)->GetFunction());
-	exports->Set(String::NewSymbol("errorFromErrno"), FunctionTemplate::New(ErrorFromErrno)->GetFunction());
+	Nan::Set(exports, Nan::New("wrapMemBufferTest").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(WrapMemBufferTest)).ToLocalChecked());
+	Nan::Set(exports, Nan::New("packTest").ToLocalChecked(),
+		Nan::GetFunction(Nan::New<FunctionTemplate>(PackTest)).ToLocalChecked());
 
-	exports->Set(String::NewSymbol("wrapMemBufferTest"), FunctionTemplate::New(WrapMemBufferTest)->GetFunction());
-	exports->Set(String::NewSymbol("packTest"), FunctionTemplate::New(PackTest)->GetFunction());
-
-	Handle<Object> errconsts = Object::New();
-	_errcmn::DefineConstants(errconsts);
-	exports->Set(String::NewSymbol("ERR"), errconsts);
-
-//	exports->Set(String::NewSymbol("_TunInterface_cstor"), TunInterface::constructor);
-
-	//	exports->Set(String::NewSymbol("_TunInterface_proto"), TunInterface::prototype);
-
-//	exports->Set(String::NewSymbol("shutdownTunInteface"), FunctionTemplate::New(ShutdownTunInterface)->GetFunction());
-
+	// Handle<Object> errconsts; MaybeLocal<v8::Object> Merrs = Nan::New<v8::Object>();
+	// _errcmn::DefineConstants(errconsts);
+	// Nan::Set(exports, Nan::New("ERR"), errconsts);
 }
 
 NODE_MODULE(netkit, InitAll)

@@ -23,27 +23,23 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "nan.h"
+
 // https://gcc.gnu.org/onlinedocs/cpp/Stringification.html
 #define xstr(s) str(s)
 #define str(s) #s
 
 // concept from node.js src/node_constants.cc
-#define _ERRCMN_DEFINE_CONSTANT(target, constant)                         \
-  (target)->Set(v8::String::NewSymbol(#constant),                         \
-                v8::Number::New(constant),                                \
-                static_cast<v8::PropertyAttribute>(                       \
-                    v8::ReadOnly|v8::DontDelete))
+#define _ERRCMN_DEFINE_CONSTANT(target, constant)                                \
+  (target)->Set(Nan::New<v8::String>(#constant).ToLocalChecked(),	         \
+                Nan::New<v8::Number>(constant))
 
 // our mode - this is the same thing, with a reverse lookup key also
-#define _ERRCMN_DEFINE_CONSTANT_WREV(target, constant)                    \
-  (target)->Set(v8::String::NewSymbol(#constant),                         \
-                v8::Number::New(constant),                                \
-                static_cast<v8::PropertyAttribute>(                       \
-                    v8::ReadOnly|v8::DontDelete));                        \
-  (target)->Set(v8::String::New( xstr(constant) ),                                \
-                v8::String::New(#constant),                         \
-                static_cast<v8::PropertyAttribute>(                       \
-                    v8::ReadOnly|v8::DontDelete));                        \
+#define _ERRCMN_DEFINE_CONSTANT_WREV(target, constant)                           \
+          (target)->Set(Nan::New<v8::String>(#constant).ToLocalChecked(),	 \
+			Nan::New<v8::Number>(constant))                          \
+	  (target)->Set(Nan::New<v8::String>( xstr(constant) ).ToLocalChecked(), \
+			Nan::New<v8::String>(#constant).ToLocalChecked())
 
 // custom error codes should be above this value
 #define _ERRCMD_CUSTOM_ERROR_CUTOFF  4000

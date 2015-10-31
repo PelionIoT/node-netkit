@@ -1,0 +1,96 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'install' ]
+2 info using npm@2.1.6
+3 info using node@v0.13.0-pre
+4 verbose install where, deps [ '/media/sf_wigwag/node-netkit', [] ]
+5 verbose install where, peers [ '/media/sf_wigwag/node-netkit', [] ]
+6 info preinstall netkit@0.0.4
+7 silly install resolved []
+8 info build /media/sf_wigwag/node-netkit
+9 verbose linkStuff [ false, false, false, '/media/sf_wigwag' ]
+10 info linkStuff netkit@0.0.4
+11 verbose linkBins netkit@0.0.4
+12 verbose linkMans netkit@0.0.4
+13 verbose rebuildBundles netkit@0.0.4
+14 verbose rebuildBundles [ '.bin', 'nodeunit', 'pegjs' ]
+15 verbose rebuild bundle /media/sf_wigwag/node-netkit/node_modules/nodeunit
+16 info build /media/sf_wigwag/node-netkit/node_modules/nodeunit
+17 info preinstall nodeunit@0.9.1
+18 verbose linkStuff [ false,
+18 verbose linkStuff   false,
+18 verbose linkStuff   false,
+18 verbose linkStuff   '/media/sf_wigwag/node-netkit/node_modules' ]
+19 info linkStuff nodeunit@0.9.1
+20 verbose linkBins nodeunit@0.9.1
+21 verbose link bins [ { nodeunit: './bin/nodeunit' },
+21 verbose link bins   '/media/sf_wigwag/node-netkit/node_modules/.bin',
+21 verbose link bins   false ]
+22 verbose linkMans nodeunit@0.9.1
+23 verbose rebuildBundles nodeunit@0.9.1
+24 verbose rebuildBundles [ '.bin',
+24 verbose rebuildBundles   'qbox',
+24 verbose rebuildBundles   'should',
+24 verbose rebuildBundles   'tap',
+24 verbose rebuildBundles   'tap-assert',
+24 verbose rebuildBundles   'tap-producer',
+24 verbose rebuildBundles   'uglify-js' ]
+25 verbose rebuild bundle /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/qbox
+26 verbose gentlyRm vacuuming /media/sf_wigwag/node-netkit/node_modules/.bin/nodeunit
+27 info build /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/qbox
+28 silly gentlyRm purging /media/sf_wigwag/node-netkit/node_modules/.bin/nodeunit
+29 silly gentlyRm quitting because other entries in /media/sf_wigwag/node-netkit/node_modules/.bin
+30 info preinstall qbox@0.1.7
+31 verbose linkStuff [ false,
+31 verbose linkStuff   false,
+31 verbose linkStuff   false,
+31 verbose linkStuff   '/media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules' ]
+32 info linkStuff qbox@0.1.7
+33 verbose linkBins qbox@0.1.7
+34 verbose linkMans qbox@0.1.7
+35 verbose rebuildBundles qbox@0.1.7
+36 info install qbox@0.1.7
+37 info postinstall qbox@0.1.7
+38 verbose rebuild bundle /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/tap-assert
+39 info build /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/tap-assert
+40 info preinstall tap-assert@0.0.10
+41 verbose linkStuff [ false,
+41 verbose linkStuff   false,
+41 verbose linkStuff   false,
+41 verbose linkStuff   '/media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules' ]
+42 info linkStuff tap-assert@0.0.10
+43 verbose linkBins tap-assert@0.0.10
+44 verbose linkMans tap-assert@0.0.10
+45 verbose rebuildBundles tap-assert@0.0.10
+46 info install tap-assert@0.0.10
+47 info postinstall tap-assert@0.0.10
+48 verbose rebuild bundle /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/tap-producer
+49 info build /media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules/tap-producer
+50 info preinstall tap-producer@0.0.1
+51 verbose linkStuff [ false,
+51 verbose linkStuff   false,
+51 verbose linkStuff   false,
+51 verbose linkStuff   '/media/sf_wigwag/node-netkit/node_modules/nodeunit/node_modules' ]
+52 info linkStuff tap-producer@0.0.1
+53 verbose linkBins tap-producer@0.0.1
+54 verbose linkMans tap-producer@0.0.1
+55 verbose rebuildBundles tap-producer@0.0.1
+56 verbose rebuildBundles [ 'inherits', 'tap-results', 'yamlish' ]
+57 info install tap-producer@0.0.1
+58 info postinstall tap-producer@0.0.1
+59 verbose stack Error: EROFS, symlink '../nodeunit/bin/nodeunit'
+59 verbose stack     at Error (native)
+60 verbose cwd /media/sf_wigwag/node-netkit
+61 error Linux 3.16.0-29-generic
+62 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "install"
+63 error node v0.13.0-pre
+64 error npm  v2.1.6
+65 error path ../nodeunit/bin/nodeunit
+66 error code EROFS
+67 error errno -30
+68 error rofs EROFS, symlink '../nodeunit/bin/nodeunit'
+68 error rofs This is most likely not a problem with npm itself
+68 error rofs and is related to the file system being read-only.
+68 error rofs
+68 error rofs Often virtualized file systems, or other file systems
+68 error rofs that don't support symlinks, give this error.
+69 verbose exit [ -30, true ]

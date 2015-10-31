@@ -15,7 +15,13 @@
   ],
   "dependencies": {
     "nan": "^2.1.0"
+    },
+  "devDependencies": {
+    "nan": "^2.1.0",
+    "pegjs": "^0.9.0",
+    "nodeunit": "^0.9.1"
   },
+
   "repository": {
     "type": "git",
     "url": "https://github.com/WigWagCo/node-netkit"
@@ -26,6 +32,6 @@
   "preferGlobal": true,
   "gypfile": true,
   "bin": {
-    "nnf": "nnf.js"
+    "nnf": "lib/nnf.js"
   }
 }

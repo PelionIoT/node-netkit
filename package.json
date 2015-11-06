@@ -8,16 +8,12 @@
     "routing"
   ],
   "author": "WigWag<npm@wigwag.com> (http://www.wigwag.com)",
-  "licenses": [
-    {
-      "type": "MIT"
-    }
-  ],
+  "license": "MIT",
   "dependencies": {
     "nan": "^2.1.0"
     },
   "devDependencies": {
-    "pegjs": "^0.9.0",
+    "pegjs": "*",
     "nodeunit": "^0.9.1"
   },
 

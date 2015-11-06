@@ -1,13 +1,18 @@
 var nlnf = require('./nlnetfilter.js');
 var util = require('util');
+var cmn = require("../libs/common.js");
+var fs = require("fs");
+var parser = require("./node-netfilter.js");
 
 nfcommand = {
 
-	command: function(opts, cb) {
+	command: function(command, cb) {
 		var that = this;
+		var nft = that.nf.nft;
 
+		var opts = parser.parse(command);
 		nfcommand.build_command(opts,function(err){
-			console.dir(opts);
+			//console.dir(opts);
 			if(err) {
 				cb(err);
 			} else {

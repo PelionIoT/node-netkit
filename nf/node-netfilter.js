@@ -60,7 +60,6 @@ module.exports = (function() {
         peg$c17 = "ip",
         peg$c18 = { type: "literal", value: "ip", description: "\"ip\"" },
         peg$c19 = function(family) {
-        			cmn.dbg("family : " + familiy);
         			return family;
         		},
         peg$c20 = "table",

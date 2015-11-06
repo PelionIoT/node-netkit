@@ -3,9 +3,9 @@ var bufferpack = cmn.bufferpack;
 var dbg = cmn.dbg;
 
 var Attribute = function(params, attr, key) {
-	 console.dir(params);
-	 console.dir(attr);
-	 console.dir(key);
+	 //console.dir(params);
+	 //console.dir(attr);
+	 //console.dir(key);
 
 	this.key = key;
 	this.attributeType = Object.keys(attr)[0].split('_')[1];

@@ -48,10 +48,7 @@
                   "-std=c++11",
                   "-D_POSIX_C_SOURCE=200809L",
                   "-DNO_ERROR_CMN_OUTPUT=1",
-                  ],
-                "include_dirs": [
-                   "deps/twlib/include"
-                ],
+                ]
               }
             },
           }

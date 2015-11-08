@@ -1,5 +1,7 @@
 //add rule ip filter input tcp dport 22 saddr 192.168.1.0/24 accept
 //add rule ip filter input tcp dport 22 drop
+//list table filter
+//list chain table
 
 {
 	var nft = require('./nftables.js');
@@ -17,7 +19,7 @@ command
 			var cmd = {};
 			cmd.command = op;
 			cmd.type = ce.ty;
-			cmd.family = (fm == undefined) ? ipfamily : fm;
+			cmd.family = ipfamily || fm;
 			if(ce.ex != null)
 				cmd.params = ce.ex;
 			return cmd;
@@ -39,7 +41,7 @@ command_expression
 		{
 			return { ty: "table", ex:tb };
 		}
-	/ "chain" _ ch:hook_expression
+	/ "chain" _  ch:hook_expression
 		{
 			return { ty: "chain", ex: ch };
 		}

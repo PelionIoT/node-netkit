@@ -28,5 +28,6 @@
   "gypfile": true,
   "bin": {
     "nnf": "lib/nnf.js"
-  }
+  },
+  "license": "MIT"
 }

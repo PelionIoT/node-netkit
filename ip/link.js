@@ -7,7 +7,8 @@ var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
@@ -80,11 +81,11 @@ module.exports.link = function(operation,ifname, attrs, cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			sock.close();
 			return cb(err);
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 
 			netlinkLinkCommand.call(netkitObject,link_opts, sock, function(err,bufs) {
 				if(err) {
@@ -117,7 +118,7 @@ netlinkLinkCommand = function(opts,sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		var ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -143,7 +144,7 @@ netlinkLinkCommand = function(opts,sock, cb) {
 
 	var bufs = [];
 
-	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
+	debug("info_msg---> " + asHexBuffer(info_msg.pack()));
 	bufs.push(info_msg.pack());
 
 	if(typeof opts.attributes !== 'undefined')
@@ -167,7 +168,7 @@ netlinkLinkCommand = function(opts,sock, cb) {
 								}
 							}
 
-							dbg("info_msg---> " + asHexBuffer(macbuf));
+							debug("info_msg---> " + asHexBuffer(macbuf));
 							bufs.push(rt.buildRtattrBuf(attr_num,macbuf));
 						}
 					}

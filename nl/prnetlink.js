@@ -2,7 +2,8 @@ var nl = require('./netlink.js')
 var cmn = require('../libs/common.js');
 var bufferpack = cmn.bufferpack;
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 
 proc = {
 
@@ -72,12 +73,12 @@ proc = {
 		cn_msg._idx = proc.CN_IDX_PROC;
 		cn_msg._val = proc.CN_VAL_PROC;
 		cn_msg._len = 4;
-		dbg("cn_msg---> " + asHexBuffer(cn_msg.pack()));
+		debug("cn_msg---> " + asHexBuffer(cn_msg.pack()));
 		bufs.push(cn_msg.pack());
 
 		var cn_op = Buffer(4);
 		cn_op.writeUInt32LE(proc.PROC_CN_MCAST_LISTEN,0);
-		dbg("cn_op---> "  + asHexBuffer(cn_op));
+		debug("cn_op---> "  + asHexBuffer(cn_op));
 		bufs.push(cn_op);
 
 		nl.sendNetlinkCommand.call(this,sock,nl_hdr,bufs,cb);

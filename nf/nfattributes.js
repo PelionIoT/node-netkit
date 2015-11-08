@@ -2,7 +2,8 @@
 var Attribute = require('./nfattr.js');
 var cmn = require('../libs/common.js');
 var bufferpack = cmn.bufferpack;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 
 
 var NfAttributes = function(command_type, parameters) {
@@ -26,7 +27,7 @@ NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 	}
 
 	a.incrementNestLength(size);
-	dbg("** nest end - " + a.key + " : " + size.toString(16) );
+	debug("** nest end - " + a.key + " : " + size.toString(16) );
 };
 
 NfAttributes.prototype.getCommandObject = function(type){
@@ -44,14 +45,14 @@ NfAttributes.prototype.writeAttributes = function(bufs) {
 	keys.forEach(function(attr) {
 		var bf = that.attribute_array[attr].getBuffer();
 		if(bf) {
-			dbg("attr ---> " + bf.toString('hex'));
+			debug("attr ---> " + bf.toString('hex'));
 			bufs.push(bf);
 		}
 	});
 };
 
 NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
-	//console.log("params");
+	//debug("params");
 	//console.dir(params);
 	if(params == null) return;
 

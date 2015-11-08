@@ -540,7 +540,7 @@ rt = {
 	        bufs.unshift(rtabuf);
 //     		len = (len + 3) & 0xFFFFFFFFFC; // must always be aligned, with a size multiple of 4 bytes
 	        var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-//	        console.log("pad: " + pad);
+//	        debug("pad: " + pad);
 	        if(pad) {
 	        	var padbuf = new Buffer(pad);
 	        	padbuf.fill(0);
@@ -572,19 +572,19 @@ rt = {
 
 			var keys, payload;
 			if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
-			    //console.log('LINK');
+			    //debug('LINK');
 				keys = rt.link_info_attr_name_map;
 				payload = bufferpack.unpack(ifinfomsg_fmt,data,index)
 			} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
-			    //console.log('ADDR');
+			    //debug('ADDR');
 				keys = rt.addr_info_attr_name_map;
 				payload = bufferpack.unpack(ifaddrmsg_fmt,data,index)
 			} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
-			    //console.log('ROUTE');
+			    //debug('ROUTE');
 				keys = rt.route_info_attr_name_map
 				payload = bufferpack.unpack(rtmsg_fmt,data,index)
 			} else if(this.RTM_NEWNEIGH <= type && type <= this.RTM_GETNEIGH) {
-			    //console.log('NEIGH');
+			    //debug('NEIGH');
 				keys = rt.neigh_info_attr_name_map
 				payload = bufferpack.unpack(ndmsg_fmt,data,index)
 			}else {
@@ -596,7 +596,7 @@ rt = {
 			// skip the header,header payload padding that rounds the message up to multiple of 16
 			index += rt.payload_sizes[type - 16];
 
-			// console.log('start index = ' + index);
+			// debug('start index = ' + index);
 			ret = rt.parseAttrs(data, index, total_len, keys);
 
 			ret['payload'] = payload;
@@ -610,10 +610,10 @@ rt = {
 		var index = attr_start;
 
 		while(index < total_len) {
-			//console.log('index = ' + index);
+			//debug('index = ' + index);
 			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 			var attr_type = data.readUInt16LE(index + 2);
-			//console.log('attr = ' + attr_type + ' len = ' + len);
+			//debug('attr = ' + attr_type + ' len = ' + len);
 
 			index += 4; // index to the data
 			var value;
@@ -627,12 +627,12 @@ rt = {
 				} else {
 					ret[key] = data.slice(index, index + len);// bytes;
 				}
-				// console.log('added [' + key + '] = ' + ret[key])
+				// debug('added [' + key + '] = ' + ret[key])
 			}
 
 			// get to next attribute padding to mod 4
 			var pad =  ((len + 3) & 0xFFFFFFFFFC) - len;
-			// console.log("pad: " + pad);
+			// debug("pad: " + pad);
 			index += (len + pad);
 		};
 

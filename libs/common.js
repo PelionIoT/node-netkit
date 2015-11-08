@@ -1,7 +1,6 @@
 var colors = require('./colors.js');
 
 var common_logger = function(){
-	console.log("bobby");
 	var debug_logger = console.log;
 	var error_logger = console.log;
 

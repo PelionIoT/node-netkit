@@ -81,11 +81,11 @@ module.exports.link = function(operation,ifname, attrs, cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			sock.close();
 			return cb(err);
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 
 			netlinkLinkCommand.call(netkitObject,link_opts, sock, function(err,bufs) {
 				if(err) {

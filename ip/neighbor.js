@@ -81,11 +81,11 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			cb(err);
 			return;
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 
 			netlinkNeighCommand.call(netkitObject,neigh_opts, sock, function(err,bufs) {
 				if(err) {
@@ -165,7 +165,7 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	var len = 0;
 	for (var n=0;n<bufs.length;n++)
 		len += bufs[n].length;
-	console.log("nl_hdr._length = " + nl_hdr._length);
+	debug("nl_hdr._length = " + nl_hdr._length);
 	nl_hdr._len = nl_hdr._length + len;
 	bufs.unshift(nl_hdr.pack());
 	var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
@@ -178,11 +178,11 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 		var sock = this.newNetlinkSocket();
 		sock.create(null,function(err) {
 			if(err) {
-				//console.log("socket.create() Error: " + util.inspect(err));
+				//debug("socket.create() Error: " + util.inspect(err));
 				cb(err);
 				return;
 			} else {
-				//console.log("Created netlink socket.");
+				//debug("Created netlink socket.");
 			}
 	            // that was exciting. Now let's close it.
 
@@ -195,20 +195,20 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	            		console.error("** Error: " + util.inspect(err));
 	            		cb(err);
 	            	} else {
-	            		console.log("in cb: " + util.inspect(arguments));
+	            		debug("in cb: " + util.inspect(arguments));
 	            		cb();
 	            	}
 	            }, function(err,bufs) {
-	            	console.log("in reply cb...");
+	            	debug("in reply cb...");
 	            	if(err) {
-	            		console.log("** Error in reply: ");
+	            		error("** Error in reply: ");
 	            		for(var n=0;n<bufs.length;n++) {
-	            			//console.log('here');
+	            			//debug('here');
 	            			//console.dir(bufs[n]);
-	            			//console.log('buf len = ' + bufs[n].length);
+	            			//debug('buf len = ' + bufs[n].length);
 	            			var errobj = this.nl.parseErrorHdr(bufs[n]);
 	            			//console.dir(this.errorFromErrno(errobj._error));
-	            			//console.log(util.inspect(errobj));
+	            			//debug(util.inspect(errobj));
 	            		}
 	            	}
 	            });

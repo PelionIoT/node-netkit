@@ -13,7 +13,7 @@ var netutils = cmn.netutils;
 
 
 module.exports.address = function(operation,family,ifname,addr,label,cb) {
-	// console.log("operation = " + operation);
+	// debug("operation = " + operation);
 
 	var netkitObject = this;
 	var opts;
@@ -45,7 +45,7 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			cb(err);
 			return;
 		}
@@ -131,11 +131,11 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
     	    };
 
 			if(err) {
-				console.log("* Error" + util.inspect(err));
+				error("* Error" + util.inspect(err));
 				sock.close()
 				return cb(err);
 			} else {
-				 //console.log("bufs --> ");
+				 //debug("bufs --> ");
 				 //console.dir(bufs);
 
 				var keys = Object.keys(bufs);
@@ -148,7 +148,7 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 
 						opts.addr = bufs[key]['event']['address'];
 
-						// console.log("bufs.length = " + bufs.length + " i = " + key);
+						// debug("bufs.length = " + bufs.length + " i = " + key);
 						// console.dir(opts);
 
 						netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
@@ -176,7 +176,7 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 				sock.close();
 				return cb(err);
 			} else {
-				//console.log("bufs--->");
+				//debug("bufs--->");
 				//console.dir(bufs);
 				sock.close();
 				return cb(null,bufs);
@@ -190,7 +190,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 
 	var ifndex;
 	if(opts.hasOwnProperty('ifname')) {
-		console.log("ifname = " + opts['ifname']);
+		debug("ifname = " + opts['ifname']);
 		ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
 			error("* Error: " + util.inspect(ifndex));
@@ -199,7 +199,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 		}
 	}
 
-	//console.log('ifndex = ' + ifndex);
+	//debug('ifndex = ' + ifndex);
 
 	var nl_hdr = nl.buildHdr();
 
@@ -240,7 +240,7 @@ netlinkAddrCommand = function(opts, sock, cb) {
 		var addr = opts['addr'];
 		var destbuf;
 		if(typeof addr === 'string') {
-			console.log("family = " + family);
+			debug("family = " + family);
 			if(family === this.AF_UNSPEC) {
 				var f = cmn.isaddress(addr)
 				if(util.isError(f)) {

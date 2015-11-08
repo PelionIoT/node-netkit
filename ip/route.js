@@ -29,8 +29,8 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 			return cb(family);
 		}
 	}
-	// console.log("inetsrc = " + inetsrc);
-	// console.log("inetdest = " + inetdest);
+	// debug("inetsrc = " + inetsrc);
+	// debug("inetdest = " + inetdest);
 
 	if(!operation || operation === 'show') {
 		var getneigh_command_opts = {
@@ -124,11 +124,11 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			cb(err);
 			return;
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 
 			netlinkRouteCommand.call(netkitObject,route_opts, sock, function(err,bufs) {
 				if(err) {

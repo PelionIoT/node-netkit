@@ -52,7 +52,7 @@ NfAttributes.prototype.writeAttributes = function(bufs) {
 };
 
 NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
-	//console.log("params");
+	//debug("params");
 	//console.dir(params);
 	if(params == null) return;
 

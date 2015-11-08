@@ -137,7 +137,7 @@ nl = {
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
 		debug("Sending---> " + asHexBuffer(all));
-		//console.log('all len = ' + all.length);
+		//debug('all len = ' + all.length);
 
 	    var msgreq = sock.createMsgReq();
 
@@ -148,21 +148,21 @@ nl = {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
-	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
+	    		//debug("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},
 
 	sendNetlinkRequest: function(sock, msgreq, cb) {
 		//debug("Sending---> " + asHexBuffer(buf));
-		//console.log('all len = ' + all.length);
+		//debug('all len = ' + all.length);
 
 	    sock.sendMsg(msgreq, function(err,bytes) {
 	    	if(err) {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
-	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
+	    		//debug("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},

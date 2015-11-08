@@ -64,11 +64,11 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			cb(err);
 			return;
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 		}
 	 });
 

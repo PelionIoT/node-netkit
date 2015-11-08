@@ -1,6 +1,10 @@
 var pr = require('../nl/prnetlink.js')
 var nl = require('../nl/netlink.js');
 
+var cmn = require('../libs/common.js');
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
+
 nlprocess = {
 
 	proc_fork_fmt: 	"I(cpu)d(timestamp_ns)" +
@@ -58,7 +62,7 @@ nlprocess = {
 	// See struct proc_event in /linux/include/uapi/linux/cn_proc.h
 	processProcEvent: function(buf) {
 		if(!(buf instanceof Buffer)) return;
-		//console.log('buf-->' + buf.toJSON());
+		//debug('buf-->' + buf.toJSON());
 
 		// Slice out the nl header and cn hdr to get to the cn data
 		buf = buf.slice(36, buf.length-1);
@@ -104,7 +108,7 @@ nlprocess = {
 				return ev;
 				break;
 			default:
-				//console.log("default");
+				//debug("default");
 				return;
 		}
 	},

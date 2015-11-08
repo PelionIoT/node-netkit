@@ -57,11 +57,11 @@ var ipcommand = {
 		var sock_opts = {};
 		sock.create(sock_opts,function(err) {
 			if(err) {
-				console.log("socket.create() Error: " + util.inspect(err));
+				debug("socket.create() Error: " + util.inspect(err));
 				sock.close();
 				return cb(err);
 			} else {
-				//console.log("Created netlink socket.");
+				//debug("Created netlink socket.");
 
 				var getlink_command_opts = {
 					type: 	rt.RTM_GETLINK, // get link
@@ -106,7 +106,7 @@ var ipcommand = {
 											cdata.push(cObject);
 										}
 									}
-									//console.log("cdata ---> ");
+									//debug("cdata ---> ");
 									//console.dir(cdata);
 									sock.close();
 									return cb(null, cdata);

@@ -887,7 +887,10 @@ namespace _errcmn {
 
 		char *get_error_str(int _errno) {
 			char *buf = (char *) malloc(max_error_buf);
-			char *ret = strerror_r(_errno,buf,max_error_buf);
+			char *ret = (char *) malloc(max_error_buf);
+			char *error_str = strerror_r(_errno,buf,max_error_buf);
+			memcpy(ret, error_str, strlen(error_str) + 1);
+			free(buf);
 			return ret;
 		}
 

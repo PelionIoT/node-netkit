@@ -2,7 +2,8 @@ var rt = require('../nl/rtnetlink.js');
 var cmn = require('../libs/common.js');
 var nativelib = cmn.nativelib;
 var util = require('util');
-
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 
 var ipparse = {
 
@@ -103,19 +104,19 @@ var ipparse = {
 	},
 
 	parseAttributes: function(filters,links,buf) {
-		//console.log("data --> " + buf.toJSON());
-		// console.log("links --> " + JSON.stringify(links));
+		//debug("data --> " + buf.toJSON());
+		// debug("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
 		if(typeof(at['operation']) !== 'undefined') {
 			//console.dir(at);
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
-			//console.log("handler_name = " + handler_name);
+			//debug("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 
 			try {
 				var data = boundApply(at,links);
 			} catch(err) {
-				cmn.err(util.inspect(err) + " attributes = " + util.inspect(at));
+				error(util.inspect(err) + " attributes = " + util.inspect(at));
 			}
 
 			 if(data === undefined) {
@@ -142,7 +143,7 @@ var ipparse = {
 				for(var f in filters_array) {
 					var object_match = true;
 					for(fkey in filters_array[f]) {
-						//console.log("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+						//debug("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
 						if(typeof(data[fkey]) !== 'undefined') {
 							if(data.hasOwnProperty(fkey) && (data[fkey] !== filters_array[f][fkey])) {
 								object_match = false;
@@ -150,14 +151,14 @@ var ipparse = {
 							}
 						} else {
 							var ev = data['event'];
-							//console.log("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+							//debug("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
 							if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
 								object_match = false;
 								break;
 							}
 						}
 					}
-					//console.log("object_match = " + object_match + " applies = " + applies);
+					//debug("object_match = " + object_match + " applies = " + applies);
 					applies |= object_match;
 				}
 			}
@@ -187,7 +188,7 @@ var ipparse = {
 				ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
 			ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
 		} catch(err) {
-			cmn.err("error parsing ling: " +util.inspect(err) + util.inspect(ch));
+			error("error parsing ling: " +util.inspect(err) + util.inspect(ch));
 		}
 
 		var data = {

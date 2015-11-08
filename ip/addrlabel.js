@@ -6,8 +6,8 @@ var ipparse = require('../ip/ipparse.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
-var err = cmn.err;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 addrlbl_attributes = {
@@ -17,7 +17,7 @@ addrlbl_attributes = {
 
 
 module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb) {
-	// console.log("operation = " + operation);
+	// debug("operation = " + operation);
 
 	var netkitObject = this;
 	var opts;
@@ -33,7 +33,7 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			cb(err);
 			return;
 		}
@@ -99,11 +99,11 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 
 		ipcommand.sendInquiry(netkitObject,filters,getaddr_command_opts,function(err, bufs){
 			if(err) {
-				console.log("* Error" + util.inspect(err));
+				error("* Error" + util.inspect(err));
 				cb(err);
 				return;
 			} else {
-				//console.log("bufs --> ");
+				//debug("bufs --> ");
 				//console.dir(bufs);
 
 				var keep_going = true;
@@ -111,11 +111,11 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 
 					opts.prefix = bufs[i]['event']['address'];
 
-					//console.log("bufs.length = " + bufs.length + " i = " + i);
+					//debug("bufs.length = " + bufs.length + " i = " + i);
 					//console.dir(opts);
 					netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
 						if(err) {
-							//console.log("err: " + util.inspect(err));
+							//error("err: " + util.inspect(err));
 						} else {
 							//cb(null,bufs);
 							//return;
@@ -140,7 +140,7 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 				cb(err);
 				return;
 			} else {
-				//console.log("bufs--->");
+				//debug("bufs--->");
 				//console.dir(bufs);
 				cb(null,bufs);
 				return;
@@ -157,13 +157,13 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
 	}
 
-	//console.log('ifndex = ' + ifndex);
+	//debug('ifndex = ' + ifndex);
 
 	var nl_hdr = nl.buildHdr();
 
@@ -206,7 +206,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 			if(family === this.AF_UNSPEC) {
 				var f = cmn.isaddress(prefix)
 				if(util.isError(f)) {
-					err("* Error: " + util.inspect(f));
+					error("* Error: " + util.inspect(f));
 					cb(ans);
 					return;
 				}
@@ -215,7 +215,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 
 			var ans = this.toAddress(prefix, family);
 			if(util.isError(ans)) {
-				err("* Error: " + util.inspect(ans));
+				error("* Error: " + util.inspect(ans));
 				cb(ans);
 				return;
 			}
@@ -225,21 +225,21 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 			cb(new Error("Error: netlinkAddrCommand() ip address is not a string"))
 		}
 
-		dbg("addrlabl_msg---> " + asHexBuffer(addrlabl_msg.pack()));
+		debug("addrlabl_msg---> " + asHexBuffer(addrlabl_msg.pack()));
 		bufs.push(addrlabl_msg.pack());
 
 		if(opts.hasOwnProperty('label')) {
 			var label = opts['label'];
 			if(label) {
 				var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_LABEL, Buffer(label));
-				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
+				debug("rt_attr label---> " + asHexBuffer(rt_attr));
 				bufs.push(rt_attr);
 			}
 		}
 
 		var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_ADDRESS,destbuf.bytes);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 

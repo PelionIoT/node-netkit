@@ -4,7 +4,8 @@ var nft = require('../nf/nftables.js');
 var NfAttributes = require('../nf/nfattributes.js');
 
 var bufferpack = cmn.bufferpack;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var util = require('util');
 
 nf = {
@@ -164,7 +165,7 @@ nf = {
 			}
 
 			if(opts.hasOwnProperty("type_flags")) {
-				//console.log('type=' + opts['type']);
+				//debug('type=' + opts['type']);
 				nl_hdr._flags |= opts['type_flags'];
 			} else {
 				return cb(new Error("no type option specified"));
@@ -208,7 +209,7 @@ nf = {
 
 	parseNfattributes: function(data) {
 		var ret = {};
-		console.log("data: " + data.toString('hex') );
+		debug("data: " + data.toString('hex') );
 
 		if(!data || !Buffer.isBuffer(data) || data.length < 16) {
 			return ret;
@@ -224,24 +225,24 @@ nf = {
 			var name = "";
 			var keys;
 			if(this.NFT_MSG_NEWTABLE <= type && type <= this.NFT_MSG_DELTABLE) {
-			    //console.log('TABLE');
+			    //debug('TABLE');
 				name = 'table';
 			} else if(this.NFT_MSG_NEWCHAIN <= type && type <= this.NFT_MSG_DELCHAIN) {
-			    //console.log('CHAIN');
+			    //debug('CHAIN');
 				name = 'chain';
 			} else if(this.NFT_MSG_NEWRULE <= type && type <= this.NFT_MSG_DELRULE) {
-			    //console.log('RULE');
+			    //debug('RULE');
 				keys = nft.nft_rule_attributes
 				// payload = bufferpack.unpack(rtmsg_fmt,data,index)
 				name = 'rule';
 			} else if(this.NFT_MSG_NEWSET <= type && type <= this.NFT_MSG_DELSET) {
-			    //console.log('SET');
+			    //debug('SET');
 				name = 'set';
 			} else if(this.NFT_MSG_NEWSETELEM <= type && type <= this.NFT_MSG_DELSETELEM) {
-			    //console.log('SETELEM');
+			    //debug('SETELEM');
 				name = 'setelem';
 			} else if(this.NFT_MSG_NEWGEN <= type && type <= this.NFT_MSG_DELGEN) {
-			    //console.log('GEN');
+			    //debug('GEN');
 				name = 'gen';
 			}else {
 				console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
@@ -252,7 +253,7 @@ nf = {
 			// skip the nfgenmsg header
 			index += 4;
 
-			// console.log('start index = ' + index);
+			// debug('start index = ' + index);
 			var payload = nf.parseAttrs(data, index, total_len, keys );
 
 			ret['operation'] = this.getNfTypeName(type);
@@ -275,7 +276,7 @@ nf = {
 			var attr_type_val = data.readUInt16LE(index + 2);
 			var remaining = data.slice(index).length;
 
-			console.log("attr_type_val: " + attr_type_val.toString(16) + " name: " + Object.keys(start_keys)[attr_type_val] + " len: " + len.toString(16)
+			debug("attr_type_val: " + attr_type_val.toString(16) + " name: " + Object.keys(start_keys)[attr_type_val] + " len: " + len.toString(16)
 			 	+ " round_len: " + round_len.toString(16) + " buf_len: " + remaining.toString(16));
 
 			var field_name = Object.keys(start_keys)[attr_type_val].split('_')[2].toLowerCase();
@@ -287,11 +288,11 @@ nf = {
 			var attr_value;
 			if(len === remaining) {
 				attr_value = data.slice(index, index + 4);
-				console.log("NESTED -- attr_value: " + attr_value.toString('hex'));
-				console.log("remaining: " + data.slice(index).toString('hex'));
+				debug("NESTED -- attr_value: " + attr_value.toString('hex'));
+				debug("remaining: " + data.slice(index).toString('hex'));
 			} else {
 				attr_value = data.slice(index + 4, index + round_len);
-				console.log("attr_value: " + attr_value.toString('hex'));
+				debug("attr_value: " + attr_value.toString('hex'));
 			}
 
 

@@ -18,7 +18,10 @@ namespace _net {
 
 	char *get_error_str(int _errno) {
 		char *buf = (char *) malloc(max_error_buf);
-		char* ret = strerror_r(_errno,buf,max_error_buf); // glibc thread safe version
+		char *ret = (char *) malloc(max_error_buf);
+		char *error_str = strerror_r(_errno,buf,max_error_buf);
+		memcpy(ret, error_str, strlen(error_str) + 1);
+		free(buf);
 		return ret;
 	}
 
@@ -64,7 +67,6 @@ namespace _net {
 	}
 
 	v8::Handle<v8::Value> err_ev_to_JS(err_ev &e, const char *prefix) {
-//		v8::Local<v8::Object> retobj = v8::Object::New();
 		v8::Local<v8::Value> retobj = Nan::Undefined();
 
 		if(e.hasErr()) {
@@ -75,7 +77,6 @@ namespace _net {
 				memset(temp,0,len);
 				strcpy(temp, prefix);
 				strcat(temp, e.errstr);
-//				retobj->Set(v8::String::New("message"), v8::String::New(temp));
 				retobj = v8::Exception::Error(Nan::New(temp).ToLocalChecked());
 				free(temp);
 			}

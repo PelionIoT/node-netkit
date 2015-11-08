@@ -6,8 +6,8 @@ var ipparse = require('../ip/ipparse.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
-var err = cmn.err;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 addrlbl_attributes = {
@@ -157,7 +157,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -206,7 +206,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 			if(family === this.AF_UNSPEC) {
 				var f = cmn.isaddress(prefix)
 				if(util.isError(f)) {
-					err("* Error: " + util.inspect(f));
+					error("* Error: " + util.inspect(f));
 					cb(ans);
 					return;
 				}
@@ -215,7 +215,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 
 			var ans = this.toAddress(prefix, family);
 			if(util.isError(ans)) {
-				err("* Error: " + util.inspect(ans));
+				error("* Error: " + util.inspect(ans));
 				cb(ans);
 				return;
 			}
@@ -225,21 +225,21 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 			cb(new Error("Error: netlinkAddrCommand() ip address is not a string"))
 		}
 
-		dbg("addrlabl_msg---> " + asHexBuffer(addrlabl_msg.pack()));
+		debug("addrlabl_msg---> " + asHexBuffer(addrlabl_msg.pack()));
 		bufs.push(addrlabl_msg.pack());
 
 		if(opts.hasOwnProperty('label')) {
 			var label = opts['label'];
 			if(label) {
 				var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_LABEL, Buffer(label));
-				dbg("rt_attr label---> " + asHexBuffer(rt_attr));
+				debug("rt_attr label---> " + asHexBuffer(rt_attr));
 				bufs.push(rt_attr);
 			}
 		}
 
 		var rt_attr = rt.buildRtattrBuf(addrlbl_attributes.IFA_ADDRESS,destbuf.bytes);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 

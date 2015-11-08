@@ -1,6 +1,7 @@
 var cmn = require('../libs/common.js');
 var bufferpack = cmn.bufferpack;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 
 var Attribute = function(params, attr, key) {
 	 //console.dir(params);
@@ -20,12 +21,12 @@ var Attribute = function(params, attr, key) {
     this.isNested = this.isNest | this.isList | this.isExpression;
 
 	var ns = this.isNested ? "(NEST)" : "";
-	dbg("key = " + key + ns +
+	debug("key = " + key + ns +
 		" typeval = " + this.spec.typeval +
 		" type = " + this.spec.type +
 		" size = " + this.spec.size +
 		" val = " + this.value );
-	dbg("buf --> " + this.buffer.toString('hex'))
+	debug("buf --> " + this.buffer.toString('hex'))
 };
 
 Attribute.prototype.getValue = function(attrObject, key) {

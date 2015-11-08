@@ -5,7 +5,8 @@ var ipparse = require('../ip/ipparse.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 var ipcommand = {
@@ -123,7 +124,7 @@ var ipcommand = {
 		if(opts.hasOwnProperty('ifname')) {
 			var ifndex = this.ifNameToIndex(opts['ifname']);
 			if(util.isError(ifndex)) {
-				err("* Error: " + util.inspect(ifndex));
+				error("* Error: " + util.inspect(ifndex));
 				cb(ifndex); // call w/ error
 				return;
 			}
@@ -155,13 +156,13 @@ var ipcommand = {
 
 		var bufs = [];
 
-		dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
+		debug("info_msg---> " + asHexBuffer(info_msg.pack()));
 		bufs.push(info_msg.pack());
 
 	 	var attr_data = Buffer(4);
 	 	attr_data.writeUInt32LE(rt.RTEXT_FILTER_VF, 0);
 		var rt_attr = rt.buildRtattrBuf(rt.IFLA_EXT_MASK, attr_data);
-		dbg("rt_attr---> "  + asHexBuffer(rt_attr));
+		debug("rt_attr---> "  + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 
 		nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);

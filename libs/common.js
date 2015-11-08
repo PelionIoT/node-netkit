@@ -1,5 +1,26 @@
 var colors = require('./colors.js');
 
+var common_logger = function(){
+	console.log("bobby");
+	var debug_logger = console.log;
+	var error_logger = console.log;
+
+	return {
+		debug: function() {
+			debug_logger(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
+		},
+		error: function() {
+			error_logger(colors.redFG('err: ') + colors.redFG.apply(undefined,arguments));
+		},
+		set_debug_logger: function(dlogger) {
+			debug_logger = dlogger;
+		},
+		set_error_logger: function(elogger) {
+			error_logger = elogger;
+		}
+	};
+}();
+
 module.exports = {
 
 	nativelib: function() {
@@ -19,13 +40,7 @@ module.exports = {
 		return b.toString('hex');
 	},
 
-	dbg: function() {
-		console.log(colors.greyFG('dbg: ') + colors.yellowFG.apply(undefined,arguments));
-	},
-
-	err: function() {
-		console.log(colors.redFG('err: ') + colors.redFG.apply(undefined,arguments));
-	},
+	logger: common_logger,
 
 	bufferpack: function() {
 		return require('./bufferpack.js');

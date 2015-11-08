@@ -4,7 +4,8 @@ var nft = require('../nf/nftables.js');
 var NfAttributes = require('../nf/nfattributes.js');
 
 var bufferpack = cmn.bufferpack;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var util = require('util');
 
 nf = {

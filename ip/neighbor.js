@@ -7,7 +7,8 @@ var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
@@ -101,7 +102,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	var ifndex = this.ifNameToIndex(ifname);
 	if(util.isError(ifndex)) {
-		err("* Error: " + util.inspect(ifndex));
+		error("* Error: " + util.inspect(ifndex));
 		cb(ifindex); // call w/ error
 		return;
 	}
@@ -120,7 +121,7 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	//var rt_msg = this.rt.buildRtmsg();
 
 //	bufs.push(nl_hdr.pack());
-	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
+	debug("nd_msg---> " + asHexBuffer(nd_msg.pack()));
 	bufs.push(nd_msg.pack());
 
 	if(inet6dest) {
@@ -135,8 +136,8 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 			var destbuf = inet6dest;
 		var rt_attr = this.rt.buildRtattrBuf(this.rt.neigh_attributes.NDA_DST,destbuf.bytes);
 		console.dir(destbuf);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	} else {
 		cb(new Error("bad parameters."));
@@ -158,7 +159,7 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 			return;
 		}
 		var rt_attr = this.rt.buildRtattrBuf(this.rt.neigh_attributes.NDA_LLADDR,macbuf);
-		dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
+		debug("rt_attr lladdr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 	var len = 0;
@@ -169,7 +170,7 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 	bufs.unshift(nl_hdr.pack());
 	var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
-	dbg("Sending---> " + asHexBuffer(all));
+	debug("Sending---> " + asHexBuffer(all));
 
 	if(sock) {
 		cb("Not implemented");
@@ -227,7 +228,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		var ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -262,7 +263,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 
 	var bufs = [];
 
-	dbg("nd_msg---> " + asHexBuffer(nd_msg.pack()));
+	debug("nd_msg---> " + asHexBuffer(nd_msg.pack()));
 	bufs.push(nd_msg.pack());
 
 	// Build the rt attributes for the command
@@ -288,8 +289,8 @@ netlinkNeighCommand = function(opts,sock, cb) {
 		}
 
 		var rt_attr = rt.buildRtattrBuf(rt.neigh_attributes.NDA_DST,destbuf.bytes);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 
@@ -309,7 +310,7 @@ netlinkNeighCommand = function(opts,sock, cb) {
 			return;
 		}
 		var rt_attr = rt.buildRtattrBuf(rt.neigh_attributes.NDA_LLADDR,macbuf);
-		dbg("rt_attr lladdr---> " + asHexBuffer(rt_attr));
+		debug("rt_attr lladdr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 

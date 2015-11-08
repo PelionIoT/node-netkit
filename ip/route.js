@@ -6,7 +6,8 @@ var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
@@ -146,7 +147,7 @@ netlinkRouteCommand = function(opts,sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		var ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -191,7 +192,7 @@ netlinkRouteCommand = function(opts,sock, cb) {
 
 	var bufs = [];
 
-	dbg("rt_msg---> " + asHexBuffer(rt_msg.pack()));
+	debug("rt_msg---> " + asHexBuffer(rt_msg.pack()));
 	bufs.push(rt_msg.pack());
 
 	// Build the rt attributes for the command
@@ -217,8 +218,8 @@ netlinkRouteCommand = function(opts,sock, cb) {
 		}
 
 		var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_DST,destbuf.bytes);
-		dbg("destbuf---> " + asHexBuffer(destbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 
@@ -244,8 +245,8 @@ netlinkRouteCommand = function(opts,sock, cb) {
 		}
 
 		var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_SRC,srcbuf.bytes);
-		dbg("srcbuf---> " + asHexBuffer(srcbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("srcbuf---> " + asHexBuffer(srcbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 
@@ -271,8 +272,8 @@ netlinkRouteCommand = function(opts,sock, cb) {
 		}
 
 		var rt_attr = rt.buildRtattrBuf(rt.route_attributes.RTA_GATEWAY,srcbuf.bytes);
-		dbg("srcbuf---> " + asHexBuffer(srcbuf.bytes));
-		dbg("rt_attr---> " + asHexBuffer(rt_attr));
+		debug("srcbuf---> " + asHexBuffer(srcbuf.bytes));
+		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);
 	}
 	nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);

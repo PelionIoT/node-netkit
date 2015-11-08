@@ -217,7 +217,7 @@ module.exports = (function() {
         				}
         			};
         		},
-        peg$c81 = function(prot) { cmn.dbg("protocol");
+        peg$c81 = function(prot) {
         			return [
         			{
         				elem:
@@ -248,7 +248,7 @@ module.exports = (function() {
         peg$c82 = function(hd) {
          			return hd;
          		},
-        peg$c83 = function(field) {cmn.dbg("network field");
+        peg$c83 = function(field) {
         			payload_len = field.len;
         			return {
         				elem:
@@ -263,7 +263,7 @@ module.exports = (function() {
         	            }
         	        };
         		},
-        peg$c84 = function(field) {cmn.dbg("transport field");
+        peg$c84 = function(field) {
         			payload_len = field.len;
         			return {
         				elem:
@@ -278,7 +278,7 @@ module.exports = (function() {
         	            }
         	        };
         		},
-        peg$c85 = function(num) {cmn.dbg("number");
+        peg$c85 = function(num) {
         		var prepend = "";
         		var numstr = num.toString(16);
         		var pad = payload_len * 2;
@@ -302,7 +302,7 @@ module.exports = (function() {
         				]
         			};
         		},
-        peg$c86 = function(quads) { cmn.dbg("ipv6addr");
+        peg$c86 = function(quads) {
         			if(ipfamily !== 'ip6') throw new Error("family != ip6 when ipv6 address detected")
         			return {
         	            elem:
@@ -319,7 +319,7 @@ module.exports = (function() {
         				}
         			};
         		},
-        peg$c87 = function(octets) {  cmn.dbg("ipv4addr");
+        peg$c87 = function(octets) {
         			if(ipfamily !== 'ip') throw new Error("family != ip when ip address detected")
         			var addr = new Buffer(4);
         			addr.writeUInt8( parseInt(octets[0], 10), 0);
@@ -341,7 +341,7 @@ module.exports = (function() {
         				}
         			};
         		},
-        peg$c88 = function(cidr) {   cmn.dbg("cidr")
+        peg$c88 = function(cidr) {
         			return {
         	            elem:
         	            {

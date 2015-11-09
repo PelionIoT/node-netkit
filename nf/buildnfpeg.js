@@ -16,4 +16,4 @@ console.log("inputFile: " + inputFile);
 
 var grammer = fs.readFileSync(inputFile, 'utf8');
 var parser = PEG.buildParser(grammer, { output: "source" });
-fs.writeFileSync("./node-netfiler.js", parser );
+fs.writeFileSync("./node-netfilter.js", parser );

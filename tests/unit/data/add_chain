@@ -1,0 +1,1 @@
+{"command":"add","type":"chain","family":"ip","params":{"table":"filter","name":"input","type":"filter","hook":{"hooknum":1,"priority":"0"}}}

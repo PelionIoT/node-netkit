@@ -1,7 +1,7 @@
 var rt = require('../../ip/ipparse.js');
 
 var fs = require('fs');
-var links = JSON.parse(fs.readFileSync('./tests/unit/links.json', 'utf8'));
+var links = JSON.parse(fs.readFileSync('./tests/unit/data/links.json', 'utf8'));
 
 var lo_obj = { ifname: 'lo',
 ifnum: 1,

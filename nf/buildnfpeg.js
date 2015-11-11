@@ -12,8 +12,10 @@ var PEG = require('pegjs');
 var fs = require('fs');
 
 var inputFile = __dirname + "/node-netfilter.pegjs";
+var outputFile = __dirname + "/node-netfilter.js";
 console.log("inputFile: " + inputFile);
+console.log("outputFile: " + outputFile);
 
 var grammer = fs.readFileSync(inputFile, 'utf8');
 var parser = PEG.buildParser(grammer, { output: "source", exportVar: "module.exports" });
-fs.writeFileSync("./node-netfilter.js", "module.exports = " + parser );
+fs.writeFileSync(outputFile, "module.exports = " + parser );

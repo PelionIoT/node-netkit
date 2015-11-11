@@ -6,6 +6,8 @@
 {
 	var nft = require('./nftables.js');
 	var cmn = require('../libs/common.js');
+	var debug = cmn.logger.debug;
+
 	var ipfamily = "ip" // default family
 	var payload_len = 0;
 }
@@ -14,7 +16,7 @@ start
 	= command:command { return command; }
 
 command
-	= op:operation fm:family? ce:command_expression
+	= op:operation fm:family? ce:command_expression?
 		{
 			var cmd = {};
 			cmd.command = op;
@@ -31,7 +33,7 @@ operation
 family
 	= family:("ip6" / "ip") _
 		{
-			cmn.dbg("family : " + familiy);
+			debug("family : " + family);
 			return family;
 		}
 
@@ -129,9 +131,6 @@ table_expression
 rule_criteria
 	= fd:field vl:value
 		{
-			// console.dir(protocol);
-			// console.dir(field);
-			// console.dir(value);
 			return { field : fd , value : vl };
 		}
 
@@ -237,7 +236,7 @@ accept
 
 protocol
 	= prot:( tcp / udp ) _
-		{ cmn.dbg("protocol");
+		{ debug("protocol");
 			return [
 			{
 				elem:
@@ -274,7 +273,7 @@ field
 
 network_header
 	= field:( saddr / daddr ) _
-		{cmn.dbg("network field");
+		{debug("network field");
 			payload_len = field.len;
 			return {
 				elem:
@@ -292,7 +291,7 @@ network_header
 
 transport_header
 	= field:( ipprotocol / dport ) _
-		{cmn.dbg("transport field");
+		{debug("transport field");
 			payload_len = field.len;
 			return {
 				elem:
@@ -310,7 +309,7 @@ transport_header
 
 number
 	= num:(hex / decimal) _
-		{cmn.dbg("number");
+		{debug("number");
 		var prepend = "";
 		var numstr = num.toString(16);
 		var pad = payload_len * 2;
@@ -337,7 +336,7 @@ number
 
 ipv6addr
 	= quads:quads
-		{ cmn.dbg("ipv6addr");
+		{ debug("ipv6addr");
 			if(ipfamily !== 'ip6') throw new Error("family != ip6 when ipv6 address detected")
 			return {
 	            elem:
@@ -357,7 +356,7 @@ ipv6addr
 
 ipv4addr
 	= octets:octets
-		{  cmn.dbg("ipv4addr");
+		{  debug("ipv4addr");
 			if(ipfamily !== 'ip') throw new Error("family != ip when ip address detected")
 			var addr = new Buffer(4);
 			addr.writeUInt8( parseInt(octets[0], 10), 0);
@@ -382,7 +381,7 @@ ipv4addr
 
 cidr
 	= cidr:(ipv4cidr / ipv6cidr)
-		{   cmn.dbg("cidr")
+		{   debug("cidr")
 			return {
 	            elem:
 	            {

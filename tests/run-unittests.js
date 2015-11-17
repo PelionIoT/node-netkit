@@ -13,6 +13,7 @@ catch(e) {
     process.exit();
 }
 
+console.log("__dirname = " + __dirname)
 process.chdir(__dirname + '/../');
 
 //run unit tests
@@ -22,5 +23,6 @@ process.chdir(__dirname + '/../');
 
 // reporter.run(['./tests/unit/test-link.js'])
 // reporter.run(['./tests/unit/test-addr.js'])
-// reporter.run(['./tests/unit/test-addrlabel.js'])
+reporter.run(['./tests/unit/test-addrlabel.js'])
+
 reporter.run(['tests/unit/test-netfilterparse.js']);

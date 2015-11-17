@@ -1,1 +1,1 @@
-{"command":"add","type":"table","family":"ip","params":{"name":"filter"}}
+{"params":{"name":"filter"},"family":"ip","type":"table","command":"add"}

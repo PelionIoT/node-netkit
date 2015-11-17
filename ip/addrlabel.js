@@ -4,6 +4,7 @@ var nl = require('../nl/netlink.js')
 var util = require('util');
 var ipparse = require('../ip/ipparse.js');
 var cmn = require('../libs/common.js');
+var bufferpack = require('../libs/bufferpack.js');
 
 var asHexBuffer = cmn.asHexBuffer;
 var debug = cmn.logger.debug;
@@ -55,7 +56,7 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 		return;
 	} else if(operation === 'add') {
 		if(prefix === null){
-			cb(new Error("Error: address " + operation + " prefix required"));
+			cb(new Error("address " + operation + " prefix required"));
 			return;
 		}
 
@@ -174,7 +175,7 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 	// The info message command
 	//<B(_family)B(_prefix_len)B(_flags)B(_scope)I(_index)
 	var family = this.AF_UNSPEC;
-	var addrlabl_msg = rt.buildIfAddrlblMsg();
+	var addrlabl_msg = buildIfAddrlblMsg();
 	addrlabl_msg._index = ifndex;
 
 	if(typeof(opts) !== 'undefined') {
@@ -203,15 +204,13 @@ netlinkAddrLabelCommand = function(opts, sock, cb) {
 		var prefix = opts['prefix'];
 		var destbuf;
 		if(typeof prefix === 'string') {
-			if(family === this.AF_UNSPEC) {
-				var f = cmn.isaddress(prefix)
-				if(util.isError(f)) {
-					error("* Error: " + util.inspect(f));
-					cb(ans);
-					return;
-				}
-				family = (f === 'inet6') ? this.AF_INET6 : this.AF_INET;
+			var f = cmn.isaddress(prefix)
+			if(util.isError(f)) {
+				error("* Error: " + util.inspect(f));
+				cb(ans);
+				return;
 			}
+			family = (f === 'inet6') ? this.AF_INET6 : this.AF_INET;
 
 			var ans = this.toAddress(prefix, family);
 			if(util.isError(ans)) {

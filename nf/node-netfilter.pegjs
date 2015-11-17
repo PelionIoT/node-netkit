@@ -1,96 +1,123 @@
-//add rule ip filter input tcp dport 22 saddr 192.168.1.0/24 accept
-//add rule ip filter input tcp dport 22 drop
-//list table filter
-//list chain table
+/*
+See: https://wiki.archlinux.org/index.php/Nftables
+
+list
+  all tables [family]
+  table [family] <name>
+  chain [family] <table> <name>
+
+add
+  table [family] <name>
+  chain [family] <table> <name> [chain definitions]
+  rule [family] <table> <chain> <rule definition>
+
+table [family] <name> (shortcut for `add table`)
+
+insert
+  rule [family] <table> <chain> <rule definition>
+
+delete
+  table [family] <name>
+  chain [family] <table> <name>
+  rule [family] <table> <handle>
+
+flush
+  table [family] <name>
+  chain [family] <table> <name>
+ */
 
 {
 	var nft = require('./nftables.js');
 	var cmn = require('../libs/common.js');
 	var debug = cmn.logger.debug;
 
-	var ipfamily = "ip" // default family
 	var payload_len = 0;
+	var command_object = {};
+	command_object.params = {};
+	command_object.family = "ip";
 }
 
 start
-	= command:command { return command; }
+	= command:command { return command_object; }
 
 command
-	= op:operation fm:family? ce:command_expression?
-		{
-			var cmd = {};
-			cmd.command = op;
-			cmd.type = ce.ty;
-			cmd.family = ipfamily || fm;
-			if(ce.ex != null)
-				cmd.params = ce.ex;
-			return cmd;
-		}
+	= op:operation { }
 
 operation
-	= op:("add" / "del" / "list" / "get" / "flush") _ { return op; }
+	=   "list" 		_	list_entity		{ command_object.command = "list"; return null;}
+	/ 	"add" 		_	add_entity		{ command_object.command = "add"; }
+	/ 	"table"		_	addtable_entity	{ command_object.command = "add"; }
+	/ 	"insert"	_ 	insert_entity	{ command_object.command = "insert"; }
+	/ 	"delete"	_	delete_entity	{ command_object.command = "delete"; }
+	/ 	"flush" 	_	flush_entity	{ command_object.command = "flush"; }
+
+list_entity
+	= "all tables" __ family?
+		{ command_object.type = "tables"; }
+
+	/ "table" _ family? table_name
+		{ command_object.type = "table"; }
+
+	/ "chain" _ family? table_identifier _ chain_name
+		{ command_object.type = "chain"; }
+
+add_entity
+	= "table" _ family? table_name
+		{ command_object.type = "table"; }
+
+	/ "chain" _ family? table_identifier _ chain_name _ hook_expression
+		{ command_object.type = "chain"; }
+
+	/ "rule" _ family? table_identifier _ chain_identifier _ rule_expression
+		{ command_object.type = "rule"; }
+
+addtable_entity
+	= family? table_name
+		{ command_object.type = "table"; }
+
+insert_entity
+	= "rule" _ family? table_identifier _ chain_identifier _ rule_expression
+		{ command_object.type = "rule"; }
+
+delete_entity
+	= "table" _ family? table_name
+		{ command_object.type = "table"; }
+
+	/ "chain" _ family? table_identifier _ chain_name
+		{ command_object.type = "chain"; }
+
+	/ "rule" _ family? rule_handle
+		{ command_object.type = "rule"; }
+
+flush_entity
+	= "table" _ family? table_name
+		{ command_object.type = "table"; }
+
+	/ "chain" _ family? table_identifier _ chain_name
+		{ command_object.type = "chain"; }
+
 
 family
-	= family:("ip6" / "ip") _
+	= family:("ip6" / "ip") __
 		{
 			debug("family : " + family);
-			return family;
+			command_object.family = family;
 		}
 
-// expand here with table and chain
-command_expression
-	= "table" _ tb:table_expression
-		{
-			return { ty: "table", ex:tb };
-		}
-	/ "chain" _  ch:hook_expression
-		{
-			return { ty: "chain", ex: ch };
-		}
-	/ "rule" __ ru:rule_expression?
-		{
-			if(typeof(ru) === 'undefined') {
-				return {
-					ty: "rule"
-				};
-			} else {
-				return {
-					ty: "rule", ex: ru
-				};
-			}
-		}
-	// / "expr" _ ex:expr_expression
-	// 	{
-	// 		throw new Error("Expression not implemented: " + ex);
-	// 		return { tex: "expr", ex: ex };
-	// 	}
-	// / "set" _ ex:set_expression
-	// 	{
-	// 		throw new Error("Expression not implemented: " + ex);
-	// 		return { tex: "set", ex: set };
-	// 	}
-	// / "setelem" _ ste:setelem_expression
-	// 	{
-	// 		throw new Error("Expression not implemented: " + ex);
-	// 		return { tex: "setelem", ex: ste };
-	// 	}
-	// / "monitor" _ mn:monitor_expression
-	// 	{
-	// 		throw new Error("Expression not implemented: " + ex);
-	// 		return { ty: "monitor", ex: mn };
-	// 	}
-	// / "export" _ exp:export_expression
-	// 	{
-	// 		throw new Error("Expression not implemented: " + ex);
-	// 		return { ty: "export", ex: exp };
-	// 	}
+chain_name
+	= ch:chain { command_object.params.name = ch; }
 
-// // expand here with table and chain expressions
-// command_expression
-// 	= ce:( hook_expression / rule_expression / table_expression ) { return ce; }
+chain_identifier
+	= ch:chain { command_object.params.chain = ch; }
+
+table_name
+	= ta:table { command_object.params.name = ta; }
+
+table_identifier
+	= ta:table { command_object.params.table = ta; }
 
 rule_expression
-	= tb:table ch:chain pt:protocol ctr:(rule_criteria)+ act:action
+	= pt:protocol ctr:(rule_criteria)+ act:action
 		{
 			var exprs = [];
 			var parms = {};
@@ -114,18 +141,7 @@ rule_expression
 			}
 
 			exprs.push(act);
-			parms.expressions = exprs;
-
-			parms.table = tb;
-			parms.chain = ch;
-
-			return parms;
-		}
-
-table_expression
-	= ta:table
-		{
-			return { name: ta };
+			command_object.params.expressions = exprs;
 		}
 
 rule_criteria
@@ -134,19 +150,16 @@ rule_criteria
 			return { field : fd , value : vl };
 		}
 
+rule_handle
+	= rh:decimal { command_object.params.handle = parseInt(rh); }
+
 hook_expression          //{ type filter hook input priority 0 }
-	= tb:table ch:chain "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
+	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
-			var parms = {};
-			parms.table = tb;
-			parms.name = ch;
-			parms.type = ht;
-
-			parms.hook = {};
-			parms.hook.hooknum = hn;
-			parms.hook.priority = hp;
-
-			return parms;
+			command_object.type = ht;
+			command_object.params.hook = {};
+			command_object.params.hook.hooknum = hn;
+			command_object.params.hook.priority = hp;
 		}
 
 hooktype
@@ -163,13 +176,13 @@ hookprio
 	= pr:[0-9]+ { return pr.join(""); }
 
 table
-	= ta:[a-zA-Z]+ __
+	= ta:[a-zA-Z]+
 		{
 			return ta.join("");
 		}
 
 chain
-	= chain:[a-zA-Z]+ _?
+	= chain:[a-zA-Z]+
 		{
 			return chain.join("");
 		}
@@ -337,7 +350,7 @@ number
 ipv6addr
 	= quads:quads
 		{ debug("ipv6addr");
-			if(ipfamily !== 'ip6') throw new Error("family != ip6 when ipv6 address detected")
+			if(command_object.family !== 'ip6') throw new Error("family != ip6 when ipv6 address specified")
 			return {
 	            elem:
 	            {
@@ -357,7 +370,7 @@ ipv6addr
 ipv4addr
 	= octets:octets
 		{  debug("ipv4addr");
-			if(ipfamily !== 'ip') throw new Error("family != ip when ip address detected")
+			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
 			var addr = new Buffer(4);
 			addr.writeUInt8( parseInt(octets[0], 10), 0);
 			addr.writeUInt8( parseInt(octets[1], 10), 1);
@@ -493,7 +506,7 @@ ipprotocol
 saddr
 	= "saddr"
 	{
-		if(ipfamily === 'ip'){
+		if(command_object.family === 'ip'){
 			return {
 				offset: 	nft.iphdr_offsets.saddr,
 				len:		nft.iphdr_sizes.saddr
@@ -508,7 +521,7 @@ saddr
 daddr
 	= "daddr"
 	{
-		if(ipfamily === 'ip'){
+		if(command_object.family === 'ip'){
 			return {
 				offset: 	nft.iphdr_offsets.daddr,
 				len:		nft.iphdr_sizes.daddr

@@ -10,6 +10,8 @@ exports.testFilters = function(test){
 		parser.parse("list all tables");
 		parser.parse("list table filter");
 		parser.parse("list chain filter input");
+		parser.parse("list chain");
+		parser.parse("list chain ip6");
 
 		parser.parse("add table filter");
 		parser.parse("add chain filter input { type filter hook input priority 0 }");

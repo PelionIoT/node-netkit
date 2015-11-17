@@ -42,7 +42,8 @@ nlnetfilter = {
 			var data = bufs[i];
 
 			// is this the done message of a multi-part message?
-			var type = data.readUInt16LE(4) & 0x00FF;
+			var type = data.readUInt16LE(4);// & 0x00FF;
+			console.log("type = " + type);
 			if(type === nl.NLMSG_DONE) {
 				return result_array;
 			} else if(type === nl.NLMSG_ERROR) {

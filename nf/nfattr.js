@@ -3,6 +3,12 @@ var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 
+
+/*
+* @params -
+*
+*/
+
 var Attribute = function(params, attr, key) {
 	 //console.dir(params);
 	 //console.dir(attr);

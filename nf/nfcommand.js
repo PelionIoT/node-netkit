@@ -7,12 +7,13 @@ var parser = require("./node-netfilter.js");
 nfcommand = {
 
 	command: function(command, cb) {
+		console.dir(command);
 		var that = this;
 		var nft = that.nf.nft;
 
 		var opts = parser.parse(command);
 		nfcommand.build_command(opts,function(err){
-			//console.dir(opts);
+			console.dir(opts);
 			if(err) {
 				cb(err);
 			} else {
@@ -48,7 +49,7 @@ nfcommand = {
 			case "add":
 				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
 				break;
-			case "del":
+			case "delete":
 				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
 			case "flush":
 				switch(type) {
@@ -101,7 +102,7 @@ nfcommand = {
 						break;
 				}
 				break;
-			case "del":
+			case "delete":
 			case "flush":
 				opts['type_flags'] = nl.NLM_F_ACK;
 				break;
@@ -115,6 +116,9 @@ nfcommand = {
 						break;
 					case "rule":
 						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					case "chain":
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH; //default
 						break;
 				}
 				break;

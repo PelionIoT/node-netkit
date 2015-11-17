@@ -226,24 +226,28 @@ nf = {
 			var keys;
 			if(this.NFT_MSG_NEWTABLE <= type && type <= this.NFT_MSG_DELTABLE) {
 			    //debug('TABLE');
+				keys = nft.nft_table_attributes
 				name = 'table';
 			} else if(this.NFT_MSG_NEWCHAIN <= type && type <= this.NFT_MSG_DELCHAIN) {
 			    //debug('CHAIN');
+				keys = nft.nft_chain_attributes
 				name = 'chain';
 			} else if(this.NFT_MSG_NEWRULE <= type && type <= this.NFT_MSG_DELRULE) {
 			    //debug('RULE');
 				keys = nft.nft_rule_attributes
-				// payload = bufferpack.unpack(rtmsg_fmt,data,index)
 				name = 'rule';
 			} else if(this.NFT_MSG_NEWSET <= type && type <= this.NFT_MSG_DELSET) {
 			    //debug('SET');
 				name = 'set';
+				throw new Error("set not implemented yet");
 			} else if(this.NFT_MSG_NEWSETELEM <= type && type <= this.NFT_MSG_DELSETELEM) {
 			    //debug('SETELEM');
 				name = 'setelem';
+				throw new Error("setelem not implemented yet");
 			} else if(this.NFT_MSG_NEWGEN <= type && type <= this.NFT_MSG_DELGEN) {
 			    //debug('GEN');
 				name = 'gen';
+				throw new Error("gen not implemented yet");
 			}else {
 				console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
 					+ type + ") **");
@@ -266,7 +270,7 @@ nf = {
 		var ret = {};
 		var index = start;
 
-		//console.dir(start_keys);
+		console.dir(start_keys);
 
 		while(index < total_len) {
 			var len = data.readUInt16LE(index);
@@ -276,12 +280,19 @@ nf = {
 			var attr_type_val = data.readUInt16LE(index + 2);
 			var remaining = data.slice(index).length;
 
-			debug("attr_type_val: " + attr_type_val.toString(16) + " name: " + Object.keys(start_keys)[attr_type_val] + " len: " + len.toString(16)
-			 	+ " round_len: " + round_len.toString(16) + " buf_len: " + remaining.toString(16));
+			debug("attr_type_val: " + attr_type_val.toString(16)
+				+ " name: " + Object.keys(start_keys)[attr_type_val]
+				+ " len: " + len.toString(16)
+			 	+ " round_len: " + round_len.toString(16)
+			 	+ " buf_len: " + remaining.toString(16));
 
 			var field_name = Object.keys(start_keys)[attr_type_val].split('_')[2].toLowerCase();
 			var field_type = Object.keys(start_keys)[attr_type_val].split('_')[1];
-			var filed_spec = start_keys['NFTA_' + field_type + '_SPEC'][attr_type_val];
+			var field_spec = start_keys['NFTA_' + field_type + '_SPEC'][attr_type_val];
+
+			debug("field_name = " + field_name
+				+ " field_type = " + field_type
+				+ " field_spec = " + field_spec);
 
 
 

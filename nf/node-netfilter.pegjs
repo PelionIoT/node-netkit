@@ -4,7 +4,8 @@ See: https://wiki.archlinux.org/index.php/Nftables
 list
   all tables [family]
   table [family] <name>
-  chain [family] <table> <name>
+  chain [family] [<table> <name>]
+  rule  [family]
 
 add
   table [family] <name>
@@ -53,13 +54,16 @@ operation
 
 list_entity
 	= "all tables" __ family?
-		{ command_object.type = "tables"; }
+		{ command_object.type = "table"; }
 
 	/ "table" _ family? table_name
 		{ command_object.type = "table"; }
 
-	/ "chain" _ family? table_identifier _ chain_name
+	/ "chain" __ family? chain_specifier?
 		{ command_object.type = "chain"; }
+
+	/ "rule" __ family?
+		{ command_object.type = "rule"; }
 
 add_entity
 	= "table" _ family? table_name
@@ -115,6 +119,9 @@ table_name
 
 table_identifier
 	= ta:table { command_object.params.table = ta; }
+
+chain_specifier
+	= _ table_identifier __ chain_name
 
 rule_expression
 	= pt:protocol ctr:(rule_criteria)+ act:action

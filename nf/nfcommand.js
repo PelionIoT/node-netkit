@@ -1,4 +1,5 @@
-var nlnf = require('./nlnetfilter.js');
+var NfAttributes = require('./nfattributes.js');
+var nlnetfilter = require('./nlnetfilter.js')
 var util = require('util');
 var cmn = require("../libs/common.js");
 var fs = require("fs");
@@ -17,13 +18,14 @@ nfcommand = {
 			if(err) {
 				cb(err);
 			} else {
-				var attrs = nlnf.nf.Attributes(opts.type, opts.params);
-				nlnf.netfilterSend.call(that, null, opts,
-					attrs, function(err,result){
+
+				var attrs = new NfAttributes(opts.type, opts.params);
+				nlnetfilter.netfilterSend.call(that, null, opts,
+					attrs, function(err,bufs){
 					if(err) {
 						return cb(err);
 					} else {
-						return cb(null, result);
+						return cb(null, attrs.generateNetfilterResponse(bufs));
 					}
 				});
 			}
@@ -31,7 +33,6 @@ nfcommand = {
 	},
 
 	build_command: function(opts,cb) {
-
 		nfcommand.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nfcommand.set_type(opts,cb);
@@ -118,7 +119,7 @@ nfcommand = {
 						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 						break;
 					case "chain":
-						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH; //default
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 						break;
 				}
 				break;

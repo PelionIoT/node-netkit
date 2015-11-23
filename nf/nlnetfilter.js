@@ -25,51 +25,11 @@ nlnetfilter = {
 						return cb(err);
 					} else {
 						sock.close();
-						return cb(null, nlnetfilter.generateNetfilterResponse(bufs,attrs));
+						return cb(null, bufs);
 					}
 				});
 			}
 		});
-	},
-
-	generateNetfilterResponse: function(bufs, attrs) {
-		//console.dir(bufs);
-
-		var result_array = []; // array if this is a multipart message
-
-		// parse all response messages
-		for(var i = 0; i < bufs.length; i++) {
-			var data = bufs[i];
-
-			// is this the done message of a multi-part message?
-			var type = data.readUInt16LE(4);// & 0x00FF;
-			console.log("type = " + type);
-			if(type === nl.NLMSG_DONE) {
-				return result_array;
-			} else if(type === nl.NLMSG_ERROR) {
-				return {};
-			}
-
-			// get the generic netfiler generation
-			var nfgenmsg = nf.unpackNfgenmsg(data, 16);
-
-			// get the total message length and parse all the raw attributes
-			var total_len = data.readUInt32LE(0);
-			var cur_result = {}; //attrs.parseNfAttrs(data, 20, total_len);
-			cur_result['genmsg'] = nfgenmsg;
-			cur_result['payload'] = nf.parseNfattributes(data);
-
-			// get the message flags
-			var flags = data.readUInt16LE(6);
-			if(flags & nl.NLM_F_MULTI) {
-				// mutlipart message add to array result
-				result_array[i] = cur_result;
-			} else {
-				// just one response message so return it
-				return cur_result;
-			}
-		}
-		return result_array;
 	},
 
 	set_family: function(opts,cb) {

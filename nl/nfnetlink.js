@@ -1,7 +1,6 @@
 var nl = require('../nl/netlink.js');
 var cmn = require('../libs/common.js');
 var nft = require('../nf/nftables.js');
-var NfAttributes = require('../nf/nfattributes.js');
 
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
@@ -93,12 +92,6 @@ nf = {
 	  return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 	},
 
-
-	Attributes: function(command_type, parameters) {
-		return new NfAttributes(command_type, parameters);
-	},
-
-
 	getFlags: function(f) {
 		var flags_str = "";
 		for (var k in nf.flags){
@@ -147,8 +140,38 @@ nf = {
 
 	addCommandMessage: function(msgreq, opts, attrs, cb) {
 
+		nf.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs) {
+			if(error) {
+				cb(error);
+			} else {
+				nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
+				cb(null);
+			}
+		});
+	},
+
+	sendNetfilterCommand: function(opts, sock, attrs, cb) {
+
+	    var msgreq = sock.createMsgReq();
+	    var batch = (opts['type_flags'] & nl.NLM_F_MATCH) ? false : true;
+
+	    // wrap the netfilter netlink command with min/max netlink request types
+	    // to satisfy the netfiler subsystem interface. Some ealier kernels don't support batching
+	    // so netfiler would not be available. nft will check batching support for each command
+	    // but we assume our kernel is late enough.
+	    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
+	    nf.addCommandMessage(msgreq, opts, attrs, function(err){
+	    	if(err) {
+	    		return cb(err,null);
+	    	} else {
+			    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MAX_TYPE);
+				nl.sendNetlinkRequest(sock, msgreq, cb);
+	    	}
+	    });
+	},
+
+	createCommandBuffer: function(opts, attrs, cb) {
 		var bufs = [];
-		var attrs;
 
 		var nl_hdr = nl.buildHdr();
 		nl_hdr._type = (nf.NFNL_SUBSYS_NFTABLES << 8);
@@ -180,141 +203,12 @@ nf = {
 			bufs.push(nf_hdr.pack());
 
 			attrs.writeAttributes(bufs);
-			nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
-			cb(null);
+
+			cb(null, nl_hdr, bufs);
 		} else {
-			cb(new Error("no options specified"));
+			cb(new Error('Command options are undefined'));
 		}
-	},
-
-	sendNetfilterCommand: function(opts, sock, attrs, cb) {
-
-	    var msgreq = sock.createMsgReq();
-	    var batch = (opts['type_flags'] & nl.NLM_F_MATCH) ? false : true;
-
-	    // wrap the netfilter netlink command with min/max netlink request types
-	    // to satisfy the netfiler subsystem interface. Some ealier kernels don't support batching
-	    // so netfiler would not be available. nft will check batching support for each command
-	    // but we assume our kernel is late enough.
-	    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
-	    nf.addCommandMessage(msgreq, opts, attrs, function(err){
-	    	if(err) {
-	    		return cb(err,null);
-	    	} else {
-			    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MAX_TYPE);
-				nl.sendNetlinkRequest(sock, msgreq, cb);
-	    	}
-	    });
-	},
-
-	parseNfattributes: function(data) {
-		var ret = {};
-		debug("data: " + data.toString('hex') );
-
-		if(!data || !Buffer.isBuffer(data) || data.length < 16) {
-			return ret;
-		} else {
-			var total_len = data.readUInt32LE(0);
-			if(total_len != data.length) {
-				return ret;
-			}
-
-			var type = data.readUInt16LE(4) & 0x00FF;
-			var index = 16; // start after the msghdr
-
-			var name = "";
-			var keys;
-			if(this.NFT_MSG_NEWTABLE <= type && type <= this.NFT_MSG_DELTABLE) {
-			    //debug('TABLE');
-				keys = nft.nft_table_attributes
-				name = 'table';
-			} else if(this.NFT_MSG_NEWCHAIN <= type && type <= this.NFT_MSG_DELCHAIN) {
-			    //debug('CHAIN');
-				keys = nft.nft_chain_attributes
-				name = 'chain';
-			} else if(this.NFT_MSG_NEWRULE <= type && type <= this.NFT_MSG_DELRULE) {
-			    //debug('RULE');
-				keys = nft.nft_rule_attributes
-				name = 'rule';
-			} else if(this.NFT_MSG_NEWSET <= type && type <= this.NFT_MSG_DELSET) {
-			    //debug('SET');
-				name = 'set';
-				throw new Error("set not implemented yet");
-			} else if(this.NFT_MSG_NEWSETELEM <= type && type <= this.NFT_MSG_DELSETELEM) {
-			    //debug('SETELEM');
-				name = 'setelem';
-				throw new Error("setelem not implemented yet");
-			} else if(this.NFT_MSG_NEWGEN <= type && type <= this.NFT_MSG_DELGEN) {
-			    //debug('GEN');
-				name = 'gen';
-				throw new Error("gen not implemented yet");
-			}else {
-				console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
-					+ type + ") **");
-				return ret;
-			}
-
-			// skip the nfgenmsg header
-			index += 4;
-
-			// debug('start index = ' + index);
-			var payload = nf.parseAttrs(data, index, total_len, keys );
-
-			ret['operation'] = this.getNfTypeName(type);
-			ret[name] = payload;
-		}
-		return ret;
-	},
-
-	parseAttrs: function(data, start, total_len, start_keys) {
-		var ret = {};
-		var index = start;
-
-		console.dir(start_keys);
-
-		while(index < total_len) {
-			var len = data.readUInt16LE(index);
-			var round_len = len + ((len % 4) ? 4 - (len % 4) : 0);
-
-
-			var attr_type_val = data.readUInt16LE(index + 2);
-			var remaining = data.slice(index).length;
-
-			debug("attr_type_val: " + attr_type_val.toString(16)
-				+ " name: " + Object.keys(start_keys)[attr_type_val]
-				+ " len: " + len.toString(16)
-			 	+ " round_len: " + round_len.toString(16)
-			 	+ " buf_len: " + remaining.toString(16));
-
-			var field_name = Object.keys(start_keys)[attr_type_val].split('_')[2].toLowerCase();
-			var field_type = Object.keys(start_keys)[attr_type_val].split('_')[1];
-			var field_spec = start_keys['NFTA_' + field_type + '_SPEC'][attr_type_val];
-
-			debug("field_name = " + field_name
-				+ " field_type = " + field_type
-				+ " field_spec = " + field_spec);
-
-
-
-			var attr_value;
-			if(len === remaining) {
-				attr_value = data.slice(index, index + 4);
-				debug("NESTED -- attr_value: " + attr_value.toString('hex'));
-				debug("remaining: " + data.slice(index).toString('hex'));
-			} else {
-				attr_value = data.slice(index + 4, index + round_len);
-				debug("attr_value: " + attr_value.toString('hex'));
-			}
-
-
-			ret[field_name] = attr_value
-			index += round_len; // index to the data
-		};
-
-		return ret;
-	},
-
-
+	}
 };
 
 module.exports = nf;

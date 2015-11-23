@@ -1,9 +1,14 @@
 
 var parser = require("../../nf/node-netfilter.js");
+var nfcommand = require("../../nf/nfcommand.js");
+var NfAttributes = require("../../nf/nfattributes.js");
+var nf = require("../../nl/nfnetlink.js");
+
+var Buffer = require('buffer').Buffer;
 var fs = require('fs');
 var util = require('util');
 
-exports.testFilters = function(test){
+exports.testNfParse = function(test){
 
 
 	test.doesNotThrow(function() {
@@ -76,5 +81,30 @@ exports.testFilters = function(test){
 			"should generate the correct structure" );
 	});
 
-    test.done();
+	test.doesNotThrow(function() {
+
+		// Input input is what is sent over the netlink socket for thw command parsed below
+		var input = fs.readFileSync('./tests/unit/data/add_rule_accept_data', 'utf8');
+		input = input.slice(32);  //remove the first 32 characters which represents 16 bytes of nl_hdr
+
+		var opts = parser.parse("add rule ip filter input tcp dport 22 saddr 192.168.56.0/23 accept");
+
+		nfcommand.build_command(opts,function(err){
+			if(err) {
+				cb(err);
+			} else {
+				 var attrs = new NfAttributes(opts.type, opts.params);
+				nf.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs){
+
+					test.deepEqual(
+						Buffer.concat(bufs),
+						new Buffer(input, 'hex'),
+						"should generate the correct structure" );
+
+				    test.done();
+
+				});
+			}
+		});
+	});
 };

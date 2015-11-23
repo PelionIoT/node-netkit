@@ -2,30 +2,37 @@ var cmn = require('../libs/common.js');
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
-
+var util = require('util');
 
 /*
+* Attribute creator
 * @params -
 *
 */
 
-var Attribute = function(params, attr, key) {
-	 //console.dir(params);
-	 //console.dir(attr);
-	 //console.dir(key);
+var Attribute = function() {
+	 // console.dir(params);
+	 // console.dir(attr_object);
+	 // console.dir(key_or_buffer);
 
+	 if(arguments.length === 3) {
+	 	this.makeFromKey(arguments[0], arguments[1], arguments[2]);
+	 } else {
+	 	this.makeFromBuffer(arguments[0], arguments[1]);
+	 }
+};
+
+
+Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 	this.key = key;
-	this.attributeType = Object.keys(attr)[0].split('_')[1];
+	this.attributeType = Object.keys(attr_object)[0].split('_')[1];
 	this.value = params[key];
-	this.spec = this.getSpec(attr,key);
+	this.spec = this.getSpec(attr_object,key);
     this.buffer = this.setBuffer();
-    this.isNest = (this.spec.type === 'r') ? true : false;
-    this.isExpression = (this.spec.type === 'e') ? true : false;
-    this.isList = (this.spec.type === 'l') ? true : false;
-    this.isGeneric = (this.spec.type === 'g') ? true : false;
-    this.isPayloadLen = this.spec.type === 'pl' ? true : false;
-    this.isNested = this.isNest | this.isList | this.isExpression;
 
+	this.setIdentities();
+
+	// Output some debug parsing info
 	var ns = this.isNested ? "(NEST)" : "";
 	debug("key = " + key + ns +
 		" typeval = " + this.spec.typeval +
@@ -33,6 +40,37 @@ var Attribute = function(params, attr, key) {
 		" size = " + this.spec.size +
 		" val = " + this.value );
 	debug("buf --> " + this.buffer.toString('hex'))
+};
+
+Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
+	//debug("buf --> " + attr_buffer.toString('hex'))
+	// console.dir(attr_buffer);
+	//debug('attr_list = ' + util.inspect(attr_list));
+
+	var index = attr_buffer.readUInt16LE(2);
+	var key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
+	this.attributeType = Object.keys(attr_list)[0].split('_')[1];
+	this.spec = this.getSpec(attr_list,key);
+	this.value = this.getBufferAsValue(attr_buffer);
+
+	this.setIdentities();
+
+	var ns = this.isNested ? "(NEST)" : "";
+	debug("key = " + key + ns +
+		" typeval = " + this.spec.typeval +
+		" type = " + this.spec.type +
+		" size = " + this.spec.size +
+		" val = " + this.value );
+
+};
+
+Attribute.prototype.setIdentities = function() {
+    this.isNest = (this.spec.type === 'r') ? true : false;
+    this.isExpression = (this.spec.type === 'e') ? true : false;
+    this.isList = (this.spec.type === 'l') ? true : false;
+    this.isGeneric = (this.spec.type === 'g') ? true : false;
+    this.isPayloadLen = this.spec.type === 'pl' ? true : false;
+    this.isNested = this.isNest | this.isList | this.isExpression;
 };
 
 Attribute.prototype.getValue = function(attrObject, key) {
@@ -73,6 +111,7 @@ Attribute.prototype.getSpec = function(attrObject,key){
 };
 
 Attribute.prototype.getNestedAttributes = function(that,params) {
+
 	var nest_attrs_type = null;
 	if(this.isExpression) {  //expression
 	 	nest_attrs_type =  params;
@@ -81,6 +120,7 @@ Attribute.prototype.getNestedAttributes = function(that,params) {
 	} else {
 		nest_attrs_type = this.spec.size.split('_')[1];
 	}
+
 	var nest_attrs = that.getCommandObject(nest_attrs_type);
 	return nest_attrs;
 }
@@ -221,6 +261,62 @@ Attribute.prototype.getElementBuf = function() {
 	buf.writeUInt16LE(4, 0);
 	buf.writeUInt16LE(nf.flags.NLA_F_NESTED | this.spec.typeval, 2 );
 	return buf;
+};
+
+Attribute.prototype.getBufferAsValue = function(buffer) {
+	switch(this.spec.type) {
+		case('s'): // string type attribute
+			return this.getBufferAsString(buffer);
+			break;
+		case('n'): // number type attribute
+		case('pl'):
+			return this.getBufferAsNumber(buffer);
+			break;
+		case('r'): // nested type attribute
+			break;
+		case('g'): // nested type attribute
+			break;
+		case('l'): // nested type attribute
+			break;
+		case('e'): // nested element type attribute
+			break;
+		default:
+			// No value
+	}
+	return;
+};
+
+Attribute.prototype.getBufferAsString = function(buffer) {
+	var attr_length = buffer.readUInt16LE(0);
+	var str_len = buffer.indexOf('\0', 4);
+
+	// if(str_len > attr_len)
+	// 	throw new Error('Attributes string temintator not found within attribute length');
+
+	return buffer.toString('ascii', 4, str_len );
+};
+
+Attribute.prototype.getBufferAsNumber = function(buffer) {
+	//console.log('this.spec.size = ' + this.spec.size);
+	//debug("buf --> " + buffer.toString('hex'))
+	var val = 0;
+	switch (this.spec.size) {
+		case 8:
+			val = beffer.readUInt8(4);
+			break;
+		case 16:
+			val = buffer.readUInt16BE(4);
+			break;
+		case 32:
+			val = buffer.readUInt32BE(4);
+			break;
+		case 64:
+			// TODO: verify the ordering of the 4 byte chunks
+			val = buffer.readUInt32BE(4);
+			val |= buffer.readUInt32BE(8) << 32;
+			break;
+	}
+	return val;
 };
 
 module.exports = Attribute;

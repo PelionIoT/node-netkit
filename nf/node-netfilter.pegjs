@@ -5,7 +5,7 @@ list
   all tables [family]
   table [family] <name>
   chain [family] [<table> <name>]
-  rule  [family]
+  rule  [family] [<table>] [<chain>]
 
 add
   table [family] <name>
@@ -62,7 +62,7 @@ list_entity
 	/ "chain" __ family? chain_specifier?
 		{ command_object.type = "chain"; }
 
-	/ "rule" __ family?
+	/ "rule" __ family? rule_specifier?
 		{ command_object.type = "rule"; }
 
 add_entity
@@ -121,7 +121,10 @@ table_identifier
 	= ta:table { command_object.params.table = ta; }
 
 chain_specifier
-	= _ table_identifier __ chain_name
+	= __ table_identifier __ chain_name
+
+rule_specifier
+	= __ table_identifier __ chain_identifier?
 
 rule_expression
 	= pt:protocol ctr:(rule_criteria)+ act:action

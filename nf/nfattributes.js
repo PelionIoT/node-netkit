@@ -1,6 +1,8 @@
 
 var Attribute = require('./nfattr.js');
 var cmn = require('../libs/common.js');
+var nf = require('../nl/nfnetlink.js');
+
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
@@ -31,6 +33,7 @@ NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 };
 
 NfAttributes.prototype.getCommandObject = function(type){
+	console.log("type = " + type);
 	var command_object = nft['nft_' + type + '_attributes'];
 	if(typeof command_object === 'undefined'){
 		throw Error("command type " + type + " does not exist");
@@ -49,6 +52,103 @@ NfAttributes.prototype.writeAttributes = function(bufs) {
 			bufs.push(bf);
 		}
 	});
+};
+
+NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
+	//console.dir(bufs);
+
+	var result_array = []; // array if this is a multipart message
+
+	// parse all response messages
+	for(var i = 0; i < bufs.length; i++) {
+		var data = bufs[i];
+
+		// is this the done message of a multi-part message?
+		var type = data.readUInt16LE(4);// & 0x00FF;
+		if(type === nl.NLMSG_DONE) {
+			return result_array;
+		} else if(type === nl.NLMSG_ERROR) {
+			return {};
+		}
+
+		// get the generic netfiler generation
+		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
+
+		// get the total message length and parse all the raw attributes
+		var total_len = data.readUInt32LE(0);
+		var cur_result = {};
+		cur_result['genmsg'] = nfgenmsg;
+		cur_result['payload'] = this.parseNfAttrsFromBuffer(data, type);
+
+		// get the message flags
+		var flags = data.readUInt16LE(6);
+		if(flags & nl.NLM_F_MULTI) {
+			// mutlipart message add to array result
+			result_array[i] = cur_result;
+		} else {
+			// just one response message so return it
+			return cur_result;
+		}
+	}
+	return result_array;
+};
+
+NfAttributes.prototype.parseNfAttrsFromBuffer = function(data, type) {
+	var ret = {};
+	var type = data.readUInt16LE(4) & 0x00FF;
+	debug("data: " + data.toString('hex') );
+
+	if(!data || !Buffer.isBuffer(data) || data.length < 16) {
+		return ret;
+	} else {
+		var total_len = data.readUInt32LE(0);
+		if(total_len != data.length) {
+			return ret;
+		}
+
+		var index = 16; // start after the msghdr
+		var name = "";
+		var keys;
+		if(nf.NFT_MSG_NEWTABLE <= type && type <= nf.NFT_MSG_DELTABLE) {
+		    //debug('TABLE');
+			keys = nft.nft_table_attributes
+			name = 'table';
+		} else if(nf.NFT_MSG_NEWCHAIN <= type && type <= nf.NFT_MSG_DELCHAIN) {
+		    //debug('CHAIN');
+			keys = nft.nft_chain_attributes
+			name = 'chain';
+		} else if(nf.NFT_MSG_NEWRULE <= type && type <= nf.NFT_MSG_DELRULE) {
+		    //debug('RULE');
+			keys = nft.nft_rule_attributes
+			name = 'rule';
+		} else if(nf.NFT_MSG_NEWSET <= type && type <= nf.NFT_MSG_DELSET) {
+		    //debug('SET');
+			name = 'set';
+			throw new Error("set not implemented yet");
+		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
+		    //debug('SETELEM');
+			name = 'setelem';
+			throw new Error("setelem not implemented yet");
+		} else if(nf.NFT_MSG_NEWGEN <= type && type <= nf.NFT_MSG_DELGEN) {
+		    //debug('GEN');
+			name = 'gen';
+			throw new Error("gen not implemented yet");
+		}else {
+			console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
+				+ type + ") **");
+			return ret;
+		}
+
+		// skip the nfgenmsg header
+		index += 4;
+
+		// debug('start index = ' + index);
+		var payload = this.parseAttrsData(data, index, total_len, keys );
+
+		ret['operation'] = nf.getNfTypeName(type);
+		ret[name] = payload;
+	}
+	return ret;
 };
 
 NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
@@ -98,5 +198,48 @@ NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 		}
 	});
 };
+
+NfAttributes.prototype.parseAttrsData = function(data, start, total_len, start_keys) {
+	var ret = {};
+	var index = start;
+	var attributes = [];
+	var expression = "";
+
+	//console.dir(start_keys);
+
+	while(index < total_len) {
+		var len = data.readUInt16LE(index);
+		var round_len = len + ((len % 4) ? 4 - (len % 4) : 0);
+		var remaining = data.slice(index);
+
+		var attribute = new Attribute(start_keys, remaining)
+		attributes.push(attribute);
+
+		if (attribute.isNest){
+			console.log("nest");
+			index += 4;
+			start_keys = attribute.getNestedAttributes(this, start_keys);
+		} else if(attribute.isList) {
+			console.log("list");
+			index += 4;
+			start_keys = attribute.getNestedAttributes(this, start_keys);
+		} else if(attribute.isExpression) {
+			console.log("expression");
+			index += 4;//round_len;
+			start_keys = attribute.getNestedAttributes(this, expression );
+		} else {
+			console.log("normal");
+			expression = attribute.value;
+			index += round_len;
+			console.dir(start_keys);
+			start_keys = attribute.getNestedAttributes(this, start_keys);
+		}
+		 console.log("round_len = " + round_len);
+		// console.log("index = " + index);
+	};
+
+	return ret;
+};
+
 
 module.exports = NfAttributes;

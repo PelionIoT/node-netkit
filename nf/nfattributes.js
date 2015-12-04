@@ -33,7 +33,6 @@ NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 };
 
 NfAttributes.prototype.getCommandObject = function(type){
-	console.log("type = " + type);
 	var command_object = nft['nft_' + type + '_attributes'];
 	if(typeof command_object === 'undefined'){
 		throw Error("command type " + type + " does not exist");
@@ -93,16 +92,16 @@ NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
 	return result_array;
 };
 
-NfAttributes.prototype.parseNfAttrsFromBuffer = function(data, type) {
+NfAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
 	var ret = {};
-	var type = data.readUInt16LE(4) & 0x00FF;
-	debug("data: " + data.toString('hex') );
+	var type = buffer.readUInt16LE(4) & 0x00FF;
+	//debug("buffer: " + buffer.toString('hex') );
 
-	if(!data || !Buffer.isBuffer(data) || data.length < 16) {
+	if(!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
 		return ret;
 	} else {
-		var total_len = data.readUInt32LE(0);
-		if(total_len != data.length) {
+		var total_len = buffer.readUInt32LE(0);
+		if(total_len != buffer.length) {
 			return ret;
 		}
 
@@ -143,7 +142,7 @@ NfAttributes.prototype.parseNfAttrsFromBuffer = function(data, type) {
 		index += 4;
 
 		// debug('start index = ' + index);
-		var payload = this.parseAttrsData(data, index, total_len, keys );
+		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
 
 		ret['operation'] = nf.getNfTypeName(type);
 		ret[name] = payload;
@@ -199,43 +198,81 @@ NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 	});
 };
 
-NfAttributes.prototype.parseAttrsData = function(data, start, total_len, start_keys) {
+NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, keys) {
 	var ret = {};
 	var index = start;
 	var attributes = [];
+	var nested_attributes = [];
+	var nested_indexes = [];
 	var expression = "";
-
-	//console.dir(start_keys);
+	var expression_count;
+	var expression_ret = null;
+	var element_ret = null;
+	//console.dir(keys);
 
 	while(index < total_len) {
-		var len = data.readUInt16LE(index);
+		var len = buffer.readUInt16LE(index);
 		var round_len = len + ((len % 4) ? 4 - (len % 4) : 0);
-		var remaining = data.slice(index);
+		var remaining = buffer.slice(index, index + round_len);
+		//console.log('\n');
+		//console.log('index = ' + index + ' round_len = ' + round_len);
 
-		var attribute = new Attribute(start_keys, remaining)
+		var attribute = new Attribute(keys, remaining);
 		attributes.push(attribute);
 
-		if (attribute.isNest){
-			console.log("nest");
+		if (attribute.isNested){
+			//console.log("nested");
+			nested_attributes.push(attribute);
+			nested_indexes.push(attribute.buffer_size + index);
+
 			index += 4;
-			start_keys = attribute.getNestedAttributes(this, start_keys);
-		} else if(attribute.isList) {
-			console.log("list");
-			index += 4;
-			start_keys = attribute.getNestedAttributes(this, start_keys);
-		} else if(attribute.isExpression) {
-			console.log("expression");
-			index += 4;//round_len;
-			start_keys = attribute.getNestedAttributes(this, expression );
+
+			if(attribute.isExpression) {
+				keys = attribute.getNestedAttributes(this, expression );
+			} else {
+				keys = attribute.getNestedAttributes(this, keys);
+			}
+
 		} else {
-			console.log("normal");
+			//console.log("normal");
 			expression = attribute.value;
 			index += round_len;
-			console.dir(start_keys);
-			start_keys = attribute.getNestedAttributes(this, start_keys);
+
+			// Are we parsing inside a nested attribute
+			if(nested_attributes.length > 0) {
+				// Have we reached the end of the current nest?
+				var l = nested_indexes[nested_indexes.length - 1];
+				while(index >= l) {
+					// Yes, so get the attribute list of what we were parsing before
+					nested_indexes.pop();
+					var attr = nested_attributes.pop();
+					keys = attr.attribute_list;
+
+					l = nested_indexes[nested_indexes.length - 1];
+				}
+			}
 		}
-		 console.log("round_len = " + round_len);
-		// console.log("index = " + index);
+
+		if(typeof(attribute.value) != 'undefined') {
+			if(element_ret !== null) {
+				element_ret[attribute.key] = attribute.value;
+			} else {
+				ret[attribute.key] = attribute.value;
+			}
+		} else {
+			if(attribute.key == 'expressions') {
+
+				expression_ret = [];
+				expression_count = 0;
+				ret['expressions'] = expression_ret;
+
+			} else if(attribute.key == 'elem'){
+
+				console.log('bobby!');
+				element_ret = {};
+				expression_ret[expression_count++] = element_ret;
+			}
+		}
 	};
 
 	return ret;

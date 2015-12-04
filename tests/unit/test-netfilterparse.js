@@ -99,7 +99,7 @@ exports.testNfParse = function(test){
 					test.deepEqual(
 						Buffer.concat(bufs),
 						new Buffer(input, 'hex'),
-						"should generate the correct structure" );
+						"should generate the correct netlink binary" );
 
 				    test.done();
 

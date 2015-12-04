@@ -11,10 +11,6 @@ var util = require('util');
 */
 
 var Attribute = function() {
-	 // console.dir(params);
-	 // console.dir(attr_object);
-	 // console.dir(key_or_buffer);
-
 	 if(arguments.length === 3) {
 	 	this.makeFromKey(arguments[0], arguments[1], arguments[2]);
 	 } else {
@@ -25,10 +21,12 @@ var Attribute = function() {
 
 Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 	this.key = key;
+	this.attribute_list = params;
 	this.attributeType = Object.keys(attr_object)[0].split('_')[1];
 	this.value = params[key];
 	this.spec = this.getSpec(attr_object,key);
     this.buffer = this.setBuffer();
+	this.buffer_size = this.buffer.length;
 
 	this.setIdentities();
 
@@ -44,19 +42,20 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	//debug("buf --> " + attr_buffer.toString('hex'))
-	// console.dir(attr_buffer);
 	//debug('attr_list = ' + util.inspect(attr_list));
 
+	this.attribute_list = attr_list;
+	this.buffer_size = attr_buffer.length;
 	var index = attr_buffer.readUInt16LE(2);
-	var key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
+	this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
 	this.attributeType = Object.keys(attr_list)[0].split('_')[1];
-	this.spec = this.getSpec(attr_list,key);
+	this.spec = this.getSpec(attr_list,this.key);
 	this.value = this.getBufferAsValue(attr_buffer);
 
 	this.setIdentities();
 
 	var ns = this.isNested ? "(NEST)" : "";
-	debug("key = " + key + ns +
+	debug("key = " +this.key + ns +
 		" typeval = " + this.spec.typeval +
 		" type = " + this.spec.type +
 		" size = " + this.spec.size +
@@ -137,7 +136,7 @@ Attribute.prototype.getSize = function() {
 	return len;
 };
 
-Attribute.prototype.getBuffer = function(spec, value) {
+Attribute.prototype.getBuffer = function() {
 	return this.buffer;
 };
 
@@ -275,6 +274,7 @@ Attribute.prototype.getBufferAsValue = function(buffer) {
 		case('r'): // nested type attribute
 			break;
 		case('g'): // nested type attribute
+			return this.getBufferAsGeneric(buffer);
 			break;
 		case('l'): // nested type attribute
 			break;
@@ -301,22 +301,51 @@ Attribute.prototype.getBufferAsNumber = function(buffer) {
 	//debug("buf --> " + buffer.toString('hex'))
 	var val = 0;
 	switch (this.spec.size) {
-		case 8:
-			val = beffer.readUInt8(4);
+		case '8':
+			val = buffer.readUInt8(4);
 			break;
-		case 16:
+		case '16':
 			val = buffer.readUInt16BE(4);
 			break;
-		case 32:
+		case '32':
 			val = buffer.readUInt32BE(4);
 			break;
-		case 64:
+		case '64':
 			// TODO: verify the ordering of the 4 byte chunks
 			val = buffer.readUInt32BE(4);
 			val |= buffer.readUInt32BE(8) << 32;
 			break;
+		default:
+			throw new Error("bad number field size: " + this.spec.size);
+			break;
 	}
 	return val;
+};
+
+Attribute.prototype.getBufferAsGeneric = function(buffer) {
+	//debug("buf --> " + buffer.toString('hex'))
+	var len = buffer.readUInt16LE(0) - 4; // take away attribute header len
+	var buf = buffer.slice(4,4 + len);
+	switch (len) {
+		case 1:
+			val = buf.readUInt8(0);
+			break;
+		case 2:
+			val = buf.readUInt16BE(0);
+			break;
+		case 4:
+			val = buf.readUInt32BE(0);
+			break;
+		case 8:
+			// TODO: verify the ordering of the 4 byte chunks
+			val = buf.readUInt32BE(0);
+			val |= buf.readUInt32BE(4) << 32;
+			break;
+		default:
+			throw new Error("bad generic number field size: " + this.spec.size);
+			break;
+	}
+	return '0x' + Number(val).toString(16);
 };
 
 module.exports = Attribute;

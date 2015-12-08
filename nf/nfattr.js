@@ -32,19 +32,19 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 	// Output some debug parsing info
 	var ns = this.isNested ? "(NEST)" : "";
-	debug("key = " + key + ns +
-		" typeval = " + this.spec.typeval +
-		" type = " + this.spec.type +
-		" size = " + this.spec.size +
-		" val = " + this.value );
-	debug("buf --> " + this.buffer.toString('hex'))
+	// debug("key = " + key + ns +
+	// 	" typeval = " + this.spec.typeval +
+	// 	" type = " + this.spec.type +
+	// 	" size = " + this.spec.size +
+	// 	" val = " + this.value );
+	// debug("buf --> " + this.buffer.toString('hex'))
 };
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
-	//debug("buf --> " + attr_buffer.toString('hex'))
 	//debug('attr_list = ' + util.inspect(attr_list));
 
 	this.attribute_list = attr_list;
+	this.buffer = attr_buffer;
 	this.buffer_size = attr_buffer.length;
 	var index = attr_buffer.readUInt16LE(2);
 	this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
@@ -53,14 +53,17 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	this.value = this.getBufferAsValue(attr_buffer);
 
 	this.setIdentities();
+	if(this.isNested) {
+		this.buffer = this.buffer.slice(0,4);
+	}
 
-	var ns = this.isNested ? "(NEST)" : "";
-	debug("key = " +this.key + ns +
-		" typeval = " + this.spec.typeval +
-		" type = " + this.spec.type +
-		" size = " + this.spec.size +
-		" val = " + this.value );
-
+	// debug("buf --> " + this.buffer.toString('hex'))
+	// var ns = this.isNested ? "(NEST)" : "";
+	// debug("key = " +this.key + ns +
+	// 	" typeval = " + this.spec.typeval +
+	// 	" type = " + this.spec.type +
+	// 	" size = " + this.spec.size +
+	// 	" val = " + this.value );
 };
 
 Attribute.prototype.setIdentities = function() {

@@ -14,7 +14,7 @@ nfcommand = {
 
 		var opts = parser.parse(command);
 		nfcommand.build_command(opts,function(err){
-			console.dir(opts);
+			//console.log(util.inspect(opts, {depth: null}));
 			if(err) {
 				cb(err);
 			} else {

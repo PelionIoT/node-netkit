@@ -127,32 +127,47 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= pt:protocol ctr:(rule_criteria)+ act:action
+	= rd:rule_definition? ct:connection_track? lgst:log_stmt? act:action?
 		{
+
 			var exprs = [];
 			var parms = {};
 
-			exprs.push(pt[0]);
-			exprs.push(pt[1]);
+			if(rd != undefined) {
+				exprs.push(rd.protocol[0]);
+				exprs.push(rd.protocol[1]);
 
-			for ( var i = 0; i < ctr.length; i++ )
-			{
-				var fld = ctr[i].field;
-				var val = ctr[i].value;
+				for ( var i = 0; i < rd.criteria.length; i++ )
+				{
+					var fld = rd.criteria[i].field;
+					var val = rd.criteria[i].value;
 
-				exprs.push(fld);
+					exprs.push(fld);
 
-				if(val.type === 'address') {
-					exprs.push(val.value[1]); // mask as bitwise
-					exprs.push(val.value[0]); // address as value
-				} else if(val.type === 'number') {
-					exprs.push(val.value[0]); // the value
+					if(val.type === 'address') {
+						exprs.push(val.value[1]); // mask as bitwise
+						exprs.push(val.value[0]); // address as value
+					} else if(val.type === 'number') {
+						exprs.push(val.value[0]); // the value
+					}
 				}
 			}
 
-			exprs.push(act);
+			if(ct != undefined) {
+				console.dir(ct);
+				for(var connection_track in ct) {
+					exprs.push(ct[connection_track]);
+				}
+			}
+
+			if(lgst != undefined) exprs.push(lgst);
+			if(act != undefined) exprs.push(act);
 			command_object.params.expressions = exprs;
 		}
+
+rule_definition
+	= pt:protocol ctr:(rule_criteria)+
+		{ return { protocol:pt, criteria: ctr }; }
 
 rule_criteria
 	= fd:field vl:value
@@ -256,6 +271,133 @@ accept
 				}
 			};
 		}
+
+// see: include/linux/netfilter/nf_conntrack_common
+connection_track
+	= "ct" _ op:nft_ct_key
+		{
+	        var retval = [
+	            {
+	            elem:
+	            {
+					name: "ct",
+					data: {
+						KEY: 		0, //op.key,
+						//DIRECTION: 	1, //op.state,
+						//SREG:      	1
+						DREG:       1
+	                }
+				}},
+
+				{
+	            elem:
+	            {
+					name: "bitwise",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						DREG:		nft.nft_registers.NFT_REG_1,
+						LEN: 		4,
+						MASK: 		{ VALUE: "0x08000000" },
+						XOR: 		{ VALUE: "0x00000000" }
+	                }
+				}},
+
+				{
+	            elem:
+	            {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP:			nft.nft_cmp_ops.NFT_CMP_NEQ,
+						DATA: 		{ VALUE: "0x00000000" }
+	                }
+				}}
+
+			];
+
+			// DREG: 		0,
+			// DIRECTION: 	2,
+			// SREG: 		3,
+			// if(pfx != null) retval.elem.data.PREFIX = pfx;
+
+			return retval;
+		}
+
+
+nft_ct_key
+	= "state" _ st:ct_state	_
+		{ return ;
+		}
+	/ "direction" _ dir:ct_direction	{ return dir; }
+	/ "status"							{ return 2; }
+	/ "mark"							{ return 3; }
+	/ "secmark"							{ return 4; }
+	/ "expiration"						{ return 5; }
+	/ "helper"							{ return 6; }
+	/ "l3protocol"						{ return 7; }
+	/ "src"								{ return 8; }
+	/ "dst"								{ return 9; }
+	/ "protocol"						{ return 10; }
+	/ "proto_src"						{ return 11; }
+	/ "proto_dst"						{ return 12; }
+	/ "labels"							{ return 13; }
+
+ct_state
+	= "established"					 	{ return 0; }
+	/ "related"							{ return 1; }
+	/ "new"								{ return 2; }
+	/ "isreply"							{ return 3; }
+
+ct_direction
+	= "original"	{ return 0; }
+	/ "reply"		{ return 1; }
+
+log_stmt
+	= "log" __ pfx:log_prefix? __ grp:log_group? __ snp:log_snaplen?
+			__ thr:log_qthreshold? __ lvl:log_level? __ flgs:log_flags? __
+		{
+	        var retval = {
+	            elem:
+	            {
+					name: "log",
+					data: {
+						GROUP: 		(grp === null) ? 0 : grp,
+	                }
+				}
+			};
+
+			if(pfx != null) retval.elem.data.PREFIX = pfx;
+			if(snp != null) retval.elem.data.SNAPLEN = snp;
+			if(thr != null) retval.elem.data.QTHRESHOLD = thr;
+			if(lvl != null) retval.elem.data.LEVEL = lvl;
+			if(flgs != null) retval.elem.data.FLAGS = flgs;
+
+			return retval;
+		}
+
+log_prefix
+	= "prefix" _ '"'str:string'"'
+		{ return str; }
+
+log_group
+	= "group" _ d:decimal
+		{ return d; }
+
+log_snaplen
+	= "snaplen" _ d:decimal
+		{ return d; }
+
+log_qthreshold
+	= "qthreshold" _ d:decimal
+		{ return d; }
+
+log_level
+	= "level" _ d:decimal
+		{ return d; }
+
+log_flags
+	= "flags" _ d:decimal
+		{ return d; }
 
 protocol
 	= prot:( tcp / udp ) _
@@ -491,6 +633,9 @@ hex
 
 decimal
 	= digits:[0-9]+ { return parseInt(digits.join(""), 10); }
+
+string
+	= str:([ 0-9a-zA-Z])+ { return str.join(""); }
 _
 	= ([ \t])+
 

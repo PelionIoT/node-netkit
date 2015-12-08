@@ -489,6 +489,79 @@ nft = {
 		NFTA_IMMEDIATE_SPEC: 		['','n/32','r/nft_data_attributes']
 	},
 
+	/**
+	 * enum nft_log_attributes - nf_tables log expression netlink attributes
+	 *
+	 * @NFTA_LOG_GROUP: netlink group to send messages to (NLA_U32)
+	 * @NFTA_LOG_PREFIX: prefix to prepend to log messages (NLA_STRING)
+	 * @NFTA_LOG_SNAPLEN: length of payload to include in netlink message (NLA_U32)
+	 * @NFTA_LOG_QTHRESHOLD: queue threshold (NLA_U32)
+	 * @NFTA_LOG_LEVEL: log level (NLA_U32)
+	 * @NFTA_LOG_FLAGS: logging flags (NLA_U32)
+	 */
+	nft_log_attributes: {
+		NFTA_LOG_UNSPEC: 		0,
+		NFTA_LOG_GROUP: 		1,
+		NFTA_LOG_PREFIX: 		2,
+		NFTA_LOG_SNAPLEN: 		3,
+		NFTA_LOG_QTHRESHOLD: 	4,
+		NFTA_LOG_LEVEL: 		5,
+		NFTA_LOG_FLAGS: 		6,
+		NFTA_LOG_SPEC:          ['','n/32','s','n/32','n/32','n/32','n/32']
+	},
+	// #define NFTA_LOG_MAX		(__NFTA_LOG_MAX - 1)
+
+	/**
+	 * enum nft_ct_keys - nf_tables ct expression keys
+	 *
+	 * @NFT_CT_STATE: conntrack state (bitmask of enum ip_conntrack_info)
+	 * @NFT_CT_DIRECTION: conntrack direction (enum ip_conntrack_dir)
+	 * @NFT_CT_STATUS: conntrack status (bitmask of enum ip_conntrack_status)
+	 * @NFT_CT_MARK: conntrack mark value
+	 * @NFT_CT_SECMARK: conntrack secmark value
+	 * @NFT_CT_EXPIRATION: relative conntrack expiration time in ms
+	 * @NFT_CT_HELPER: connection tracking helper assigned to conntrack
+	 * @NFT_CT_L3PROTOCOL: conntrack layer 3 protocol
+	 * @NFT_CT_SRC: conntrack layer 3 protocol source (IPv4/IPv6 address)
+	 * @NFT_CT_DST: conntrack layer 3 protocol destination (IPv4/IPv6 address)
+	 * @NFT_CT_PROTOCOL: conntrack layer 4 protocol
+	 * @NFT_CT_PROTO_SRC: conntrack layer 4 protocol source
+	 * @NFT_CT_PROTO_DST: conntrack layer 4 protocol destination
+	 */
+	// enum nft_ct_keys {
+	// 	NFT_CT_STATE,
+	// 	NFT_CT_DIRECTION,
+	// 	NFT_CT_STATUS,
+	// 	NFT_CT_MARK,
+	// 	NFT_CT_SECMARK,
+	// 	NFT_CT_EXPIRATION,
+	// 	NFT_CT_HELPER,
+	// 	NFT_CT_L3PROTOCOL,
+	// 	NFT_CT_SRC,
+	// 	NFT_CT_DST,
+	// 	NFT_CT_PROTOCOL,
+	// 	NFT_CT_PROTO_SRC,
+	// 	NFT_CT_PROTO_DST,
+	// 	NFT_CT_LABELS,
+	// };
+
+	/**
+	 * enum nft_ct_attributes - nf_tables ct expression netlink attributes
+	 *
+	 * @NFTA_CT_DREG: destination register (NLA_U32)
+	 * @NFTA_CT_KEY: conntrack data item to load (NLA_U32: nft_ct_keys)
+	 * @NFTA_CT_DIRECTION: direction in case of directional keys (NLA_U8)
+	 * @NFTA_CT_SREG: source register (NLA_U32)
+	 */
+	nft_ct_attributes: {
+		NFTA_CT_USPEC:      0,
+		NFTA_CT_DREG: 		1,
+		NFTA_CT_KEY: 		2,
+		NFTA_CT_DIRECTION: 	3,
+		NFTA_CT_SREG: 		4,
+		NFTA_CT_SPEC: 		['','n/32','n/32','n/8','n/32']
+	}
+
 
 // /**
 //  * enum nft_set_flags - nf_tables set flags
@@ -793,58 +866,6 @@ nft = {
 // #define NFTA_META_MAX		(__NFTA_META_MAX - 1)
 
 // /**
-//  * enum nft_ct_keys - nf_tables ct expression keys
-//  *
-//  * @NFT_CT_STATE: conntrack state (bitmask of enum ip_conntrack_info)
-//  * @NFT_CT_DIRECTION: conntrack direction (enum ip_conntrack_dir)
-//  * @NFT_CT_STATUS: conntrack status (bitmask of enum ip_conntrack_status)
-//  * @NFT_CT_MARK: conntrack mark value
-//  * @NFT_CT_SECMARK: conntrack secmark value
-//  * @NFT_CT_EXPIRATION: relative conntrack expiration time in ms
-//  * @NFT_CT_HELPER: connection tracking helper assigned to conntrack
-//  * @NFT_CT_L3PROTOCOL: conntrack layer 3 protocol
-//  * @NFT_CT_SRC: conntrack layer 3 protocol source (IPv4/IPv6 address)
-//  * @NFT_CT_DST: conntrack layer 3 protocol destination (IPv4/IPv6 address)
-//  * @NFT_CT_PROTOCOL: conntrack layer 4 protocol
-//  * @NFT_CT_PROTO_SRC: conntrack layer 4 protocol source
-//  * @NFT_CT_PROTO_DST: conntrack layer 4 protocol destination
-//  */
-// enum nft_ct_keys {
-// 	NFT_CT_STATE,
-// 	NFT_CT_DIRECTION,
-// 	NFT_CT_STATUS,
-// 	NFT_CT_MARK,
-// 	NFT_CT_SECMARK,
-// 	NFT_CT_EXPIRATION,
-// 	NFT_CT_HELPER,
-// 	NFT_CT_L3PROTOCOL,
-// 	NFT_CT_SRC,
-// 	NFT_CT_DST,
-// 	NFT_CT_PROTOCOL,
-// 	NFT_CT_PROTO_SRC,
-// 	NFT_CT_PROTO_DST,
-// 	NFT_CT_LABELS,
-// };
-
-// /**
-//  * enum nft_ct_attributes - nf_tables ct expression netlink attributes
-//  *
-//  * @NFTA_CT_DREG: destination register (NLA_U32)
-//  * @NFTA_CT_KEY: conntrack data item to load (NLA_U32: nft_ct_keys)
-//  * @NFTA_CT_DIRECTION: direction in case of directional keys (NLA_U8)
-//  * @NFTA_CT_SREG: source register (NLA_U32)
-//  */
-// enum nft_ct_attributes {
-// 	NFTA_CT_UNSPEC,
-// 	NFTA_CT_DREG,
-// 	NFTA_CT_KEY,
-// 	NFTA_CT_DIRECTION,
-// 	NFTA_CT_SREG,
-// 	__NFTA_CT_MAX
-// };
-// #define NFTA_CT_MAX		(__NFTA_CT_MAX - 1)
-
-// /**
 //  * enum nft_limit_attributes - nf_tables limit expression netlink attributes
 //  *
 //  * @NFTA_LIMIT_RATE: refill rate (NLA_U64)
@@ -857,28 +878,6 @@ nft = {
 // 	__NFTA_LIMIT_MAX
 // };
 // #define NFTA_LIMIT_MAX		(__NFTA_LIMIT_MAX - 1)
-
-// /**
-//  * enum nft_log_attributes - nf_tables log expression netlink attributes
-//  *
-//  * @NFTA_LOG_GROUP: netlink group to send messages to (NLA_U32)
-//  * @NFTA_LOG_PREFIX: prefix to prepend to log messages (NLA_STRING)
-//  * @NFTA_LOG_SNAPLEN: length of payload to include in netlink message (NLA_U32)
-//  * @NFTA_LOG_QTHRESHOLD: queue threshold (NLA_U32)
-//  * @NFTA_LOG_LEVEL: log level (NLA_U32)
-//  * @NFTA_LOG_FLAGS: logging flags (NLA_U32)
-//  */
-// enum nft_log_attributes {
-// 	NFTA_LOG_UNSPEC,
-// 	NFTA_LOG_GROUP,
-// 	NFTA_LOG_PREFIX,
-// 	NFTA_LOG_SNAPLEN,
-// 	NFTA_LOG_QTHRESHOLD,
-// 	NFTA_LOG_LEVEL,
-// 	NFTA_LOG_FLAGS,
-// 	__NFTA_LOG_MAX
-// };
-// #define NFTA_LOG_MAX		(__NFTA_LOG_MAX - 1)
 
 // /**
 //  * enum nft_queue_attributes - nf_tables queue expression netlink attributes

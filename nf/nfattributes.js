@@ -53,6 +53,17 @@ NfAttributes.prototype.writeAttributes = function(bufs) {
 	});
 };
 
+NfAttributes.prototype.logAttributeBuffers = function() {
+	var that = this;
+    var keys = Object.keys(this.attribute_array);
+	keys.forEach(function(attr) {
+		var bf = that.attribute_array[attr].buffer;
+		if(bf) {
+			debug("attr ---> " + bf.toString('hex'));
+		}
+	});
+};
+
 NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
 	//console.dir(bufs);
 
@@ -143,6 +154,7 @@ NfAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
 
 		// debug('start index = ' + index);
 		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
+		//this.logAttributeBuffers();
 
 		ret['operation'] = nf.getNfTypeName(type);
 		ret[name] = payload;
@@ -201,7 +213,6 @@ NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, keys) {
 	var ret = {};
 	var index = start;
-	var attributes = [];
 	var nested_attributes = [];
 	var nested_indexes = [];
 	var expression = "";
@@ -218,7 +229,7 @@ NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		//console.log('index = ' + index + ' round_len = ' + round_len);
 
 		var attribute = new Attribute(keys, remaining);
-		attributes.push(attribute);
+		this.attribute_array.push(attribute);
 
 		if (attribute.isNested){
 			//console.log("nested");
@@ -255,7 +266,7 @@ NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 
 		if(typeof(attribute.value) != 'undefined') {
 			if(element_ret !== null) {
-				element_ret[attribute.key] = attribute.value;
+				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
 			} else {
 				ret[attribute.key] = attribute.value;
 			}
@@ -268,10 +279,9 @@ NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 
 			} else if(attribute.key == 'elem'){
 
-				console.log('bobby!');
-				element_ret = {};
+				element_ret = []; element_ret_count = 0;
 				expression_ret[expression_count++] = element_ret;
-			}
+			} //else {}
 		}
 	};
 

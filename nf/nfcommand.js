@@ -1,5 +1,6 @@
 var NfAttributes = require('./nfattributes.js');
-var nlnetfilter = require('./nlnetfilter.js')
+var nlnetfilter = require('./nlnetfilter.js');
+var nlnf = require('../nl/nfnetlink.js');
 var util = require('util');
 var cmn = require("../libs/common.js");
 var fs = require("fs");
@@ -13,6 +14,7 @@ nfcommand = {
 		var nft = that.nf.nft;
 
 		var opts = parser.parse(command);
+		opts['sybsys'] = nlnf.NFNL_SUBSYS_NFTABLES;
 		nfcommand.build_command(opts,function(err){
 			//console.log(util.inspect(opts, {depth: null}));
 			if(err) {
@@ -36,6 +38,8 @@ nfcommand = {
 		nfcommand.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nfcommand.set_type(opts,cb);
+		opts['subsys'] = nf.NFNL_SUBSYS_NFTABLES;
+
 		return cb();
 	},
 

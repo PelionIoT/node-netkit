@@ -14,7 +14,8 @@
     },
   "devDependencies": {
     "pegjs": "*",
-    "nodeunit": "^0.9.1"
+    "nodeunit": "^0.9.1",
+    "es6-promise": "*"
   },
 
   "repository": {

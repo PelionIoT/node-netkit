@@ -7,6 +7,29 @@ var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 var util = require('util');
 
+
+// struct nfulnl_msg_packet_hdr {
+// 	__be16		hw_protocol;	/* hw protocol (network order) */
+// 	__u8	hook;		/* netfilter hook */
+// 	__u8	_pad;
+// };
+
+// struct nfulnl_msg_packet_hw {
+// 	__be16		hw_addrlen;
+// 	__u16	_pad;
+// 	__u8	hw_addr[8];
+// };
+
+// struct nfulnl_msg_packet_timestamp {
+// 	__aligned_be64	sec;
+// 	__aligned_be64	usec;
+// };
+
+var nfulnl_msg_packet_hdr = "<H(_hw_protocol)B(_hook)B(_pad)";
+var nfulnl_msg_packet_hw  = "<H(_hw_addrlen)H(_pad0)B(_pad1)";
+var nfulnl_msg_packet_timestamp = "<d(_sec)d(_usec)";
+var nfulnl_msg_config_mode = "<I(_copy_range)B(_copy_mode)B(_pad1)";
+
 nf = {
 
 	NFNETLINK_V0: 					0,
@@ -115,11 +138,49 @@ nf = {
 		return o;
 	},
 
+
+	// <H(_hw_protocol)B(_hook)B(_pad),
+	build_nfulnl_msg_packet_hdr: function(params) {
+		var o = bufferpack.metaObject(params);
+		o._hw_protocol = 0;
+		o._hook = 0;
+		o._pad = 0;
+		return o;
+	},
+	unpack_nfulnl_msg_packet_hdr: function(data, pos) {
+		return bufferpack.unpack(nf.nfulnl_msg_packet_hdr, data, pos);
+	},
+
+	// <H(_hw_addrlen)H(_pad)B(_pad)
+	build_nfulnl_msg_packet_hw: function(params) {
+		var o = bufferpack.metaObject(params);
+		o._hw_addrlen = 0;
+		o._pad0 = 0;
+		o._pad1 = 0;
+		return o;
+	},
+	unpack_nfulnl_msg_packet_hw: function(data, pos) {
+		return bufferpack.unpack(nf.nfulnl_msg_packet_hw, data, pos);
+	},
+
+	// <I(_copy_range)B(_copy_mode)B(_pad1)
+	build_nfulnl_msg_config_mode: function(params) {
+		var o = bufferpack.metaObject(nfulnl_msg_config_mode);
+		o._copy_range = 0;
+		o._copy_mode = 0;
+		o._pad1 = 0;
+		return o;
+	},
+
+	unpack_nfulnl_msg_config_mode: function(data,pos) {
+		return bufferpack.unpack(nf.nfulnl_msg_config_mode,data,pos);
+	},
+
 	unpackNfgenmsg: function(data, pos) {
 		return bufferpack.unpack(nf.nfgenmsg_fmt, data, pos);
 	},
 
-	addBatchMessages: function(msgreq, batch) {
+	addNfBatchMessages: function(msgreq, batch) {
 		// addBatchMessages - add netlink min/max request packets to the buffer
 		// \param msgreq - netlinksocket mesgreq type
 		// \param batch - the batch message value to add
@@ -139,7 +200,6 @@ nf = {
 	},
 
 	addCommandMessage: function(msgreq, opts, attrs, cb) {
-
 		nf.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs) {
 			if(error) {
 				cb(error);
@@ -154,17 +214,18 @@ nf = {
 
 	    var msgreq = sock.createMsgReq();
 	    var batch = (opts['type_flags'] & nl.NLM_F_MATCH) ? false : true;
+	    batch = batch ^ (opts['batch'] === "false" );
 
 	    // wrap the netfilter netlink command with min/max netlink request types
 	    // to satisfy the netfiler subsystem interface. Some ealier kernels don't support batching
 	    // so netfiler would not be available. nft will check batching support for each command
 	    // but we assume our kernel is late enough.
-	    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
+	    if(batch) nf.addNfBatchMessages(msgreq, nl.NLMSG_MIN_TYPE);
 	    nf.addCommandMessage(msgreq, opts, attrs, function(err){
 	    	if(err) {
 	    		return cb(err,null);
 	    	} else {
-			    if(batch) nf.addBatchMessages(msgreq, nl.NLMSG_MAX_TYPE);
+			    if(batch) nf.addNfBatchMessages(msgreq, nl.NLMSG_MAX_TYPE);
 				nl.sendNetlinkRequest(sock, msgreq, cb);
 	    	}
 	    });
@@ -174,13 +235,23 @@ nf = {
 		var bufs = [];
 
 		var nl_hdr = nl.buildHdr();
-		nl_hdr._type = (nf.NFNL_SUBSYS_NFTABLES << 8);
 		nl_hdr._flags = nl.NLM_F_REQUEST;
 
 		var nf_hdr = nf.buildNfgenmsg(this.nfgenmsg_fmt);
 		nf_hdr._version = nf.NFNETLINK_V0;
 
 		if(typeof(opts) !== 'undefined') {
+
+			if(opts.hasOwnProperty("res_id")) {
+				nf_hdr._resid = opts['res_id'];
+			}
+
+			if(opts.hasOwnProperty("subsys")) {
+				nl_hdr._type |= opts['subsys'] << 8;
+			} else {
+				return cb(new Error("no subsys option specified"));
+			}
+
 			if(opts.hasOwnProperty("cmd")) {
 				nl_hdr._type |= opts['cmd'];
 			} else {
@@ -202,7 +273,7 @@ nf = {
 
 			bufs.push(nf_hdr.pack());
 
-			attrs.writeAttributes(bufs);
+			if(typeof(attrs) !== 'undefined') attrs.writeAttributes(bufs);
 
 			cb(null, nl_hdr, bufs);
 		} else {

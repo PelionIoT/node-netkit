@@ -35,6 +35,26 @@ module.exports = {
 		return nativelib;
 	}(),
 
+	onExit: function(cb) {
+		function exitHandler(options, err) {
+		    if (options.cleanup)
+		    	{ common_logger.debug("nfevent.exiting"); cb(); }
+		    if (err) { common_logger.error(err.stack); }
+		    if (options.exit)  { process.exit(); }
+		}
+
+		process.stdin.resume();//so the program will not close instantly
+
+		//do something when app is closing
+		process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+		//catches ctrl+c event
+		process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+
+		//catches uncaught exceptions
+		process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
+	},
+
 	asHexBuffer: function(b) {
 		return b.toString('hex');
 	},

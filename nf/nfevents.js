@@ -90,6 +90,22 @@ nfevents = (function(){
 		});
 	};
 
+	var unbindgroup = function(sock, opts) {
+		return new cmn.Promise(function(resolve,reject){
+			try {
+				var attrs = buildNfulCommandAttr(ul.nfulnl_msg_types.NFULNL_MSG_CONFIG,
+		                                         ul.nfulnl_msg_config_cmds.NFULNL_CFG_CMD_UNBIND);
+				nfsendcommand(opts, sock, attrs).then(function(bufs){
+					resolve(bufs)
+				}, function(err){
+					reject(err);
+				});
+			} catch(err) {
+				reject(err);
+			}
+		});
+	};
+
 	var packetcopy = function(opts, sock, mode, range) {
 
 		var packet_cpy = Buffer(6);
@@ -265,23 +281,11 @@ nfevents = (function(){
 					return cb(new Error("socket.create() Error: " + util.inspect(err)));
 				} else {
 
-					function exitHandler(options, err) {
-					    if (options.cleanup) { cmn.logger.debug("nfevent.exiting"); sock.close(); }
-					    if (err) { cmn.logger.error(err.stack); }
-					    if (options.exit)  { cmn.logger.debug("nfevent.exiting"); sock.close(); process.exit(); }
-					}
-
-					process.stdin.resume();//so the program will not close instantly
-
-					//do something when app is closing
-					process.on('exit', exitHandler.bind(null,{cleanup:true}));
-
-					//catches ctrl+c event
-					process.on('SIGINT', exitHandler.bind(null, {exit:true}));
-
-					//catches uncaught exceptions
-					process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
-
+					cmn.onExit( function() {
+						unbindgroup(sock, opts).then(function() {
+							sock.close();
+						})
+					});
 
 					if(!opts.hasOwnProperty('res_id')) opts['res_id'] = 0;
 					opts['batch'] = "false";
@@ -301,7 +305,7 @@ nfevents = (function(){
 							if(err) {
 								cb(new Error("onRecv() Error: " + util.inspect(err)));
 							} else {
-								cb(null, bufs);
+								cb(null, ul.parseNfulogAttributes(bufs));
 							}
 						});
 					}, function(err) {

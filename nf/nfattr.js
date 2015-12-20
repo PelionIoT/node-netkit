@@ -3,6 +3,7 @@ var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 var util = require('util');
+var bignum = require('bignum');
 
 /*
 * Attribute creator
@@ -184,39 +185,22 @@ Attribute.prototype.getGenericBuffer = function() {
 	var val = 0;
 	var strval = "";
 	var hex = -1;
-
 	try {
 		strval = this.value.toLowerCase();
 		hex = strval.indexOf('x');
 		if(hex !== -1) {
-			val = parseInt(strval,16);
-			len = (strval.length - (hex + 1)) / 2; // two nibbles per byte
+			val = bignum(strval.slice(hex + 1),16);
 		} else {
-			val = parseInt(strval,10);
-			len = parseInt(strval,16).toString().length / 2;
+			val = bignum(strval,10);
 		}
+		len = ((val.bitLength() + 3) >> 3);
 	} catch(err) {
 		throw new Error("no way to parse: " + this.value);
 	}
 	if(val === NaN) throw new Error("no way to parse: " + this.value);
 
 	var buf = Buffer(len);
-	switch(len) {
-		case 1:
-			buf.writeUInt8(val,0,len);
-			break;
-		case 2:
-			buf.writeUInt16BE(val,0,len);
-			break;
-		case 4:
-			buf.writeUInt32BE(val,0,len);
-			break;
-		case 8:
-			// TODO: verify the ordering of the 4 byte chunks
-			buf.writeUInt32BE(val << 32,0,4 );
-			buf.writeUInt32BE(val,4,len);
-			break;
-	}
+	buf = val.toBuffer({endian:'big', size:len})
 	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
 	return full_attribute;
 };
@@ -235,9 +219,8 @@ Attribute.prototype.getNumberBuffer = function() {
 			buf.writeUInt32BE(this.value.valueOf(),0,len);
 			break;
 		case 8:
-			// TODO: verify the ordering of the 4 byte chunks
-			buf.writeUInt32BE(this.value.valueOf() << 32,0,4 );
-			buf.writeUInt32BE(this.value.valueOf(),4,len);
+			this.value = bignum(this.value);
+			buf = this.value.toBuffer({endian:'big',size:8});
 			break;
 	}
 	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);

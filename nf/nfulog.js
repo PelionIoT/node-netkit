@@ -73,7 +73,7 @@ nfulog = {
 			//debug('index = ' + index);
 			var len = data.readUInt16LE(index) - 4; // attr header len == attr header + field
 			var attr_type = data.readUInt16LE(index + 2);
-			cmn.logger.debug('attr = ' + attr_type + ' len = ' + len);
+			//cmn.logger.debug('attr = ' + attr_type + ' len = ' + len);
 
 			index += 4; // index to the data
 			var value;
@@ -119,10 +119,10 @@ nfulog = {
 						ret.data.payload = attr_buf.toString('hex');
 						break;
 					case ul.NFULA_PREFIX:
-						ret.data.prefix = attr_buf.toString('ascii');
+						ret.data.prefix = attr_buf.toString('ascii',0 , len -1);
 						break;
 					case ul.NFULA_UID:
-						ret.data.socket_uid = attr_buf.toString('ascii');
+						ret.data.socket_uid = attr_buf.toString('ascii',0 , len -1);
 						break;
 					case ul.NFULA_SEQ:
 					     ret.data.sequence_no = attr_buf.readUInt32BE(0)
@@ -131,7 +131,7 @@ nfulog = {
 					     ret.data.global_sequence_no = attr_buf.readUInt32BE(0)
 						break;
 					case ul.NFULA_GID:
-						ret.data.socket_gid = attr_buf.toString('ascii');
+						ret.data.socket_gid = attr_buf.toString('ascii',0 , len -1);
 						break;
 					case ul.NFULA_HWTYPE:
 						ret.data.hwtype = attr_buf.readUInt16BE(0);

@@ -5,11 +5,11 @@ var nft = nk.nf.nft;
 
 var options = {
 	// set the amount of packet data that nflog copies to userspace
-	// mode: COPY_NONE, COP_META_COPY_PACKET (part of the pavket we are interested in)
+	// mode: COPY_NONE, COPY_META, COPY_PACKET (part of the packet we are interested in)
 	// range: size of packet to get
- 	packet_copy: { mode: "COPY_PACKET", range: 0xFFFF },
+ 	packet_copy: { mode: "copy_none", range: 0xFFFF },
 
- 	// set the group number of events to listen to (default: 0)
+ 	// set the group number of the events to listen to (default: 0)
 	res_id: 0,
 
 	// Sets the size (in bytes) of the buffer that is used to

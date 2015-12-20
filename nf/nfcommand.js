@@ -54,6 +54,16 @@ nfcommand = {
 			case "add":
 				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
 				break;
+			case "insert":
+				switch(type) {
+					case "RULE":
+						opts['cmd'] =  nf.NFT_MSG_NEWRULE;
+						break;
+					default:
+						return cb(new Error(command + "only implemented for type rule"));
+						break;
+				}
+				break;
 			case "delete":
 				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
 			case "flush":
@@ -104,6 +114,18 @@ nfcommand = {
 						break;
 					default:
 						opts['type_flags'] =  nl.NLM_F_ACK;
+						break;
+				}
+				break;
+			case "insert":
+				switch(type) {
+					case "rule":
+						opts['type_flags'] =  nl.NLM_F_REQUEST | nl.NLM_F_MATCH | nl.NLM_F_ATOMIC;
+						opts['batch'] = true; // up until using atomic all types containing match would not require a batch
+						                      // netfilter netlink command. See: nfnetlink.sendNetfilterCommand()
+						break;
+					default:
+						return cb(new Error(command + "only implemented for type rule"));
 						break;
 				}
 				break;

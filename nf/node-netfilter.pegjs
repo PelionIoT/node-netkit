@@ -80,7 +80,7 @@ addtable_entity
 		{ command_object.type = "table"; }
 
 insert_entity
-	= "rule" _ family? table_identifier _ chain_identifier _ rule_expression
+	= "rule" _ family? table_identifier _ chain_identifier _ rule_position _ rule_expression
 		{ command_object.type = "rule"; }
 
 delete_entity
@@ -134,8 +134,11 @@ rule_expression
 			var parms = {};
 
 			if(rd != undefined) {
-				exprs.push(rd.protocol[0]);
-				exprs.push(rd.protocol[1]);
+
+				if(rd.protocol != undefined) {
+					exprs.push(rd.protocol[0]);
+					exprs.push(rd.protocol[1]);
+				}
 
 				for ( var i = 0; i < rd.criteria.length; i++ )
 				{
@@ -154,7 +157,6 @@ rule_expression
 			}
 
 			if(ct != undefined) {
-				console.dir(ct);
 				for(var connection_track in ct) {
 					exprs.push(ct[connection_track]);
 				}
@@ -166,8 +168,14 @@ rule_expression
 		}
 
 rule_definition
-	= pt:protocol ctr:(rule_criteria)+
+	= pt:protocol? ctr:(rule_criteria)+
 		{ return { protocol:pt, criteria: ctr }; }
+
+rule_position
+	= "position" _ p:decimal
+		{
+			command_object.params.position = p;
+		}
 
 rule_criteria
 	= fd:field vl:value
@@ -225,7 +233,7 @@ address
 
 
 ipv6
-	= addr:ipv6addr cd:cidr _
+	= addr:ipv6addr cd:cidr? _
 		{
 			return {
 				type: "address",
@@ -234,7 +242,7 @@ ipv6
 		}
 
 ipv4
-	= addr:ipv4addr cd:cidr _
+	= addr:ipv4addr cd:cidr? _
 		{
 			return {
 				type: "address",
@@ -343,9 +351,9 @@ nft_ct_key
 	/ "labels"							{ return 13; }
 
 ct_state
-	= "established"					 	{ return 0; }
-	/ "related"							{ return 1; }
-	/ "new"								{ return 2; }
+	= "established"					 	{ return 0x02000000; }
+	/ "related"							{ return 0x04000000; }
+	/ "new"								{ return 0x08000000; }
 	/ "isreply"							{ return 3; }
 
 ct_direction

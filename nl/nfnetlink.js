@@ -214,7 +214,7 @@ nf = {
 
 	    var msgreq = sock.createMsgReq();
 	    var batch = (opts['type_flags'] & nl.NLM_F_MATCH) ? false : true;
-	    batch = batch ^ (opts['batch'] === "false" );
+	    if(opts['batch'] != undefined) batch = opts['batch'];
 
 	    // wrap the netfilter netlink command with min/max netlink request types
 	    // to satisfy the netfiler subsystem interface. Some ealier kernels don't support batching

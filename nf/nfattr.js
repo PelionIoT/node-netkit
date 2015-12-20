@@ -190,10 +190,11 @@ Attribute.prototype.getGenericBuffer = function() {
 		hex = strval.indexOf('x');
 		if(hex !== -1) {
 			val = bignum(strval.slice(hex + 1),16);
+			len = (strval.length - (hex + 1)) / 2; // two nibbles per byte
 		} else {
 			val = bignum(strval,10);
+			len = parseInt(strval,16).toString().length / 2;
 		}
-		len = ((val.bitLength() + 3) >> 3);
 	} catch(err) {
 		throw new Error("no way to parse: " + this.value);
 	}

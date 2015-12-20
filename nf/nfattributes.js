@@ -29,7 +29,7 @@ NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 	}
 
 	a.incrementNestLength(size);
-	debug("** nest end - " + a.key + " : " + size.toString(16) );
+	//debug("** nest end - " + a.key + " : " + size.toString(16) );
 };
 
 NfAttributes.prototype.getCommandObject = function(type){

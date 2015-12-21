@@ -30,12 +30,13 @@ flush
 {
 	var nft = require('./nftables.js');
 	var cmn = require('../libs/common.js');
+	var bignum = require('bignum');
 	var debug = cmn.logger.debug;
 
 	var payload_len = 0;
 	var command_object = {};
 	command_object.params = {};
-	command_object.family = "ip";
+	command_object.family = "ip"; // default when not specified
 }
 
 start
@@ -45,67 +46,66 @@ command
 	= op:operation { }
 
 operation
-	=   "list" 		_	list_entity		{ command_object.command = "list"; return null;}
-	/ 	"add" 		_	add_entity		{ command_object.command = "add"; }
-	/ 	"table"		_	addtable_entity	{ command_object.command = "add"; }
-	/ 	"insert"	_ 	insert_entity	{ command_object.command = "insert"; }
-	/ 	"delete"	_	delete_entity	{ command_object.command = "delete"; }
-	/ 	"flush" 	_	flush_entity	{ command_object.command = "flush"; }
+	=   "list" 		_   family? 		list_entity		{ command_object.command = "list"; return null;}
+	/ 	"add" 		_	family? 		add_entity		{ command_object.command = "add"; }
+	/ 	"table"		_	family? 		addtable_entity	{ command_object.command = "add"; }
+	/ 	"insert"	_ 	family? 		insert_entity	{ command_object.command = "insert"; }
+	/ 	"delete"	_	family? 		delete_entity	{ command_object.command = "delete"; }
+	/ 	"flush" 	_	family? 		flush_entity	{ command_object.command = "flush"; }
 
 list_entity
-	= "all tables" __ family?
+	= "all tables"
 		{ command_object.type = "table"; }
 
-	/ "table" _ family? table_name
+	/ "table" _ table_name
 		{ command_object.type = "table"; }
 
-	/ "chain" __ family? chain_specifier?
+	/ "chain" __ chain_specifier?
 		{ command_object.type = "chain"; }
 
-	/ "rule" __ family? rule_specifier?
+	/ "rule" __ rule_specifier?
 		{ command_object.type = "rule"; }
 
 add_entity
-	= "table" _ family? table_name
+	= "table" _ table_name
 		{ command_object.type = "table"; }
 
-	/ "chain" _ family? table_identifier _ chain_name _ hook_expression
+	/ "chain" _ table_identifier _ chain_name _ hook_expression
 		{ command_object.type = "chain"; }
 
-	/ "rule" _ family? table_identifier _ chain_identifier _ rule_expression
+	/ "rule" _ table_identifier _ chain_identifier _ rule_expression
 		{ command_object.type = "rule"; }
 
 addtable_entity
-	= family? table_name
+	= table_name
 		{ command_object.type = "table"; }
 
 insert_entity
-	= "rule" _ family? table_identifier _ chain_identifier _ rule_position _ rule_expression
+	= "rule" _ table_identifier _ chain_identifier _ rule_position _ rule_expression
 		{ command_object.type = "rule"; }
 
 delete_entity
-	= "table" _ family? table_name
+	= "table" _ table_name
 		{ command_object.type = "table"; }
 
-	/ "chain" _ family? table_identifier _ chain_name
+	/ "chain" _ table_identifier _ chain_name
 		{ command_object.type = "chain"; }
 
-	/ "rule" _ family? rule_handle
+	/ "rule" _ rule_handle
 		{ command_object.type = "rule"; }
 
 flush_entity
-	= "table" _ family? table_name
+	= "table" _ table_name
 		{ command_object.type = "table"; }
 
-	/ "chain" _ family? table_identifier _ chain_name
+	/ "chain" _ table_identifier _ chain_name
 		{ command_object.type = "chain"; }
 
 
 family
-	= family:("ip6" / "ip") __
+	= family:("ip" "6"?) __
 		{
-			debug("family : " + family);
-			command_object.family = family;
+			command_object.family = family.join("");
 		}
 
 chain_name
@@ -172,9 +172,9 @@ rule_definition
 		{ return { protocol:pt, criteria: ctr }; }
 
 rule_position
-	= "position" _ p:decimal
+	= "position" _ p:( hex / decimal )
 		{
-			command_object.params.position = p;
+			command_object.params.position = '0x' + p.toString(16);
 		}
 
 rule_criteria
@@ -184,7 +184,7 @@ rule_criteria
 		}
 
 rule_handle
-	= rh:decimal { command_object.params.handle = parseInt(rh); }
+	= rh:( hex / decimal ) { command_object.params.handle = '0x' + rh.toString(16); }
 
 hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
@@ -389,23 +389,23 @@ log_prefix
 
 log_group
 	= "group" _ d:decimal
-		{ return d; }
+		{ return d.toNumber(); }
 
 log_snaplen
 	= "snaplen" _ d:decimal
-		{ return d; }
+		{ return d.toNumber(); }
 
 log_qthreshold
 	= "qthreshold" _ d:decimal
-		{ return d; }
+		{ return d.toNumber(); }
 
 log_level
 	= "level" _ d:decimal
-		{ return d; }
+		{ return d.toNumber(); }
 
 log_flags
 	= "flags" _ d:decimal
-		{ return d; }
+		{ return d.toNumber(); }
 
 protocol
 	= prot:( tcp / udp ) _
@@ -484,7 +484,7 @@ number
 	= num:(hex / decimal) _
 		{debug("number");
 		var prepend = "";
-		var numstr = num.toString(16);
+		var numstr = '0x' + num.toString(16);
 		var pad = payload_len * 2;
 		while(numstr.length < pad) numstr = "0".concat(numstr);
 
@@ -499,7 +499,7 @@ number
 							data: {
 								SREG: 		nft.nft_registers.NFT_REG_1,
 								OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
-								DATA: 		{ VALUE: "0x" + numstr } // 0x0016 = 22 - ssh protocol
+								DATA: 		{ VALUE: numstr } // 0x0016 = 22 - ssh protocol
 			                }
 						}
 					}
@@ -637,10 +637,10 @@ skipequad
 	= "::" q:[0-9a-fA-F]+ { return { skip: true, val: q.join("") }; }
 
 hex
-	= nibbles:("0x" [0-9a-fA-F]+) { return parseInt(nibbles.join(""), 16); }
+	= nibbles:("0x" [0-9a-fA-F]+) { return bignum(nibbles[1].join(""), 16); }
 
 decimal
-	= digits:[0-9]+ { return parseInt(digits.join(""), 10); }
+	= digits:[0-9]+ { return bignum(digits.join(""), 10); }
 
 string
 	= str:([ 0-9a-zA-Z])+ { return str.join(""); }

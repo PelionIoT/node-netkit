@@ -1,6 +1,6 @@
 var nk = require('../../index.js');
 var util = require('util');
-var parser = require("../../nf/node-netfilter.js");
+var parser = require('../../nf/node-netfilter.js');
 var nft = nk.nf.nft;
 
 /*

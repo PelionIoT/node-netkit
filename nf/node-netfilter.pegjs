@@ -54,10 +54,10 @@ operation
 	/ 	"flush" 	_	family? 		flush_entity	{ command_object.command = "flush"; }
 
 list_entity
-	= "all tables"
+	= "table" !"s" _ table_name
 		{ command_object.type = "table"; }
 
-	/ "table" _ table_name
+	/ "tables"
 		{ command_object.type = "table"; }
 
 	/ "chain" __ chain_specifier?

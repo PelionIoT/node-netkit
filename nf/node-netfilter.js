@@ -413,9 +413,10 @@ module.exports = (function() {
         		},
         peg$c172 = function(num) {debug("number");
         		var prepend = "";
-        		var numstr = '0x' + num.toString(16);
+        		var numstr = num.toString(16);
         		var pad = payload_len * 2;
         		while(numstr.length < pad) numstr = "0".concat(numstr);
+        		numstr = '0x' + numstr;
 
         		payload_len
         	        return {

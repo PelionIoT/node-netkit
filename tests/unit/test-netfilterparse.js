@@ -87,7 +87,7 @@ exports.testNfParse = function(test){
 		var input = fs.readFileSync('./tests/unit/data/add_rule_accept_data', 'utf8');
 		input = input.slice(32);  //remove the first 32 characters which represents 16 bytes of nl_hdr
 
-		var opts = parser.parse("add ip rule filter input tcp dport 22 saddr 192.168.56.0/23 accept");
+		var opts = parser.parse("add ip rule filter input tcp dport 22 saddr 192.168.1.0/24 accept");
 
 		nfcommand.build_command(opts,function(err){
 			if(err) {

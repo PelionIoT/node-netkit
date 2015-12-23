@@ -190,7 +190,7 @@ Attribute.prototype.getGenericBuffer = function() {
 		hex = strval.indexOf('x');
 		if(hex !== -1) {
 			val = bignum(strval.slice(hex + 1),16);
-			len = (strval.length - (hex + 1)) / 2; // two nibbles per byte
+			len = (strval.length - (hex + 1)) >> 1; // two nibbles per byte
 		} else {
 			val = bignum(strval,10);
 			len = parseInt(strval,16).toString().length / 2;
@@ -198,6 +198,7 @@ Attribute.prototype.getGenericBuffer = function() {
 	} catch(err) {
 		throw new Error("no way to parse: " + this.value);
 	}
+	if(len < 1 || len > 8) throw new Error("attribute length not within 1 - 8 bytes in length: " + this.value);
 	if(val === NaN) throw new Error("no way to parse: " + this.value);
 
 	var buf = Buffer(len);

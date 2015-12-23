@@ -19,7 +19,7 @@ try {
 	console.log(util.inspect(ret, {depth:null}));
 	writeDataFile("add_chain", ret);
 
-	ret = parser.parse("add ip rule filter input tcp dport 22 saddr 192.168.56.0/23 accept");
+	ret = parser.parse("add ip rule filter input tcp dport 22 ip saddr 192.168.56.0/23 accept");
 	console.log(util.inspect(ret, {depth:null}));
 	writeDataFile("add_accept", ret);
 

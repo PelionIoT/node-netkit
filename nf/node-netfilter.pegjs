@@ -34,9 +34,40 @@ flush
 	var debug = cmn.logger.debug;
 
 	var payload_len = 0;
+	var expressions_array = [];
+
 	var command_object = {};
 	command_object.params = {};
 	command_object.family = "ip"; // default when not specified
+
+	var add_protocol = function(prot) {
+		expressions_array.push(
+		{
+			elem:
+			{
+				name: "payload",
+				data: {
+					DREG: 		nft.nft_registers.NFT_REG_1,
+					BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER,
+					OFFSET: 	nft.iphdr_offsets.protocol,
+					LEN: 		nft.iphdr_sizes.protocol
+	            }
+	        }
+	    });
+
+	    expressions_array.push(
+	    {
+	        elem:
+	        {
+				name: "cmp",
+				data: {
+					SREG: 		nft.nft_registers.NFT_REG_1,
+					OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
+					DATA: 		{ VALUE: prot } //nft.ip_proto.IPPROTO_TCP
+	            }
+			}
+		});
+	};
 }
 
 start
@@ -100,7 +131,7 @@ flush_entity
 
 	/ "chain" _ table_identifier _ chain_name
 		{ command_object.type = "chain"; }
-
+//
 
 family
 	= family:("ip" "6"?) __
@@ -127,33 +158,14 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= rd:rule_definition? ct:connection_track? lgst:log_stmt? act:action?
+	= rd:rule_definition ct:connection_track? lgst:log_stmt? act:rule_action?
 		{
 
 			var exprs = [];
 			var parms = {};
 
-			if(rd != undefined) {
-
-				if(rd.protocol != undefined) {
-					exprs.push(rd.protocol[0]);
-					exprs.push(rd.protocol[1]);
-				}
-
-				for ( var i = 0; i < rd.criteria.length; i++ )
-				{
-					var fld = rd.criteria[i].field;
-					var val = rd.criteria[i].value;
-
-					exprs.push(fld);
-
-					if(val.type === 'address') {
-						exprs.push(val.value[1]); // mask as bitwise
-						exprs.push(val.value[0]); // address as value
-					} else if(val.type === 'number') {
-						exprs.push(val.value[0]); // the value
-					}
-				}
+			if(expressions_array != undefined) {
+				exprs = expressions_array;
 			}
 
 			if(ct != undefined) {
@@ -164,12 +176,27 @@ rule_expression
 
 			if(lgst != undefined) exprs.push(lgst);
 			if(act != undefined) exprs.push(act);
+
 			command_object.params.expressions = exprs;
 		}
 
-rule_definition
-	= pt:protocol? ctr:(rule_criteria)+
-		{ return { protocol:pt, criteria: ctr }; }
+table
+	= ta:[a-zA-Z]+
+		{
+			return ta.join("");
+		}
+
+chain
+	= chain:[a-zA-Z]+
+		{
+			return chain.join("");
+		}
+
+rule_handle
+	= rh:( hex / decimal ) { command_object.params.handle = '0x' + rh.toString(16); }
+
+rule_action
+	= drop / accept
 
 rule_position
 	= "position" _ p:( hex / decimal )
@@ -177,15 +204,239 @@ rule_position
 			command_object.params.position = '0x' + p.toString(16);
 		}
 
+rule_definition
+	= ctr:(rule_criteria)+
+
 rule_criteria
-	= fd:field vl:value
-		{
-			return { field : fd , value : vl };
+	= rps:rule_packet_selector _ pfv:packet_field_value __
+
+rule_packet_selector
+	= pt:packet_type
+		{ debug("packet_selector");
+			expressions_array.push( {
+				elem:
+				{
+					name: "payload",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_1,
+						BASE: 		pt.payload_base,
+						OFFSET: 	pt.offset,
+						LEN: 		pt.len
+	                }
+	            }
+	        });
+
+	        payload_len = pt.len; // remeber last payload load for make the compare value
 		}
 
-rule_handle
-	= rh:( hex / decimal ) { command_object.params.handle = '0x' + rh.toString(16); }
+packet_type
+	= pkt:tcp  _ fld:tcp_field { fld.payload_base = pkt; return fld; }
+	/ pkt:ip   _ fld:ip_field  { fld.payload_base = pkt; return fld; }
+	/ pkt:ip6  _ fld:ip6_field { fld.payload_base = pkt; return fld; }
+	/ pkt:udp  _ fld:udp_field { fld.payload_base = pkt; return fld; }
 
+//  packet type bases
+tcp
+	= "tcp"
+		{
+			add_protocol('0x06');
+			return nft.nft_payload_bases.NFT_PAYLOAD_TRANSPORT_HEADER;
+		}
+
+udp
+	= "udp"
+		{
+			add_protocol('0x11');
+			return nft.nft_payload_bases.NFT_PAYLOAD_TRANSPORT_HEADER;
+		}
+
+ip
+	= "ip" !"6" { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
+
+ip6
+	= "ip6"  { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
+
+
+
+tcp_field
+	= "sport" { return { offset: nft.tcphdr_offsets.source, len: nft.tcphdr_sizes.source }; }
+	/ "dport" { return { offset: nft.tcphdr_offsets.dest, len: nft.tcphdr_sizes.dest }; }
+	/ "sequence"
+	/ "ackseq"
+	/ "doff"
+	/ "flags"
+	/ "window"
+	/ "checksum"
+	/ "urgptr"
+
+ip_field
+	= "version"
+	/ "hdrlength"
+	/ "tos"
+	/ "length"
+	/ "id"
+	/ "frag-off"
+	/ "ttl"
+	/ "protocol" { return { offset: nft.iphdr_offsets.protocol, len: nft.iphdr_sizes.protocol }; }
+	/ "checksum"
+	/ "saddr" { return { offset: nft.iphdr_offsets.saddr, len: nft.iphdr_sizes.saddr }; }
+	/ "daddr" { return { offset: nft.iphdr_offsets.daddr, len: nft.iphdr_sizes.daddr }; }
+
+ip6_field
+	= "version"
+	/ "priority"
+	/ "flowlabel"
+	/ "length"
+	/ "nexthdr"
+	/ "hoplimit"
+	/ "saddr" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
+	/ "daddr" { return { offset: nft.ipv6hdr_offsets.daddr, len: nft.ipv6hdr_sizes.daddr };	}
+
+udp_field
+	= "sport" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
+	/ "dport" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
+	/ "length"
+	/ "checksum"
+
+packet_field_value
+	= val:( number / address) { return val; }
+
+address
+	= ipv4 / ipv6
+
+ipv6
+	= ipv6addr cidr? _
+
+ipv4
+	= ipv4addr cidr? _
+
+number
+	= num:(hex / decimal) _
+		{debug("number");
+			var prepend = "";
+			var numstr = num.toString(16);
+			var pad = payload_len * 2;
+			while(numstr.length < pad) numstr = "0".concat(numstr);
+			numstr = '0x' + numstr;
+
+			expressions_array.push(
+	        {
+	            elem:
+	            {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
+						DATA: 		{ VALUE: numstr } // 0x0016 = 22 - ssh protocol
+	                }
+				}
+			});
+		}
+
+ipv6addr
+	= quads:quads
+		{ debug("ipv6addr");
+			if(command_object.family !== 'ip6') throw new Error("family != ip6 when ipv6 address specified")
+
+			expressions_array.push(
+			{
+	            elem:
+	            {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
+						DATA: 		{
+										// overkill but throws for bad hex val
+										VALUE: "0x" + quads
+									} // C0A83800 = 192.168.56.0
+	                }
+				}
+			});
+		}
+
+ipv4addr
+	= octets:octets
+		{  debug("ipv4addr");
+			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
+			var addr = new Buffer(4);
+			addr.writeUInt8( parseInt(octets[0], 10), 0);
+			addr.writeUInt8( parseInt(octets[1], 10), 1);
+			addr.writeUInt8( parseInt(octets[2], 10), 2);
+			addr.writeUInt8( parseInt(octets[3], 10), 3);
+
+			expressions_array.push(
+			{
+	            elem:
+	            {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
+						DATA: 		{
+										// overkill but throws for bad hex val
+										VALUE: "0x" + addr.toString('hex')
+									} // C0A83800 = 192.168.56.0
+	                }
+				}
+			});
+		}
+
+cidr
+	= cidr:(ipv4cidr / ipv6cidr)
+		{   debug("cidr")
+			var last_addr = expressions_array.pop();
+			expressions_array.push(
+			{
+	            elem:
+	            {
+					name: "bitwise",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						DREG:		nft.nft_registers.NFT_REG_1,
+						LEN: 		cidr.len,
+						MASK: 		{ VALUE: "0x" + cidr.val },
+						XOR: 		{ VALUE: "0x00000000" }
+	                }
+				}
+			});
+			expressions_array.push(last_addr);
+		}
+
+
+drop
+	= "drop"
+		{
+	        expressions_array.push(
+	        {
+	            elem:
+	            {
+					name: "immediate",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_VERDICT,
+						DATA: 		{ VERDICT: { CODE: 0x00000000 } }
+	                }
+				}
+			});
+		}
+
+accept
+	= "accept"
+		{
+	        expressions_array.push(
+	        {
+	            elem:
+	            {
+					name: "immediate",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_VERDICT,
+						DATA: 		{ VERDICT: { CODE: 0x00000001 } }
+	                }
+				}
+			});
+		}
+
+////////////////////////////////////////////////////////////////////////////
 hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
@@ -207,129 +458,6 @@ hooknum
 
 hookprio
 	= pr:[0-9]+ { return pr.join(""); }
-
-table
-	= ta:[a-zA-Z]+
-		{
-			return ta.join("");
-		}
-
-chain
-	= chain:[a-zA-Z]+
-		{
-			return chain.join("");
-		}
-
-action
-	= drop / accept
-
-value
-	= val:( number / address) { return val; }
-
-address
-	= ip:( ipv4 / ipv6 ) {
-		return ip;
-	}
-
-
-ipv6
-	= addr:ipv6addr cd:cidr? _
-		{
-			return {
-				type: "address",
-				value: [ addr,	cd ]
-			};
-		}
-
-ipv4
-	= addr:ipv4addr cd:cidr? _
-		{
-			return {
-				type: "address",
-				value: [ addr,	cd ]
-			};
-		}
-
-drop
-	= "drop"
-		{
-	        return {
-	            elem:
-	            {
-					name: "immediate",
-					data: {
-						DREG: 		nft.nft_registers.NFT_REG_VERDICT,
-						DATA: 		{ VERDICT: { CODE: 0x00000000 } }
-	                }
-				}
-			};
-		}
-
-accept
-	= "accept"
-		{
-	        return {
-	            elem:
-	            {
-					name: "immediate",
-					data: {
-						DREG: 		nft.nft_registers.NFT_REG_VERDICT,
-						DATA: 		{ VERDICT: { CODE: 0x00000001 } }
-	                }
-				}
-			};
-		}
-
-// see: include/linux/netfilter/nf_conntrack_common
-connection_track
-	= "ct" _ op:nft_ct_key
-		{
-	        var retval = [
-	            {
-	            elem:
-	            {
-					name: "ct",
-					data: {
-						KEY: 		0, //op.key,
-						//DIRECTION: 	1, //op.state,
-						//SREG:      	1
-						DREG:       1
-	                }
-				}},
-
-				{
-	            elem:
-	            {
-					name: "bitwise",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						DREG:		nft.nft_registers.NFT_REG_1,
-						LEN: 		4,
-						MASK: 		{ VALUE: "0x08000000" },
-						XOR: 		{ VALUE: "0x00000000" }
-	                }
-				}},
-
-				{
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP:			nft.nft_cmp_ops.NFT_CMP_NEQ,
-						DATA: 		{ VALUE: "0x00000000" }
-	                }
-				}}
-
-			];
-
-			// DREG: 		0,
-			// DIRECTION: 	2,
-			// SREG: 		3,
-			// if(pfx != null) retval.elem.data.PREFIX = pfx;
-
-			return retval;
-		}
 
 
 nft_ct_key
@@ -383,6 +511,60 @@ log_stmt
 			return retval;
 		}
 
+
+// see: include/linux/netfilter/nf_conntrack_common
+connection_track
+	= "ct" _ op:nft_ct_key
+		{
+	        var retval = [
+	            {
+	            elem:
+	            {
+					name: "ct",
+					data: {
+						KEY: 		0, //op.key,
+						//DIRECTION: 	1, //op.state,
+						//SREG:      	1
+						DREG:       1
+	                }
+				}},
+
+				{
+	            elem:
+	            {
+					name: "bitwise",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						DREG:		nft.nft_registers.NFT_REG_1,
+						LEN: 		4,
+						MASK: 		{ VALUE: "0x08000000" },
+						XOR: 		{ VALUE: "0x00000000" }
+	                }
+				}},
+
+				{
+	            elem:
+	            {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP:			nft.nft_cmp_ops.NFT_CMP_NEQ,
+						DATA: 		{ VALUE: "0x00000000" }
+	                }
+				}}
+
+			];
+
+			// DREG: 		0,
+			// DIRECTION: 	2,
+			// SREG: 		3,
+			// if(pfx != null) retval.elem.data.PREFIX = pfx;
+
+			return retval;
+		}
+
+
+
 log_prefix
 	= "prefix" _ '"'str:string'"'
 		{ return str; }
@@ -407,169 +589,6 @@ log_flags
 	= "flags" _ d:decimal
 		{ return d.toNumber(); }
 
-protocol
-	= prot:( tcp / udp ) _
-		{ debug("protocol");
-			return [
-			{
-				elem:
-				{
-					name: "payload",
-					data: {
-						DREG: 		nft.nft_registers.NFT_REG_1,
-						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER,
-						OFFSET: 	nft.iphdr_offsets.protocol,
-						LEN: 		nft.iphdr_sizes.protocol
-	                }
-	            }
-	        },
-	        {
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
-						DATA: 		{ VALUE: prot } //nft.ip_proto.IPPROTO_TCP
-	                }
-				}
-			}];
-
-			return prot;
-		}
-
-field
- 	= hd:(transport_header / network_header)
- 		{
- 			return hd;
- 		}
-
-network_header
-	= field:( saddr / daddr ) _
-		{debug("network field");
-			payload_len = field.len;
-			return {
-				elem:
-				{
-					name: "payload",
-					data: {
-						DREG: 		nft.nft_registers.NFT_REG_1,
-						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER,
-						OFFSET: 	field.offset,
-						LEN:		field.len
-	                }
-	            }
-	        };
-		}
-
-transport_header
-	= field:( ipprotocol / dport ) _
-		{debug("transport field");
-			payload_len = field.len;
-			return {
-				elem:
-				{
-					name: "payload",
-					data: {
-						DREG: 		nft.nft_registers.NFT_REG_1,
-						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_TRANSPORT_HEADER,
-						OFFSET: 	field.offset,
-						LEN:		field.len
-	                }
-	            }
-	        };
-		}
-
-number
-	= num:(hex / decimal) _
-		{debug("number");
-		var prepend = "";
-		var numstr = num.toString(16);
-		var pad = payload_len * 2;
-		while(numstr.length < pad) numstr = "0".concat(numstr);
-		numstr = '0x' + numstr;
-
-		payload_len
-	        return {
-	        	type: "number",
-	        	value : [
-			        {
-			            elem:
-			            {
-							name: "cmp",
-							data: {
-								SREG: 		nft.nft_registers.NFT_REG_1,
-								OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
-								DATA: 		{ VALUE: numstr } // 0x0016 = 22 - ssh protocol
-			                }
-						}
-					}
-				]
-			};
-		}
-
-ipv6addr
-	= quads:quads
-		{ debug("ipv6addr");
-			if(command_object.family !== 'ip6') throw new Error("family != ip6 when ipv6 address specified")
-			return {
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
-						DATA: 		{
-										// overkill but throws for bad hex val
-										VALUE: "0x" + quads
-									} // C0A83800 = 192.168.56.0
-	                }
-				}
-			};
-		}
-
-ipv4addr
-	= octets:octets
-		{  debug("ipv4addr");
-			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
-			var addr = new Buffer(4);
-			addr.writeUInt8( parseInt(octets[0], 10), 0);
-			addr.writeUInt8( parseInt(octets[1], 10), 1);
-			addr.writeUInt8( parseInt(octets[2], 10), 2);
-			addr.writeUInt8( parseInt(octets[3], 10), 3);
-			return {
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
-						DATA: 		{
-										// overkill but throws for bad hex val
-										VALUE: "0x" + addr.toString('hex')
-									} // C0A83800 = 192.168.56.0
-	                }
-				}
-			};
-		}
-
-cidr
-	= cidr:(ipv4cidr / ipv6cidr)
-		{   debug("cidr")
-			return {
-	            elem:
-	            {
-					name: "bitwise",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						DREG:		nft.nft_registers.NFT_REG_1,
-						LEN: 		cidr.len,
-						MASK: 		{ VALUE: "0x" + cidr.val },
-						XOR: 		{ VALUE: "0x00000000" }
-	                }
-				}
-			}
-		}
 
 ipv6cidr
 	= "/" cd:([0-9][0-9]?[0-9]?)
@@ -650,69 +669,3 @@ _
 
 __
 	= ([ \t])*
-
-// Protocols
-tcp
-	= "tcp" { return "0x06"; }
-udp
-	= "udp" { return "0x11"; }
-
-// IP header
-ipprotocol
-	= "prot"
-	{
-		return {
-			offset: 	nft.iphdr_offsets.protocol,
-			len:		nft.iphdr_sizes.protocol
-		};
-	}
-
-saddr
-	= "saddr"
-	{
-		if(command_object.family === 'ip'){
-			return {
-				offset: 	nft.iphdr_offsets.saddr,
-				len:		nft.iphdr_sizes.saddr
-			};
-		} else {
-			return {
-				offset: 	nft.ipv6hdr_offsets.saddr,
-				len:		nft.ipv6hdr_sizes.saddr
-			};
-		}
-	}
-daddr
-	= "daddr"
-	{
-		if(command_object.family === 'ip'){
-			return {
-				offset: 	nft.iphdr_offsets.daddr,
-				len:		nft.iphdr_sizes.daddr
-			};
-		} else {
-			return {
-				offset: 	nft.ipv6hdr_offsets.daddr,
-				len:		nft.ipv6hdr_sizes.daddr
-			};
-		}
-	}
-
-// TCP header
-dport
-	= "dport"
-	{
-		return {
-			offset: 	nft.tcphdr_offsets.dest,
-			len:		nft.tcphdr_sizes.dest
-		};
-	}
-
-sport
-	= "sport"
-	{
-		return {
-			offset: 	nft.tcphdr_offsets.source,
-			len:		nft.tcphdr_sizes.source
-		};
-	}

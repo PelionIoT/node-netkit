@@ -28,6 +28,9 @@ flush
  */
 
 {
+	/*
+		This block is for predefines global to the parser
+	*/
 	var nft = require('./nftables.js');
 	var cmn = require('../libs/common.js');
 	var bignum = require('bignum');
@@ -94,7 +97,10 @@ list_entity
 	/ "chain" __ chain_specifier?
 		{ command_object.type = "chain"; }
 
-	/ "rule" __ rule_specifier?
+	/ "rule" !"s" __ rule_specifier?
+		{ command_object.type = "rule"; }
+
+	/ "rules"__ table_identifier __ chain_identifier
 		{ command_object.type = "rule"; }
 
 add_entity
@@ -158,11 +164,10 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= rd:rule_definition ct:connection_track? lgst:log_stmt? act:rule_action?
+	= rd:rule_definition? ct:connection_track? lgst:log_stmt? act:rule_action?
 		{
 
 			var exprs = [];
-			var parms = {};
 
 			if(expressions_array != undefined) {
 				exprs = expressions_array;
@@ -196,7 +201,10 @@ rule_handle
 	= rh:( hex / decimal ) { command_object.params.handle = '0x' + rh.toString(16); }
 
 rule_action
-	= drop / accept
+	= ra:(drop / accept)
+		{
+			return(ra);
+		}
 
 rule_position
 	= "position" _ p:( hex / decimal )
@@ -407,7 +415,7 @@ cidr
 drop
 	= "drop"
 		{
-	        expressions_array.push(
+	        return(
 	        {
 	            elem:
 	            {
@@ -423,7 +431,7 @@ drop
 accept
 	= "accept"
 		{
-	        expressions_array.push(
+	        return(
 	        {
 	            elem:
 	            {
@@ -461,10 +469,8 @@ hookprio
 
 
 nft_ct_key
-	= "state" _ st:ct_state	_
-		{ return ;
-		}
-	/ "direction" _ dir:ct_direction	{ return dir; }
+	= "state" _ 	st:ct_state	_ 		{ return st; }
+	/ "direction" _ dir:ct_direction _ 	{ return dir; }
 	/ "status"							{ return 2; }
 	/ "mark"							{ return 3; }
 	/ "secmark"							{ return 4; }

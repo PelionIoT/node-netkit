@@ -288,7 +288,7 @@ nfevents = (function(){
 					});
 
 					if(!opts.hasOwnProperty('res_id')) opts['res_id'] = 0;
-					opts['batch'] = "false";
+					opts['batch'] = false;
 					opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ACK;
 					opts['family'] = nk.AF_INET;
 					opts['subsys'] = nf.NFNL_SUBSYS_ULOG;

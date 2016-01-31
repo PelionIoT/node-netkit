@@ -11,7 +11,7 @@ var util = require('util');
 
 var tun0 = netkit.newTapInterfaceRaw();
 
-tun0.ifname = "tap_test";
+tun0.ifname = "tap0";
 
 if(tun0.create()) {
 	console.log("Interface created: " + tun0.ifname);
@@ -68,8 +68,9 @@ if(tun0.create()) {
 					console.log('buffer: ' + chunk.toJSON());
 					if(!tun0.stream.write(chunk)) {
 						console.log("ERROR: test write failed");
-					} else
+					} else {
 					    console.log("wrote back " + chunk.length + " bytes.");
+					}
 				}
 			});
 

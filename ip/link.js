@@ -7,15 +7,20 @@ var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
-module.exports.link = function(operation,ifname,cb) {
+module.exports.link = function(operation,ifname, attrs, cb) {
 	var netkitObject = this;
 	var link_opts;
 	var sock_opts = {};
 	var family;
+
+	if(arguments.length < 4) {
+		cb = attrs;
+	}
 
 	if(!operation || operation === 'show') {
 		var getlink_command_opts = {
@@ -38,6 +43,17 @@ module.exports.link = function(operation,ifname,cb) {
 			ifname: ifname,
 			info_flags: 0x00,  // down
 			info_change: 0x01
+		}
+	} else if(operation === 'set') {
+		if(attrs === null || typeof attrs !== 'object') {
+			return cb(new Error("set link rquires attributes object"));
+		}
+
+		link_opts = {
+			type: rt.RTM_NEWLINK, // the command
+			flags: nl.NLM_F_REQUEST|nl.NLM_F_ACK,
+			ifname: ifname,
+			attributes: attrs
 		}
 	// } else if(operation === 'add') {
 	// 	link_opts = {
@@ -65,11 +81,11 @@ module.exports.link = function(operation,ifname,cb) {
 	var sock = netkitObject.newNetlinkSocket();
 	sock.create(sock_opts,function(err) {
 		if(err) {
-			console.log("socket.create() Error: " + util.inspect(err));
+			error("socket.create() Error: " + util.inspect(err));
 			sock.close();
 			return cb(err);
 		} else {
-			//console.log("Created netlink socket.");
+			//debug("Created netlink socket.");
 
 			netlinkLinkCommand.call(netkitObject,link_opts, sock, function(err,bufs) {
 				if(err) {
@@ -87,6 +103,8 @@ module.exports.link = function(operation,ifname,cb) {
 
 netlinkLinkCommand = function(opts,sock, cb) {
 
+	var that = this;
+
 	var nl_hdr = nl.buildHdr();
 
 	// <B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
@@ -100,7 +118,7 @@ netlinkLinkCommand = function(opts,sock, cb) {
 	if(opts.hasOwnProperty('ifname')) {
 		var ifndex = this.ifNameToIndex(opts['ifname']);
 		if(util.isError(ifndex)) {
-			err("* Error: " + util.inspect(ifndex));
+			error("* Error: " + util.inspect(ifndex));
 			cb(ifndex); // call w/ error
 			return;
 		}
@@ -126,8 +144,42 @@ netlinkLinkCommand = function(opts,sock, cb) {
 
 	var bufs = [];
 
-	dbg("info_msg---> " + asHexBuffer(info_msg.pack()));
+	debug("info_msg---> " + asHexBuffer(info_msg.pack()));
 	bufs.push(info_msg.pack());
+
+	if(typeof opts.attributes !== 'undefined')
+	{
+		try {
+			var keys = Object.keys(opts.attributes);
+		    keys.forEach(function(key) {
+		    	if(rt.link_info_attr_name_map.indexOf(key.toLowerCase()) !== -1){
+		    		var attr_num = rt.link_attributes["IFLA_" + key.toUpperCase()];
+		    		var attr_val = opts.attributes[key];
+
+		    		if(key === 'address') {
+			    		if(typeof attr_val === 'string') {
+							var macbuf = that.util.bufferifyMacString(attr_val,6); // we want 6 bytes no matter what
+							if(!macbuf) {
+
+								if(attr_val.length === 12) {
+									macbuf = new Buffer(attr_val, 'hex');
+								} else {
+									throw(new Error("bad address, not a mac address: " + attr_val));
+								}
+							}
+
+							debug("info_msg---> " + asHexBuffer(macbuf));
+							bufs.push(rt.buildRtattrBuf(attr_num,macbuf));
+						}
+					}
+		    	} else {
+		    		throw(new Error(key + " is not a link attribute"));
+		    	}
+		    });
+		} catch(err) {
+			return cb(err);
+		}
+	}
 
 	nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
 };

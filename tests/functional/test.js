@@ -9,7 +9,7 @@ var util = require('util');
 
 var tun0 = netkit.newTunInterfaceRaw();
 
-tun0.ifname = "tun_test";
+tun0.ifname = "tun0";
 
 // run a little test on toAddress
 var ans = netkit.toAddress('aaaa::/64',netkit.AF_INET6);
@@ -98,7 +98,7 @@ if(tun0.create()) {
 					[  // ipv6 routes: dest
 						{
 						  dest: "2003::/16",        // ip -6 route add 2003::/16 dev tun_test
-						  via_if: "tun_test",       // via the interface 'tun_test'
+						  via_if: tun0.ifname,       // via the interface 'tun_test'
 //						  via_network: "2001::/16",
 						  metric: 2400,             // if you have a specific metric in add_route6 you will need to use the same metric so the
 						                            // kernel can find the correct route

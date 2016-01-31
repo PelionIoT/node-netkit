@@ -15,6 +15,7 @@
 #include "node_pointer.h"
 #include "network-common.h"
 #include "error-common.h"
+#include "nan.h"
 
 using namespace node;
 using namespace v8;
@@ -67,8 +68,8 @@ protected:
 	struct readReq {
 		uv_work_t work;
 		int _errno; // the errno that happened on read if an error ocurred.
-		v8::Persistent<Function> completeCB;
-		v8::Persistent<Object> buffer;
+		Nan::Callback* completeCB;
+		Nan::Persistent<v8::Object> buffer;
 		char *_backing;                // the backing store of the buffer
 		int len;
 		TunInterface *self;
@@ -82,9 +83,9 @@ protected:
 	struct writeReq {
 		uv_work_t work;
 		int _errno; // the errno that happened on read if an error occurred.
-		v8::Persistent<Function> onSendSuccessCB;
-		v8::Persistent<Function> onSendFailureCB;
-		v8::Persistent<Object> buffer; // Buffer object passed in
+		Nan::Callback* onSendSuccessCB;
+		Nan::Callback* onSendFailureCB;
+		Nan::Persistent<v8::Object> buffer; // Buffer object passed in
 		char *_backing; // backing of the passed in Buffer
 		int len;
 		TunInterface *self;
@@ -102,39 +103,32 @@ protected:
 	static void post_write(uv_work_t *req, int status);
 
 public:
-	static Handle<Value> Init(const Arguments& args);
-	static void ExtendFrom(const Arguments& args);
+    static NAN_METHOD(Init);
     static void Shutdown();
 
-//    static Persistent<Function> constructor_template;
-    static Handle<Value> New(const Arguments& args);
-    static Handle<Value> NewInstance(const Arguments& args);
+    static NAN_METHOD(New);
+    static NAN_METHOD(IsCreated);
 
-    static Handle<Value> IsCreated(const Arguments& args);
-
-    static Handle<Value> GetIfName(Local<String> property, const AccessorInfo &info);
-    static void SetIfName(Local<String> property, Local<Value> val, const AccessorInfo &info);
-    static Handle<Value> GetIfFD(Local<String> property, const AccessorInfo &info);
-    static void SetIfFD(Local<String> property, Local<Value> val, const AccessorInfo &info);
-    static Handle<Value> GetIfFlags(Local<String> property, const AccessorInfo &info);
-    static void SetIfFlags(Local<String> property, Local<Value> val, const AccessorInfo &info);
-    static Handle<Value> GetLastError(Local<String> property, const AccessorInfo &info);
-    static void SetLastError(Local<String> property, Local<Value> val, const AccessorInfo &info);
-//    static Handle<Value> GetLastErrorStr(Local<String> property, const AccessorInfo &info);
-//    static void SetLastErrorStr(Local<String> property, Local<Value> val, const AccessorInfo &info);
-    static Handle<Value> GetReadChunkSize(Local<String> property, const AccessorInfo &info);
-    static void SetReadChunkSize(Local<String> property, Local<Value> val, const AccessorInfo &info);
+    static NAN_GETTER(GetIfName);
+    static NAN_SETTER(SetIfName);
+    static NAN_GETTER(GetIfFD);
+    static NAN_SETTER(SetIfFD);
+    static NAN_GETTER(GetIfFlags);
+    static NAN_SETTER(SetIfFlags);
+    static NAN_GETTER(GetLastError);
+    static NAN_SETTER(SetLastError);
+    static NAN_GETTER(GetReadChunkSize);
+    static NAN_SETTER(SetReadChunkSize);
 
 
-    static Handle<Value> GetData(const Arguments& args);
-    static Handle<Value> SendData(const Arguments& args);
+    static NAN_METHOD(GetData);
+    static NAN_METHOD(SendData);
+    static NAN_METHOD(Create);
+    static NAN_METHOD(Open);
+    static NAN_METHOD(Close);
 
-    static Handle<Value> Create(const Arguments& args);
-    static Handle<Value> Open(const Arguments& args);
-    static Handle<Value> Close(const Arguments& args);
 
-
-    static Persistent<Function> constructor;
+    static Nan::Persistent<Function> constructor;
 //    static Persistent<ObjectTemplate> prototype;
 
     // solid reference to TUN / TAP creation is: http://backreference.org/2010/03/26/tuntap-interface-tutorial/

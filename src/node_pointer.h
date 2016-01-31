@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "v8.h"
 #include "node_buffer.h"
+#include "nan.h"
 
 /*
  * Called when the "pointer" is garbage collected.
@@ -53,8 +54,8 @@ inline static void wrap_pointer_cb(char *data, void *hint) {
 
 inline static v8::Handle<v8::Value> WrapPointer(void *ptr, size_t length) {
   void *user_data = NULL;
-  node::Buffer *buf = node::Buffer::New((char *)ptr, length, wrap_pointer_cb, user_data);
-  return buf->handle_;
+  Nan::MaybeLocal<v8::Object> Mbuf = Nan::NewBuffer((char *)ptr, length, wrap_pointer_cb, user_data);
+  return Mbuf.ToLocalChecked();
 }
 
 /*

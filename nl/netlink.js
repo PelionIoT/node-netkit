@@ -4,8 +4,8 @@ var rtnetlink = require('./rtnetlink.js')
 var util = require('util');
 
 var asHexBuffer = cmn.asHexBuffer;
-var dbg = cmn.dbg;
-var err = cmn.err;
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 var bufferpack = cmn.bufferpack;
 
 
@@ -126,8 +126,8 @@ nl = {
 
 	sendNetlinkCommand: function(sock, nl_hdr, bufs,cb) {
 
-		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
-		dbg("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
+		debug("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
+		debug("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
 
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)
@@ -136,8 +136,8 @@ nl = {
 		bufs.unshift(nl_hdr.pack());
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
-		dbg("Sending---> " + asHexBuffer(all));
-		//console.log('all len = ' + all.length);
+		debug("Sending---> " + asHexBuffer(all));
+		//debug('all len = ' + all.length);
 
 	    var msgreq = sock.createMsgReq();
 
@@ -148,37 +148,38 @@ nl = {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
-	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
+	    		//debug("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},
 
 	sendNetlinkRequest: function(sock, msgreq, cb) {
-		//dbg("Sending---> " + asHexBuffer(buf));
-		//console.log('all len = ' + all.length);
+		//debug("Sending---> " + asHexBuffer(buf));
+		//debug('all len = ' + all.length);
 
 	    sock.sendMsg(msgreq, function(err,bytes) {
 	    	if(err) {
 	    		cb(err);
 	    	} else {
 	    		cb(err,bytes);
-	    		//console.log("snedMsg resp --> " + asHexBuffer(bytes[0]));
+	    		//debug("snedMsg resp --> " + asHexBuffer(bytes[0]));
 	    	}
 	    });
 	},
 
 	addNetlinkMessageToReq: function(msgreq, nl_hdr, bufs) {
--		dbg("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
-		dbg("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
+-		debug("nl_hdr.type ---> " + nl_hdr._type + ' (' + nl_hdr._type.toString(16) + ')');
+		debug("nl_hdr.flags ---> " + nl_hdr._flags + ' (' + nl_hdr._flags.toString(16) + ')');
 
 		var len = 0;
 		for (var n=0;n<bufs.length;n++)
 			len += bufs[n].length;
 		nl_hdr._len = nl_hdr._length + len;
 		bufs.unshift(nl_hdr.pack());
+
 		var all = Buffer.concat(bufs,nl_hdr._len); // the entire message....
 
-		dbg("Adding---> " + asHexBuffer(all));
+		debug("Adding---> " + asHexBuffer(all));
 
 	    msgreq.addMsg(all);
 	},

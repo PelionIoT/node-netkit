@@ -13,14 +13,18 @@ catch(e) {
     process.exit();
 }
 
+console.log("__dirname = " + __dirname)
 process.chdir(__dirname + '/../');
 
 //run unit tests
-reporter.run(['./tests/unit/test-rtnetlink.js']);
-reporter.run(['./tests/unit/test-ipparse.js']);
-reporter.run(['./tests/unit/test-nlprocess.js']);
+reporter.run([
+	'./tests/unit/test-netfilterparse.js',
+	'./tests/unit/test-nfnetlinkgeneration.js',
+	'./tests/unit/test-rtnetlink.js',
+	'./tests/unit/test-ipparse.js',
+	'./tests/unit/test-nlprocess.js',
+	'./tests/unit/test-link.js',
+	'./tests/unit/test-addr.js',
+	// './tests/unit/test-addrlabel.js',
 
-//run functional tests that use nodeunit
-reporter.run(['./tests/unit/test-addr.js'])
-//reporter.run(['./tests/unit/test-addrlabel.js'])
-
+	]);

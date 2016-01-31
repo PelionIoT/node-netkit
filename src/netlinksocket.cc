@@ -280,15 +280,11 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
 			sock->Ref();    // don't let the socket get garbage collected yet
 			req->reqRef();  // nor the request object
 			if(info.Length() > 0 && info[1]->IsFunction()) {
-				req->onSendCB = new Nan::Callback(Local<Function>::Cast(info[1]));
-			} else {
-				req->onSendCB = new Nan::Callback();
+				req->onSendCB.SetFunction(Local<Function>::Cast(info[1]));
 			}
 
 			if(info.Length() > 1 && info[2]->IsFunction()) {
-				req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[2]));
-			} else {
-				req->onReplyCB = new Nan::Callback();
+				req->onReplyCB.SetFunction(Local<Function>::Cast(info[2]));
 			}
 
 			void (*post_process_func)(uv_work_s*, int) = NULL;
@@ -335,7 +331,7 @@ NAN_METHOD(NetlinkSocket::OnRecv) {
 
 		Request_t* recvmsg_req = new Request_t(sock,v8req); // new request sequnce starts at zero
 		recvmsg_req->reqRef();
-		recvmsg_req->onReplyCB = new Nan::Callback(Local<Function>::Cast(info[0]));
+		recvmsg_req->onReplyCB.SetFunction(Local<Function>::Cast(info[0]));
 
 		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
 		(recvmsg_req->self->handle).data = recvmsg_req;
@@ -646,31 +642,31 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		}
 		retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
 
-		if(job->onReplyCB->IsEmpty() && !job->onSendCB->IsEmpty()) {
+		if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
 			// if we don't have a reply callback,
 			if(!nlError) {
 				argv[0] = fals->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onSendCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
+				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
 			} else {
 				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
-				job->onSendCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
+				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
 			}
-		} else if (!job->onReplyCB->IsEmpty()) {
+		} else if (!job->onReplyCB.IsEmpty()) {
 			if(!nlError) {
 				argv[0] = fals->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onReplyCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
+				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
 			} else {
 				argv[0] = tru->ToBoolean();
 				argv[1] = retbufs->ToObject();
-				job->onReplyCB->Call(Nan::GetCurrentContext()->Global(),2,argv);
+				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
 			}
 		}
 	} else { // failure on job creation. we did not get to the point of sending a packet.
-		if(!job->onSendCB->IsEmpty()) {
+		if(!job->onSendCB.IsEmpty()) {
 			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();
-			job->onSendCB->Call(Nan::GetCurrentContext()->Global(),1,argv);
+			job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
 		}
 	}
 

@@ -21,7 +21,6 @@ public:
 		, fd(0)
 		, seq(0)
 		, err()
-		, onDataCB(NULL)
 		, listening(false)
 		, listenReq(nullptr)
 	{
@@ -115,8 +114,8 @@ protected:
 			uv_work_t work;
 			uv_async_t async;
 			_net::err_ev err; // the errno that happened sendmsg if an error occurred.
-			Nan::Callback* onSendCB;
-			Nan::Callback* onReplyCB;       // This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
+			Nan::Callback onSendCB;
+			Nan::Callback onReplyCB;       // This is for when we do a sendmsg and *don't* use NLM_F_ACK ...see do_sendmsg()
 			Nan::Persistent<v8::Function> buffer; // Buffer object passed in
 			char *_backing; // backing of the passed in Buffer
 			int len;
@@ -140,7 +139,6 @@ protected:
 	struct sockaddr_nl	addr_peer;
 
 	_net::err_ev err;
-	Nan::Callback* onDataCB;
 	bool listening;
 	Request_t* listenReq;
 	uv_poll_t handle;  // currently only one event loop supported  until we contextualize this

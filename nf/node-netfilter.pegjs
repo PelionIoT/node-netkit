@@ -43,6 +43,12 @@ flush
 	command_object.params = {};
 	command_object.family = "ip"; // default when not specified
 
+	var or_values = function(values) {
+		var v = values || [], ret = 0;
+		v.forEach(function(num) { ret = ret | num; } );
+		return ret;
+	}
+
 	var add_protocol = function(prot) {
 		expressions_array.push(
 		{
@@ -97,7 +103,7 @@ list_entity
 	/ "chain" __ chain_specifier?
 		{ command_object.type = "chain"; }
 
-	/ "rule" !"s" __ rule_specifier?
+	/ "rule" !"s" __ rule_specifier
 		{ command_object.type = "rule"; }
 
 	/ "rules"__ table_identifier __ chain_identifier
@@ -128,7 +134,7 @@ delete_entity
 	/ "chain" _ table_identifier _ chain_name
 		{ command_object.type = "chain"; }
 
-	/ "rule" _ rule_handle
+	/ "rule" _ table_identifier _ chain_identifier _ rule_handle
 		{ command_object.type = "rule"; }
 
 flush_entity
@@ -164,7 +170,7 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= rd:rule_definition? ct:connection_track? lgst:log_stmt? act:rule_action?
+	= rd:rule_definition? ct:connection_track* lgst:log_stmt? act:rule_action?
 		{
 
 			var exprs = [];
@@ -174,9 +180,11 @@ rule_expression
 			}
 
 			if(ct != undefined) {
-				for(var connection_track in ct) {
-					exprs.push(ct[connection_track]);
-				}
+				ct.forEach(function(connection_track) {
+					for(var elem in connection_track) {
+						exprs.push(connection_track[elem]);
+					}
+				}); 
 			}
 
 			if(lgst != undefined) exprs.push(lgst);
@@ -198,7 +206,11 @@ chain
 		}
 
 rule_handle
-	= rh:( hex / decimal ) { command_object.params.handle = '0x' + rh.toString(16); }
+	= "handle" _ rh:( hex / decimal ) 
+		{ 
+			var hndl = rh.toBuffer({endian: 'big', size: 8});
+			command_object.params.handle = '0x' + hndl.toString('hex');
+		}
 
 rule_action
 	= ra:(drop / accept)
@@ -209,7 +221,8 @@ rule_action
 rule_position
 	= "position" _ p:( hex / decimal )
 		{
-			command_object.params.position = '0x' + p.toString(16);
+			var pos = p.toBuffer({endian: 'big', size: 8});
+			command_object.params.position = '0x' + pos.toString('hex');
 		}
 
 rule_definition
@@ -265,46 +278,51 @@ ip6
 	= "ip6"  { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
 
 
+/* 
+	Packet field definitions
 
+  	// Commented out fields are combined into the upper and 
+  	// lower portion of a field and not supported yet.
+*/
 tcp_field
 	= "sport" { return { offset: nft.tcphdr_offsets.source, len: nft.tcphdr_sizes.source }; }
 	/ "dport" { return { offset: nft.tcphdr_offsets.dest, len: nft.tcphdr_sizes.dest }; }
-	/ "sequence"
-	/ "ackseq"
-	/ "doff"
-	/ "flags"
-	/ "window"
-	/ "checksum"
-	/ "urgptr"
+	/ "sequence" { return { offset: nft.tcphdr_offsets.seq, len: nft.tcphdr_sizes.seq }; }
+	/ "ackseq" { return { offset: nft.tcphdr_offsets.ack_seq, len: nft.tcphdr_sizes.ack_seq }; }
+//	/ "doff" { return { offset: nft.tcphdr_offsets.offset_flag, len: nft.tcphdr_sizes.offset_flag }; }
+	/ "flags" { return { offset: nft.tcphdr_offsets.offset_flag, len: nft.tcphdr_sizes.offset_flag }; }
+	/ "window" { return { offset: nft.tcphdr_offsets.window, len: nft.tcphdr_sizes.window }; }
+	/ "checksum" { return { offset: nft.tcphdr_offsets.check, len: nft.tcphdr_sizes.check }; }
+	/ "urgptr" { return { offset: nft.tcphdr_offsets.urg_ptr, len: nft.tcphdr_sizes.urg_ptr }; }
 
 ip_field
-	= "version"
-	/ "hdrlength"
-	/ "tos"
-	/ "length"
-	/ "id"
-	/ "frag-off"
-	/ "ttl"
+	= "version" { return { offset: nft.iphdr_offsets.version_ihl, len: nft.iphdr_sizes.version_ihl }; }
+//	/ "hdrlength" { return { offset: nft.iphdr_offsets.tos, len: nft.iphdr_sizes.tos }; }
+	/ "tos" { return { offset: nft.iphdr_offsets.tos, len: nft.iphdr_sizes.tos }; }
+	/ "length" { return { offset: nft.iphdr_offsets.tot_len, len: nft.iphdr_sizes.tot_len }; }
+	/ "id" { return { offset: nft.iphdr_offsets.id, len: nft.iphdr_sizes.id }; }
+	/ "frag-off" { return { offset: nft.iphdr_offsets.frag_off, len: nft.iphdr_sizes.frag_off }; }
+	/ "ttl" { return { offset: nft.iphdr_offsets.ttl, len: nft.iphdr_sizes.ttl }; }
 	/ "protocol" { return { offset: nft.iphdr_offsets.protocol, len: nft.iphdr_sizes.protocol }; }
-	/ "checksum"
+//	/ "checksum" { return { offset: nft.iphdr_offsets.protocol, len: nft.iphdr_sizes.protocol }; }
 	/ "saddr" { return { offset: nft.iphdr_offsets.saddr, len: nft.iphdr_sizes.saddr }; }
 	/ "daddr" { return { offset: nft.iphdr_offsets.daddr, len: nft.iphdr_sizes.daddr }; }
 
 ip6_field
-	= "version"
-	/ "priority"
-	/ "flowlabel"
-	/ "length"
-	/ "nexthdr"
-	/ "hoplimit"
+	= "version" { return { offset: nft.ipv6hdr_offsets.prio_version, len: nft.ipv6hdr_sizes.prio_version };	}
+//	/ "priority" { return { offset: nft.ipv6hdr_offsets.prio_version, len: nft.ipv6hdr_sizes.prio_version };	}
+	/ "flowlabel" { return { offset: nft.ipv6hdr_offsets.flow_lbl, len: nft.ipv6hdr_sizes.flow_lbl };	}
+	/ "length" { return { offset: nft.ipv6hdr_offsets.payload_len, len: nft.ipv6hdr_sizes.payload_len };	}
+	/ "nexthdr" { return { offset: nft.ipv6hdr_offsets.nexthdr, len: nft.ipv6hdr_sizes.nexthdr };	}
+	/ "hoplimit" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
 	/ "saddr" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
 	/ "daddr" { return { offset: nft.ipv6hdr_offsets.daddr, len: nft.ipv6hdr_sizes.daddr };	}
 
 udp_field
-	= "sport" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
-	/ "dport" { return { offset: nft.ipv6hdr_offsets.saddr, len: nft.ipv6hdr_sizes.saddr };	}
-	/ "length"
-	/ "checksum"
+	= "sport" { return { offset: nft.udphdr_offsets.source, len: nft.udthdr_sizes.source };	}
+	/ "dport" { return { offset: nft.udphdr_offsets.dest, len: nft.udphdr_sizes.dest };	}
+	/ "length" { return { offset: nft.udphdr_offsets.dest, len: nft.udphdr_sizes.len };	}
+	/ "checksum" { return { offset: nft.udphdr_offsets.check, len: nft.udphdr_sizes.check };	}
 
 packet_field_value
 	= val:( number / address) { return val; }
@@ -469,66 +487,47 @@ hookprio
 
 
 nft_ct_key
-	= "state" _ 	st:ct_state	_ 		{ return st; }
-	/ "direction" _ dir:ct_direction _ 	{ return dir; }
-	/ "status"							{ return 2; }
-	/ "mark"							{ return 3; }
-	/ "secmark"							{ return 4; }
-	/ "expiration"						{ return 5; }
-	/ "helper"							{ return 6; }
-	/ "l3protocol"						{ return 7; }
-	/ "src"								{ return 8; }
-	/ "dst"								{ return 9; }
-	/ "protocol"						{ return 10; }
-	/ "proto_src"						{ return 11; }
-	/ "proto_dst"						{ return 12; }
-	/ "labels"							{ return 13; }
+	= "state" _ 	sts:ct_states*	_ 	{ return { key:0, value:or_values(sts) }; }
+	/ "direction" _ dir:ct_direction _ 	{ return { key:1, value:dir }; }
+	/ "status"							{ return { key:2, value:dir }; }
+	/ "mark"							{ return { key:3, value:dir }; }
+	/ "secmark"							{ return { key:4, value:dir }; }
+	/ "expiration"						{ return { key:5, value:dir }; }
+	/ "helper"							{ return { key:6, value:dir }; }
+	/ "l3protocol"						{ return { key:7, value:dir }; }
+	/ "src"								{ return { key:8, value:dir }; }
+	/ "dst"								{ return { key:9, value:dir }; }
+	/ "protocol"						{ return { key:10, value:dir }; }
+	/ "proto_src"						{ return { key:11, value:dir }; }
+	/ "proto_dst"						{ return { key:12, value:dir }; }
+	/ "labels"							{ return { key:13, value:dir }; }
+
+ct_states
+	= ","? st:ct_state {return st;}
 
 ct_state
-	= "established"					 	{ return 0x02000000; }
-	/ "related"							{ return 0x04000000; }
-	/ "new"								{ return 0x08000000; }
-	/ "isreply"							{ return 3; }
+	= "established"					 	{ return 0x02; }
+	/ "related"							{ return 0x04; }
+	/ "new"								{ return 0x08; }
 
 ct_direction
 	= "original"	{ return 0; }
 	/ "reply"		{ return 1; }
 
-log_stmt
-	= "log" __ pfx:log_prefix? __ grp:log_group? __ snp:log_snaplen?
-			__ thr:log_qthreshold? __ lvl:log_level? __ flgs:log_flags? __
-		{
-	        var retval = {
-	            elem:
-	            {
-					name: "log",
-					data: {
-						GROUP: 		(grp === null) ? 0 : grp,
-	                }
-				}
-			};
-
-			if(pfx != null) retval.elem.data.PREFIX = pfx;
-			if(snp != null) retval.elem.data.SNAPLEN = snp;
-			if(thr != null) retval.elem.data.QTHRESHOLD = thr;
-			if(lvl != null) retval.elem.data.LEVEL = lvl;
-			if(flgs != null) retval.elem.data.FLAGS = flgs;
-
-			return retval;
-		}
-
-
 // see: include/linux/netfilter/nf_conntrack_common
 connection_track
 	= "ct" _ op:nft_ct_key
 		{
+			var mask = new Buffer(4);
+			mask.fill(0);
+			mask.writeUInt16LE(op.value);
 	        var retval = [
 	            {
 	            elem:
 	            {
 					name: "ct",
 					data: {
-						KEY: 		0, //op.key,
+						KEY: 		op.key, //op.key,
 						//DIRECTION: 	1, //op.state,
 						//SREG:      	1
 						DREG:       1
@@ -543,7 +542,7 @@ connection_track
 						SREG: 		nft.nft_registers.NFT_REG_1,
 						DREG:		nft.nft_registers.NFT_REG_1,
 						LEN: 		4,
-						MASK: 		{ VALUE: "0x08000000" },
+						MASK: 		{ VALUE: "0x" + mask.toString('hex') },
 						XOR: 		{ VALUE: "0x00000000" }
 	                }
 				}},
@@ -569,7 +568,28 @@ connection_track
 			return retval;
 		}
 
+log_stmt
+	= "log" __ pfx:log_prefix? __ grp:log_group? __ snp:log_snaplen?
+			__ thr:log_qthreshold? __ lvl:log_level? __ flgs:log_flags? __
+		{
+	        var retval = {
+	            elem:
+	            {
+					name: "log",
+					data: {
+						GROUP: 		(grp === null) ? 0 : grp,
+	                }
+				}
+			};
 
+			if(pfx != null) retval.elem.data.PREFIX = pfx;
+			if(snp != null) retval.elem.data.SNAPLEN = snp;
+			if(thr != null) retval.elem.data.QTHRESHOLD = thr;
+			if(lvl != null) retval.elem.data.LEVEL = lvl;
+			if(flgs != null) retval.elem.data.FLAGS = flgs;
+
+			return retval;
+		}
 
 log_prefix
 	= "prefix" _ '"'str:string'"'

@@ -163,6 +163,28 @@ nft = {
 		urg_ptr: 	2,
 	},
 
+
+	// struct udphdr {
+	// __be16	source;
+	// __be16	dest;
+	// __be16	len;
+	// __sum16	check;
+	// };
+
+	udphdr_offsets: {
+		source: 		0,
+		dest: 		2,
+		len: 		4,
+		check: 		6
+	},
+
+	udphdr_sizes: {
+		source: 		2,
+		dest: 		2,
+		len: 		2,
+		check: 		2
+	},
+
 	/*
 	* nft register defines
 	*/

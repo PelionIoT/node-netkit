@@ -221,7 +221,12 @@ Attribute.prototype.getNumberBuffer = function() {
 			buf.writeUInt32BE(this.value.valueOf(),0,len);
 			break;
 		case 8:
-			this.value = bignum(this.value);
+			if(this.value.startsWith("0x")) {
+				this.value = this.value.slice(2);
+				this.value = bignum(this.value, 16);
+			} else {
+				this.value = bignum(this.value, 10);
+			}
 			buf = this.value.toBuffer({endian:'big',size:8});
 			break;
 	}

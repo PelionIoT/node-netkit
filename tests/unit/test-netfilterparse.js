@@ -11,7 +11,7 @@ var util = require('util');
 exports.testNfParse = function(test){
 
 	var nnf_commands = JSON.parse(fs.readFileSync('./tests/unit/data/nnf_commands.json', 'utf8'));
-console.dir(nnf_commands);
+
 	test.doesNotThrow(function() {
 		
 		nnf_commands.forEach(function(command) {

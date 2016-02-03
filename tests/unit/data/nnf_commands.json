@@ -1,40 +1,32 @@
 [
-	// basic listing
 	"list tables",
 	"list table filter",
 	"list chain filter input",
 	"list chain",
 	"list ip6 chain",
-	"list rules",
 	"list rules filter input",
 
-	// create table, chain and rule to block ssh from anywhere but specified subnet
 	"add table filter",
 	"add chain filter input { type filter hook input priority 0 }",
 	"add rule filter input tcp dport 22 ip saddr 192.168.1.0/24 accept",
 	"add rule filter input tcp dport 22 drop",
 
-	// some connection states and logging
 	"add rule filter input tcp dport 22 ct state new log prefix \"New SSH connection\" group 0 accept",
 	"add rule filter input tcp dport 22 ct state established log prefix \"New SSH connection\" group 0 accept",
 	"add rule filter input log",
 	"add rule filter input log prefix \"network packet\" group 0",
 	"add rule filter input tcp dport 22 ct direction reply accept",
 
-	// Multiple connecition states
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",
 
-	// Deletions
 	"delete table filter",
 	"delete chain filter input",
-	"delete rule 5",
+	"delete rule filter input handle 5",
 
-	// flushing
 	"flush table filter",
 	"flush chain filter input",
 
-	// Repeat some with family specifiers
 	"list ip tables",
 	"list ip table filter",
 	"list ip chain filter input",
@@ -45,7 +37,7 @@
 
 	"delete ip table filter",
 	"delete ip chain filter input",
-	"delete ip6 rule 5",
+	"delete ip6 rule filter input handle 5",
 
 	"flush ip6 table filter",
 	"flush ip chain filter input"

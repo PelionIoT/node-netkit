@@ -13,9 +13,22 @@
 
 	"add rule filter input tcp dport 22 ct state new log prefix \"New SSH connection\" group 0 accept",
 	"add rule filter input tcp dport 22 ct state established log prefix \"New SSH connection\" group 0 accept",
+	"add rule filter input tcp dport 22 ct state related log prefix \"New SSH connection\" group 0 accept",
+	"add rule filter input tcp dport 22 ct state invalid log prefix \"New SSH connection\" group 0 accept",
+
+	"add rule filter input tcp dport 22 ct direction original accept",
+	"add rule filter input tcp dport 22 ct direction reply accept",
+
+	"add rule filter input tcp dport 22 ct status expected accept",
+	"add rule filter input tcp dport 22 ct status seen-reply accept",
+	"add rule filter input tcp dport 22 ct status assured accept",
+	"add rule filter input tcp dport 22 ct status confirmed accept",
+	"add rule filter input tcp dport 22 ct status snat accept",
+	"add rule filter input tcp dport 22 ct status dnat accept",
+	"add rule filter input tcp dport 22 ct status dying accept",
+
 	"add rule filter input log",
 	"add rule filter input log prefix \"network packet\" group 0",
-	"add rule filter input tcp dport 22 ct direction reply accept",
 
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",

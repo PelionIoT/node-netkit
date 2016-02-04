@@ -485,11 +485,11 @@ hooknum
 hookprio
 	= pr:[0-9]+ { return pr.join(""); }
 
-
+// nftables/src/ct.c
 nft_ct_key
-	= "state" _ 	sts:ct_states*	_ 	{ return { key:0, value:or_values(sts) }; }
-	/ "direction" _ dir:ct_direction _ 	{ return { key:1, value:dir }; }
-	/ "status"							{ return { key:2, value:dir }; }
+	= "state" 		_ 	state:ct_states*	_ 	{ return { key:0, value:or_values(state)  }; }
+	/ "direction" 	_ 	dir:ct_direction  	_ 	{ return { key:1, value:dir }; }
+	/ "status"		_ 	status:ct_status*	_	{ return { key:2, value:or_values(status) }; }
 	/ "mark"							{ return { key:3, value:dir }; }
 	/ "secmark"							{ return { key:4, value:dir }; }
 	/ "expiration"						{ return { key:5, value:dir }; }
@@ -509,10 +509,21 @@ ct_state
 	= "established"					 	{ return 0x02; }
 	/ "related"							{ return 0x04; }
 	/ "new"								{ return 0x08; }
+	/ "invalid"							{ return 0x01; }
 
 ct_direction
 	= "original"	{ return 0; }
 	/ "reply"		{ return 1; }
+
+// There are more, but most of them don't make sense fo filtering
+ct_status
+	= "expected" 	{ return 0x001; }
+	/ "seen-reply" 	{ return 0x002; }
+	/ "assured" 	{ return 0x004; }
+	/ "confirmed" 	{ return 0x008; }
+	/ "snat" 		{ return 0x010; }
+	/ "dnat" 		{ return 0x020; }
+	/ "dying" 		{ return 0x200; }
 
 // see: include/linux/netfilter/nf_conntrack_common
 connection_track

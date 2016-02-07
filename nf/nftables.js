@@ -550,22 +550,22 @@ nft = {
 	 * @NFT_CT_PROTO_SRC: conntrack layer 4 protocol source
 	 * @NFT_CT_PROTO_DST: conntrack layer 4 protocol destination
 	 */
-	// enum nft_ct_keys {
-	// 	NFT_CT_STATE,
-	// 	NFT_CT_DIRECTION,
-	// 	NFT_CT_STATUS,
-	// 	NFT_CT_MARK,
-	// 	NFT_CT_SECMARK,
-	// 	NFT_CT_EXPIRATION,
-	// 	NFT_CT_HELPER,
-	// 	NFT_CT_L3PROTOCOL,
-	// 	NFT_CT_SRC,
-	// 	NFT_CT_DST,
-	// 	NFT_CT_PROTOCOL,
-	// 	NFT_CT_PROTO_SRC,
-	// 	NFT_CT_PROTO_DST,
-	// 	NFT_CT_LABELS,
-	// };
+	nft_ct_keys: {
+		NFT_CT_STATE: 		0,
+		NFT_CT_DIRECTION: 	1,
+		NFT_CT_STATUS: 		2,
+		NFT_CT_MARK: 		3,
+		NFT_CT_SECMARK: 	4,
+		NFT_CT_EXPIRATION: 	5,
+		NFT_CT_HELPER: 		6,
+		NFT_CT_L3PROTOCOL: 	7,
+		NFT_CT_SRC: 		8,
+		NFT_CT_DST: 		9,
+		NFT_CT_PROTOCOL: 	10,
+		NFT_CT_PROTO_SRC: 	11,
+		NFT_CT_PROTO_DST: 	12,
+		NFT_CT_LABELS: 		13,
+	},
 
 	/**
 	 * enum nft_ct_attributes - nf_tables ct expression netlink attributes
@@ -582,7 +582,7 @@ nft = {
 		NFTA_CT_DIRECTION: 	3,
 		NFTA_CT_SREG: 		4,
 		NFTA_CT_SPEC: 		['','n/32','n/32','n/8','n/32']
-	}
+	},
 
 
 // /**
@@ -816,76 +816,75 @@ nft = {
 // };
 // #define NFTA_EXTHDR_MAX		(__NFTA_EXTHDR_MAX - 1)
 
-// /**
-//  * enum nft_meta_keys - nf_tables meta expression keys
-//  *
-//  * @NFT_META_LEN: packet length (skb->len)
-//  * @NFT_META_PROTOCOL: packet ethertype protocol (skb->protocol), invalid in OUTPUT
-//  * @NFT_META_PRIORITY: packet priority (skb->priority)
-//  * @NFT_META_MARK: packet mark (skb->mark)
-//  * @NFT_META_IIF: packet input interface index (dev->ifindex)
-//  * @NFT_META_OIF: packet output interface index (dev->ifindex)
-//  * @NFT_META_IIFNAME: packet input interface name (dev->name)
-//  * @NFT_META_OIFNAME: packet output interface name (dev->name)
-//  * @NFT_META_IIFTYPE: packet input interface type (dev->type)
-//  * @NFT_META_OIFTYPE: packet output interface type (dev->type)
-//  * @NFT_META_SKUID: originating socket UID (fsuid)
-//  * @NFT_META_SKGID: originating socket GID (fsgid)
-//  * @NFT_META_NFTRACE: packet nftrace bit
-//  * @NFT_META_RTCLASSID: realm value of packet's route (skb->dst->tclassid)
-//  * @NFT_META_SECMARK: packet secmark (skb->secmark)
-//  * @NFT_META_NFPROTO: netfilter protocol
-//  * @NFT_META_L4PROTO: layer 4 protocol number
-//  * @NFT_META_BRI_IIFNAME: packet input bridge interface name
-//  * @NFT_META_BRI_OIFNAME: packet output bridge interface name
-//  * @NFT_META_PKTTYPE: packet type (skb->pkt_type), special handling for loopback
-//  * @NFT_META_CPU: cpu id through smp_processor_id()
-//  * @NFT_META_IIFGROUP: packet input interface group
-//  * @NFT_META_OIFGROUP: packet output interface group
-//  * @NFT_META_CGROUP: socket control group (skb->sk->sk_classid)
-//  */
-// enum nft_meta_keys {
-// 	NFT_META_LEN,
-// 	NFT_META_PROTOCOL,
-// 	NFT_META_PRIORITY,
-// 	NFT_META_MARK,
-// 	NFT_META_IIF,
-// 	NFT_META_OIF,
-// 	NFT_META_IIFNAME,
-// 	NFT_META_OIFNAME,
-// 	NFT_META_IIFTYPE,
-// 	NFT_META_OIFTYPE,
-// 	NFT_META_SKUID,
-// 	NFT_META_SKGID,
-// 	NFT_META_NFTRACE,
-// 	NFT_META_RTCLASSID,
-// 	NFT_META_SECMARK,
-// 	NFT_META_NFPROTO,
-// 	NFT_META_L4PROTO,
-// 	NFT_META_BRI_IIFNAME,
-// 	NFT_META_BRI_OIFNAME,
-// 	NFT_META_PKTTYPE,
-// 	NFT_META_CPU,
-// 	NFT_META_IIFGROUP,
-// 	NFT_META_OIFGROUP,
-// 	NFT_META_CGROUP,
-// };
+	/**
+	 * enum nft_meta_keys - nf_tables meta expression keys
+	 *
+	 * @NFT_META_LEN: packet length (skb->len)
+	 * @NFT_META_PROTOCOL: packet ethertype protocol (skb->protocol), invalid in OUTPUT
+	 * @NFT_META_PRIORITY: packet priority (skb->priority)
+	 * @NFT_META_MARK: packet mark (skb->mark)
+	 * @NFT_META_IIF: packet input interface index (dev->ifindex)
+	 * @NFT_META_OIF: packet output interface index (dev->ifindex)
+	 * @NFT_META_IIFNAME: packet input interface name (dev->name)
+	 * @NFT_META_OIFNAME: packet output interface name (dev->name)
+	 * @NFT_META_IIFTYPE: packet input interface type (dev->type)
+	 * @NFT_META_OIFTYPE: packet output interface type (dev->type)
+	 * @NFT_META_SKUID: originating socket UID (fsuid)
+	 * @NFT_META_SKGID: originating socket GID (fsgid)
+	 * @NFT_META_NFTRACE: packet nftrace bit
+	 * @NFT_META_RTCLASSID: realm value of packet's route (skb->dst->tclassid)
+	 * @NFT_META_SECMARK: packet secmark (skb->secmark)
+	 * @NFT_META_NFPROTO: netfilter protocol
+	 * @NFT_META_L4PROTO: layer 4 protocol number
+	 * @NFT_META_BRI_IIFNAME: packet input bridge interface name
+	 * @NFT_META_BRI_OIFNAME: packet output bridge interface name
+	 * @NFT_META_PKTTYPE: packet type (skb->pkt_type), special handling for loopback
+	 * @NFT_META_CPU: cpu id through smp_processor_id()
+	 * @NFT_META_IIFGROUP: packet input interface group
+	 * @NFT_META_OIFGROUP: packet output interface group
+	 * @NFT_META_CGROUP: socket control group (skb->sk->sk_classid)
+	 */
+	nft_meta_keys:  {
+		LEN: 			0,
+		PROTOCOL: 		1,
+		PRIORITY: 		2,
+		MARK: 			3,
+		IIF: 			4,
+		OIF: 			5,
+		IIFNAME: 		6,
+		OIFNAME: 		7,
+		IIFTYPE: 		8,
+		OIFTYPE: 		9,
+		SKUID: 			10,
+		SKGID: 			11,
+		NFTRACE: 		12,
+		RTCLASSID: 		13,
+		SECMARK: 		14,
+		NFPROTO: 		15,
+		L4PROTO: 		16,
+		BRI_IIFNAME: 	17,
+		BRI_OIFNAME: 	18,
+		PKTTYPE: 		19,
+		CPU: 			20,
+		IIFGROUP: 		21,
+		OIFGROUP: 		22,
+		CGROUP: 		23
+	},
 
-// /**
-//  * enum nft_meta_attributes - nf_tables meta expression netlink attributes
-//  *
-//  * @NFTA_META_DREG: destination register (NLA_U32)
-//  * @NFTA_META_KEY: meta data item to load (NLA_U32: nft_meta_keys)
-//  * @NFTA_META_SREG: source register (NLA_U32)
-//  */
-// enum nft_meta_attributes {
-// 	NFTA_META_UNSPEC,
-// 	NFTA_META_DREG,
-// 	NFTA_META_KEY,
-// 	NFTA_META_SREG,
-// 	__NFTA_META_MAX
-// };
-// #define NFTA_META_MAX		(__NFTA_META_MAX - 1)
+	// /**
+	//  * enum nft_meta_attributes - nf_tables meta expression netlink attributes
+	//  *
+	//  * @NFTA_META_DREG: destination register (NLA_U32)
+	//  * @NFTA_META_KEY: meta data item to load (NLA_U32: nft_meta_keys)
+	//  * @NFTA_META_SREG: source register (NLA_U32)
+	//  */
+	nft_meta_attributes: {
+		NFTA_META_UNSPEC: 	0,
+		NFTA_META_DREG: 	1,
+		NFTA_META_KEY: 		2,
+		NFTA_META_SREG: 	3,
+		NFTA_META_SPEC: 	['','n/32','n/32','n/32']
+	},
 
 // /**
 //  * enum nft_limit_attributes - nf_tables limit expression netlink attributes
@@ -978,28 +977,28 @@ nft = {
 // 	NFT_NAT_DNAT,
 // };
 
-// /**
-//  * enum nft_nat_attributes - nf_tables nat expression netlink attributes
-//  *
-//  * @NFTA_NAT_TYPE: NAT type (NLA_U32: nft_nat_types)
-//  * @NFTA_NAT_FAMILY: NAT family (NLA_U32)
-//  * @NFTA_NAT_REG_ADDR_MIN: source register of address range start (NLA_U32: nft_registers)
-//  * @NFTA_NAT_REG_ADDR_MAX: source register of address range end (NLA_U32: nft_registers)
-//  * @NFTA_NAT_REG_PROTO_MIN: source register of proto range start (NLA_U32: nft_registers)
-//  * @NFTA_NAT_REG_PROTO_MAX: source register of proto range end (NLA_U32: nft_registers)
-//  * @NFTA_NAT_FLAGS: NAT flags (see NF_NAT_RANGE_* in linux/netfilter/nf_nat.h) (NLA_U32)
-//  */
-// enum nft_nat_attributes {
-// 	NFTA_NAT_UNSPEC,
-// 	NFTA_NAT_TYPE,
-// 	NFTA_NAT_FAMILY,
-// 	NFTA_NAT_REG_ADDR_MIN,
-// 	NFTA_NAT_REG_ADDR_MAX,
-// 	NFTA_NAT_REG_PROTO_MIN,
-// 	NFTA_NAT_REG_PROTO_MAX,
-// 	NFTA_NAT_FLAGS,
-// 	__NFTA_NAT_MAX
-// };
+	/**
+	 * enum nft_nat_attributes - nf_tables nat expression netlink attributes
+	 *
+	 * @NFTA_NAT_TYPE: NAT type (NLA_U32: nft_nat_types)
+	 * @NFTA_NAT_FAMILY: NAT family (NLA_U32)
+	 * @NFTA_NAT_REG_ADDR_MIN: source register of address range start (NLA_U32: nft_registers)
+	 * @NFTA_NAT_REG_ADDR_MAX: source register of address range end (NLA_U32: nft_registers)
+	 * @NFTA_NAT_REG_PROTO_MIN: source register of proto range start (NLA_U32: nft_registers)
+	 * @NFTA_NAT_REG_PROTO_MAX: source register of proto range end (NLA_U32: nft_registers)
+	 * @NFTA_NAT_FLAGS: NAT flags (see NF_NAT_RANGE_* in linux/netfilter/nf_nat.h) (NLA_U32)
+	 */
+	nft_nat_attributes: {
+		NFTA_NAT_UNSPEC: 			0,
+		NFTA_NAT_TYPE: 				1,
+		NFTA_NAT_FAMILY: 			2,
+		NFTA_NAT_REGADDRMIN: 		3,
+		NFTA_NAT_REGADDRMAX: 		4,
+		NFTA_NAT_REGPROTOMIN: 	5,
+		NFTA_NAT_REGPROTOMAX: 	6,
+		NFTA_NAT_FLAGS: 			7,
+		NFTA_NAT_SPEC: 	['','n/32','n/32','n/32','n/32','n/32','n/32','n/32']
+	},
 // #define NFTA_NAT_MAX		(__NFTA_NAT_MAX - 1)
 
 // /**

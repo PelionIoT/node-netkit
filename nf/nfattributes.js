@@ -93,8 +93,20 @@ NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
 		// get the message flags
 		var flags = data.readUInt16LE(6);
 		if(flags & nl.NLM_F_MULTI) {
+
+			// determine if this should be filtered based on the  parameters of the command
+			var filter = false;
+			var op = cur_result.payload.operation;
+			if(op.startsWith('new')) {
+				var that = this;
+				var entity = cur_result.payload[op.substring(3)];
+				Object.keys(this.parameters).forEach(function(key){
+					if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key])
+						filter = true;
+				});
+			}  
 			// mutlipart message add to array result
-			result_array[i] = cur_result;
+			if(!filter) result_array[i] = cur_result;
 		} else {
 			// just one response message so return it
 			return cur_result;

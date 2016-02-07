@@ -78,13 +78,12 @@ Attribute.prototype.setIdentities = function() {
 
 Attribute.prototype.getValue = function(attrObject, key) {
 	// retrive the field specification string for that attribute subtype
-	var param_name = key;
-	var key_name = "NFTA_" + this.attributeType.toUpperCase() + "_" + param_name.toUpperCase();
+	var key_name = "NFTA_" + this.attributeType.toUpperCase() + "_" + key.toUpperCase();
 
 	var key_value = attrObject[key_name];
 	if(typeof key_value === 'undefined'){
-		throw Error("key " + key_name +
-			" does not exist in command object for type " + this.command_type);
+		throw Error("key [" + key + "] for attribute [" + this.attributeType + 
+ 			"] does not exist in command object: " + util.inspect(attrObject) );
 	}
 	return key_value;
 };

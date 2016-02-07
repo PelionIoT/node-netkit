@@ -2,19 +2,12 @@
 	"list tables",
 	"list table filter",
 	"list chain filter input",
-	"list chain",
-	"list ip6 chain",
 	"list rules filter input",
 
 	"add table filter",
 	"add chain filter input { type filter hook input priority 0 }",
 	"add rule filter input tcp dport 22 ip saddr 192.168.1.0/24 accept",
 	"add rule filter input tcp dport 22 drop",
-
-	"add rule filter input tcp dport 22 ct state new log prefix \"New SSH connection\" group 0 accept",
-	"add rule filter input tcp dport 22 ct state established log prefix \"New SSH connection\" group 0 accept",
-	"add rule filter input tcp dport 22 ct state related log prefix \"New SSH connection\" group 0 accept",
-	"add rule filter input tcp dport 22 ct state invalid log prefix \"New SSH connection\" group 0 accept",
 
 	"add rule filter input tcp dport 22 ct direction original accept",
 	"add rule filter input tcp dport 22 ct direction reply accept",
@@ -32,6 +25,17 @@
 
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",
 	"add rule filter input tcp dport 22 ct state new ct direction reply accept",
+
+	"add rule filter input tcp dport 22 ct state new log prefix \"New SSH connection\" group 0 accept",
+	"add rule filter input tcp dport 22 ct state established log prefix \"New SSH connection\" group 0 accept",
+	"add rule filter input tcp dport 22 ct state related log prefix \"New SSH connection\" group 0 accept",
+	"add rule filter input tcp dport 22 ct state invalid log prefix \"New SSH connection\" group 0 accept",
+
+
+	"add rule filter forward meta protocol ip",
+	"add rule filter forward meta protocol arp",
+	"add rule filter forward meta protocol ip6",
+	"add rule filter forward meta protocol vlan",
 
 	"delete table filter",
 	"delete chain filter input",

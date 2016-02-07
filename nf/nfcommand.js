@@ -9,7 +9,7 @@ var parser = require("./node-netfilter.js");
 nfcommand = {
 
 	command: function(command, cb) {
-		console.dir(command);
+		//console.dir(command);
 		var that = this;
 		var nft = that.nf.nft;
 

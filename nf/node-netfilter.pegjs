@@ -34,6 +34,7 @@ flush
 	var nft = require('./nftables.js');
 	var cmn = require('../libs/common.js');
 	var bignum = require('bignum');
+	var structs = require('./nfstructs.js');
 	var debug = cmn.logger.debug;
 
 	var payload_len = 0;
@@ -100,7 +101,10 @@ list_entity
 	/ "tables"
 		{ command_object.type = "table"; }
 
-	/ "chain" __ chain_specifier?
+	/ "chain" !"s" _ chain_specifier
+		{ command_object.type = "chain"; }
+
+	/ "chains" __ table_identifier?
 		{ command_object.type = "chain"; }
 
 	/ "rule" !"s" __ rule_specifier
@@ -170,7 +174,7 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= rd:rule_definition? ct:connection_track* lgst:log_stmt? act:rule_action?
+	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action?
 		{
 
 			var exprs = [];
@@ -186,7 +190,13 @@ rule_expression
 					}
 				}); 
 			}
-
+			if(meta != undefined) {
+				meta.forEach(function(m){
+					for(var elem in m) {
+						exprs.push(m[elem])
+					}
+				});
+			}
 			if(lgst != undefined) exprs.push(lgst);
 			if(act != undefined) exprs.push(act);
 
@@ -490,7 +500,7 @@ nft_ct_key
 	= "state" 		_ 	state:ct_states*	_ 	{ return { key:0, value:or_values(state)  }; }
 	/ "direction" 	_ 	dir:ct_direction  	_ 	{ return { key:1, value:dir }; }
 	/ "status"		_ 	status:ct_status*	_	{ return { key:2, value:or_values(status) }; }
-	/ "mark"							{ return { key:3, value:dir }; }
+	/ "mark"		_   mark:ct_mark		_   { return { key:3, value:mark }; }
 	/ "secmark"							{ return { key:4, value:dir }; }
 	/ "expiration"						{ return { key:5, value:dir }; }
 	/ "helper"							{ return { key:6, value:dir }; }
@@ -524,6 +534,9 @@ ct_status
 	/ "snat" 		{ return 0x010; }
 	/ "dnat" 		{ return 0x020; }
 	/ "dying" 		{ return 0x200; }
+
+ct_mark
+	= decimal
 
 // see: include/linux/netfilter/nf_conntrack_common
 connection_track
@@ -625,6 +638,45 @@ log_level
 log_flags
 	= "flags" _ d:decimal
 		{ return d.toNumber(); }
+
+meta_stmt
+	= "meta" _ mp:meta_params
+		{ return mp; }
+
+meta_params
+	= "len" _ val:decimal
+	/ "protocol" _ val:ether_type 
+		{ return structs.build_meta(nft.nft_meta_keys.PROTOCOL, val, 2); }  
+	/ "priority" _ val:(hex / decimal)
+	/ "mark" _ val:(hex / decimal)
+	/ "iif" _ val:(hex / decimal)
+	/ "oif" _ val:(hex / decimal)
+	/ "iifname" _ val:(hex / decimal)
+	/ "oifname" _ val:(hex / decimal)
+	/ "iiftype" _ val:(hex / decimal)
+	/ "oiftype" _ val:(hex / decimal)
+	/ "skuid" _ val:(hex / decimal)
+	/ "skgid" _ val:(hex / decimal)
+	/ "nftrace" _ val:(hex / decimal)
+	/ "rtclassid" _ val:(hex / decimal)
+	/ "secmark" _ val:(hex / decimal)
+	/ "nfproto" _ val:(hex / decimal)
+	/ "l4proto" _ val:(hex / decimal)
+	/ "bri_iifname" _ val:(hex / decimal)
+	/ "bri_oifname" _ val:(hex / decimal)
+	/ "pkttype" _ val:(hex / decimal)
+	/ "cpu" _ val:(hex / decimal)
+	/ "iifgroup" _ val:(hex / decimal)
+	/ "oifgroup" _ val:(hex / decimal)
+	/ "cgroup" _ val:(hex / decimal)
+
+
+// include/uapi/linux/if_ether.h
+ether_type
+	= "ip" !"6" { return "0x0800"; }
+	/ "arp"	{ return "0x0806"; }
+	/ "ip6" { return "0x86DD"; }
+	/ "vlan"{ return "0x8100"; }
 
 
 ipv6cidr

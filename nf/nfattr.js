@@ -58,13 +58,13 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 		this.buffer = this.buffer.slice(0,4);
 	}
 
-	// debug("buf --> " + this.buffer.toString('hex'))
-	// var ns = this.isNested ? "(NEST)" : "";
-	// debug("key = " +this.key + ns +
-	// 	" typeval = " + this.spec.typeval +
-	// 	" type = " + this.spec.type +
-	// 	" size = " + this.spec.size +
-	// 	" val = " + this.value );
+	 // debug("buf --> " + this.buffer.toString('hex'))
+	 // var ns = this.isNested ? "(NEST)" : "";
+	 // debug("key = " +this.key + ns +
+	 // 	" typeval = " + this.spec.typeval +
+	 // 	" type = " + this.spec.type +
+	 // 	" size = " + this.spec.size +
+	 // 	" val = " + this.value );
 };
 
 Attribute.prototype.setIdentities = function() {
@@ -184,26 +184,46 @@ Attribute.prototype.getGenericBuffer = function() {
 	var val = 0;
 	var strval = "";
 	var hex = -1;
+	var buf;
+
 	try {
 		strval = this.value.toLowerCase();
 		hex = strval.indexOf('x');
+		var isLetters = cmn.isASCIILetters(strval);
+
 		if(hex !== -1) {
-			val = bignum(strval.slice(hex + 1),16);
 			len = (strval.length - (hex + 1)) >> 1; // two nibbles per byte
 		} else {
-			val = bignum(strval,10);
-			len = parseInt(strval,16).toString().length / 2;
+			if(isLetters) {
+				len = strval.length;
+			} else {
+				len = parseInt(strval,16).toString().length / 2;
+			}
 		}
+
+		if(!isLetters) {
+			if(len < 1 || len > 8) throw new Error("attribute length not within 1 - 8 bytes in length: " + this.value);
+			if(hex !== -1) {
+				val = bignum(strval.slice(hex + 1),16);
+			} else {
+				val = bignum(strval,10);
+			}
+		
+		if(val === NaN) throw new Error("no way to parse: " + this.value);
+			buf = val.toBuffer({endian:'big', size:len})
+
+		} else {
+			buf = new Buffer(len);
+			buf.fill(0);
+			buf.write(strval);
+		}
+
+		var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
+		return full_attribute;
+
 	} catch(err) {
 		throw new Error("no way to parse: " + this.value);
 	}
-	if(len < 1 || len > 8) throw new Error("attribute length not within 1 - 8 bytes in length: " + this.value);
-	if(val === NaN) throw new Error("no way to parse: " + this.value);
-
-	var buf = Buffer(len);
-	buf = val.toBuffer({endian:'big', size:len})
-	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
-	return full_attribute;
 };
 
 Attribute.prototype.getNumberBuffer = function() {
@@ -334,7 +354,13 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			val |= buf.readUInt32BE(4) << 32;
 			break;
 		default:
-			throw new Error("bad generic number field size: " + this.spec.size);
+			//throw new Error("bad generic number field size: " + this.spec.size);
+			var end = 0;
+			for(var pair of buf.entries()) {
+				if(pair[1] === 0) break;
+				end++;
+			}
+			return buf.slice(0,end).toString('ascii');
 			break;
 	}
 	return '0x' + Number(val).toString(16);

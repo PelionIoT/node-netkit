@@ -81,6 +81,10 @@ module.exports = {
 		else return (new Error("* Error: isaddress fail : " + str));
 	},
 
+	isASCIILetters: function(str) {
+	    return /^[\x41-\x7A]*$/.test(str);
+	},
+
 	maskFromCidr: function (mask, ip) {
 		var bits;
 		var SIZE_BYTE = 8;

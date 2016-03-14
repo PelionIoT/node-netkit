@@ -29,6 +29,10 @@ public:
 		memset(&addr_local,0,sizeof(sockaddr_nl));
 		memset(&addr_peer,0,sizeof(sockaddr_nl));
 
+		if(this->fd > 0) {
+			close(this->fd);
+		}
+
 		// malloc_info(0, stderr);
 		// fprintf(stderr,"======================================================\n" );
 	}

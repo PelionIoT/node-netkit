@@ -8,12 +8,12 @@ var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 
 
-var NlAttributes = function(command_type, parameters, attr_map_func) {
+var NlAttributes = function(command_type, parameters, attr_map_func, cmd_obj_func) {
 	console.dir(command_type);
-
 	this.command_type = null;
 	this.attribute_array = [];
 	this.getAttributeMap = attr_map_func;
+	this.getCommandObject = cmd_obj_func;
 
 	// The object that has the attribute defines
 	this.command_object = this.getCommandObject(command_type);
@@ -34,15 +34,6 @@ NlAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 
 	a.incrementNestLength(size);
 	//debug("** nest end - " + a.key + " : " + size.toString(16) );
-};
-
-NlAttributes.prototype.getCommandObject = function(type){
-	var command_object = nft['nft_' + type + '_attributes'];
-	if(typeof command_object === 'undefined'){
-		throw Error("command type " + type + " does not exist");
-	}
-	this.command_type = type;
-	return command_object;
 };
 
 NlAttributes.prototype.writeAttributes = function(bufs) {

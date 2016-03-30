@@ -21,7 +21,7 @@ nfcommand = {
 				cb(err);
 			} else {
 
-				var attrs = new NlAttributes(opts.type, opts.params, nlnf.getAttributeMap );
+				var attrs = new NlAttributes(opts.type, opts.params, nlnf.getAttributeMap. nlnf.getCommandObject );
 				nlnetfilter.netfilterSend.call(that, null, opts,
 					attrs, function(err,bufs){
 					if(err) {

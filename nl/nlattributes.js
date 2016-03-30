@@ -8,15 +8,13 @@ var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 
 
-var NlAttributes = function(command_type, parameters, attr_map_func, cmd_obj_func) {
-	console.dir(command_type);
+var NlAttributes = function(command_type, parameters, netlink_type) {
 	this.command_type = null;
 	this.attribute_array = [];
-	this.getAttributeMap = attr_map_func;
-	this.getCommandObject = cmd_obj_func;
+	this.netlink_type = netlink_type;
 
 	// The object that has the attribute defines
-	this.command_object = this.getCommandObject(command_type);
+	this.command_object = this.netlink_type.getCommandObject(command_type);
 
 	// The command line attribute object passed in
 	this.parameters = parameters;
@@ -76,12 +74,12 @@ NlAttributes.prototype.generateNetfilterResponse = function(bufs) {
 			return {};
 		}
 
-		// get the generic netfiler generation
-		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
-
 		// get the total message length and parse all the raw attributes
 		var total_len = data.readUInt32LE(0);
 		var cur_result = {};
+
+		// get the generic netfiler generation
+		var nfgenmsg = that.netlink_type.parseGenmsg(data);
 		cur_result['genmsg'] = nfgenmsg;
 		cur_result['payload'] = this.parseNfAttrsFromBuffer(data, type);
 
@@ -119,7 +117,8 @@ NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
     var keys = Object.keys(params);
 	keys.forEach(function(key) {
 
-		var a = new Attribute(params,attrs,key);
+		var a = new Attribute(that)
+		a.makeFromKey(params,attrs,key);
 
 		if(a.isNest) {
 			// push a nest header attribute
@@ -176,7 +175,9 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		//console.log('\n');
 		//console.log('index = ' + index + ' round_len = ' + round_len);
 
-		var attribute = new Attribute(keys, remaining);
+		var attribute = new Attribute(this);
+		attribute.makeFronBuffer(keys, remaining);
+
 		this.attribute_array.push(attribute);
 
 		if (attribute.isNested){
@@ -251,7 +252,7 @@ NlAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
 
 		var index = 16; // start after the msghdr
 
-		var attribute_map = this.getAttributeMap(type);
+		var attribute_map = this.netlink_type.getAttributeMap(type);
 		var name = attribute_map.name;
 		var keys = attribute_map.keys;
 

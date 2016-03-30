@@ -11,12 +11,8 @@ var bignum = require('bignum');
 *
 */
 
-var Attribute = function() {
-	 if(arguments.length === 3) {
-	 	this.makeFromKey(arguments[0], arguments[1], arguments[2]);
-	 } else {
-	 	this.makeFromBuffer(arguments[0], arguments[1]);
-	 }
+var Attribute = function(that) {
+	this.netlink_type = that.netlink_type;
 };
 
 
@@ -78,7 +74,7 @@ Attribute.prototype.setIdentities = function() {
 
 Attribute.prototype.getValue = function(attrObject, key) {
 	// retrive the field specification string for that attribute subtype
-	var key_name = "NFTA_" + this.attributeType.toUpperCase() + "_" + key.toUpperCase();
+	var key_name = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_" + key.toUpperCase();
 
 	var key_value = attrObject[key_name];
 	if(typeof key_value === 'undefined'){
@@ -90,7 +86,8 @@ Attribute.prototype.getValue = function(attrObject, key) {
 
 Attribute.prototype.getSpec = function(attrObject,key){
 	// retrive the field specification string for that attribute subtype
-	var attr_subtype_specname = "NFTA_" + this.attributeType.toUpperCase() + "_SPEC";
+	var attr_subtype_specname = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_SPEC";
+
 	var spec_array = attrObject[attr_subtype_specname];
 	if(typeof spec_array === 'undefined'){
 		throw Error("command type " + this.attributeType + " does not exist");
@@ -123,7 +120,7 @@ Attribute.prototype.getNestedAttributes = function(that,params) {
 		nest_attrs_type = this.spec.size.split('_')[1];
 	}
 
-	var nest_attrs = that.getCommandObject(nest_attrs_type);
+	var nest_attrs = this.netlink_type.getCommandObject(nest_attrs_type);
 	return nest_attrs;
 }
 

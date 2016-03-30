@@ -1,6 +1,6 @@
 var parser = require("../../nf/node-netfilter.js");
 var nfcommand = require("../../nf/nfcommand.js");
-var NfAttributes = require("../../nf/nfattributes.js");
+var NlAttributes = require("../../nl/nlattributes.js");
 var nf = require("../../nl/nfnetlink.js");
 
 var Buffer = require('buffer').Buffer;
@@ -53,22 +53,29 @@ exports.testNfNetlinkGeneration = function(test){
 
 		var opts = parser.parse("add ip rule filter input tcp dport 22 ip saddr 192.168.1.0/24 accept");
 
-		nfcommand.build_command(opts,function(err){
-			if(err) {
-				cb(err);
-			} else {
-				 var attrs = new NfAttributes(opts.type, opts.params);
-				nf.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs){
+		try{
+			nfcommand.build_command(opts,function(err){
+				if(err) {
+					cb(err);
+				} else {
+					 var attrs = new NlAttributes(opts.type, opts.params, nf);
+					nf.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs){
 
-					test.deepEqual(
-						Buffer.concat(bufs),
-						new Buffer(input, 'hex'),
-						"should generate the correct netlink binary" );
+						test.deepEqual(
+							Buffer.concat(bufs),
+							new Buffer(input, 'hex'),
+							"should generate the correct netlink binary" );
 
-				    test.done();
+					    test.done();
 
-				});
-			}
-		});
+					});
+				}
+			});
+
+		}catch(error) {
+
+			console.error(error.stack);
+		}
+
 	});
 };

@@ -159,6 +159,15 @@ nf = {
 		return nf.nft_types_name_map[type];
 	},
 
+	get_prefix: function() {
+		return "NFTA_";
+	},
+
+	parseGenmsg: function(data) {
+		// get the generic netfiler generation
+		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
+	},
+
 	attrType: function(obj) {
 	  return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 	},

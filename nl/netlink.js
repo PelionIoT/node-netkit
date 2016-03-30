@@ -154,9 +154,6 @@ nl = {
 	},
 
 	sendNetlinkRequest: function(sock, msgreq, cb) {
-		//debug("Sending---> " + asHexBuffer(buf));
-		//debug('all len = ' + all.length);
-
 	    sock.sendMsg(msgreq, function(err,bytes) {
 	    	if(err) {
 	    		cb(err);

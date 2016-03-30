@@ -12,7 +12,7 @@ var err = require('../../libs/common.js').err;
 // 	}
 // });
 
-nk.link("set","eth2", {"address" : "080027dce400"} , function(err) {
+nk.link("set","enp0s25", {"address" : "080027dce400"} , function(err) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err));
 	} else {

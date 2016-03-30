@@ -107,6 +107,54 @@ nf = {
 		"getgen"
 	],
 
+
+	getAttributeMap: function(type) {
+
+		var retVal = {};
+
+		if(nf.NFT_MSG_NEWTABLE <= type && type <= nf.NFT_MSG_DELTABLE) {
+		    //debug('TABLE');
+			retVal.keys = nft.nft_table_attributes
+			retVal.name = 'table';
+		} else if(nf.NFT_MSG_NEWCHAIN <= type && type <= nf.NFT_MSG_DELCHAIN) {
+		    //debug('CHAIN');
+			retVal.keys = nft.nft_chain_attributes
+			retVal.name = 'chain';
+		} else if(nf.NFT_MSG_NEWRULE <= type && type <= nf.NFT_MSG_DELRULE) {
+		    //debug('RULE');
+			retVal.keys = nft.nft_rule_attributes
+			retVal.name = 'rule';
+		} else if(nf.NFT_MSG_NEWSET <= type && type <= nf.NFT_MSG_DELSET) {
+		    //debug('SET');
+			retVal.name = 'set';
+			throw new Error("set not implemented yet");
+		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
+		    //debug('SETELEM');
+			retVal.name = 'setelem';
+			throw new Error("setelem not implemented yet");
+		} else if(nf.NFT_MSG_NEWGEN <= type && type <= nf.NFT_MSG_DELGEN) {
+		    //debug('GEN');
+			retVal.name = 'gen';
+			throw new Error("gen not implemented yet");
+		}else {
+			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
+				+ type + ") **"
+			error.warn(msg);
+			throw new Error(msg);
+		}
+
+		return retVal;
+	},
+
+	getCommandObject: function(type){
+		var command_object = nft['nft_' + type + '_attributes'];
+		if(typeof command_object === 'undefined'){
+			throw Error("command type " + type + " does not exist");
+		}
+		this.command_type = type;
+		return command_object;
+	},
+
 	getNfTypeName: function(type) {
 		return nf.nft_types_name_map[type];
 	},

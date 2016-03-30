@@ -8,8 +8,8 @@ var error = cmn.logger.error;
 nlprocess = {
 
 	proc_fork_fmt: 	"I(cpu)d(timestamp_ns)" +
-						"<I(parent_pid)I(parent_tgid)I(child_pid)I(child_tgid)" +
-						"S(cmdline)",
+					"<I(parent_pid)I(parent_tgid)I(child_pid)I(child_tgid)" +
+					"S(cmdline)",
 
 	PROC_EVENT_NONE: 0x00000000,
 	PROC_EVENT_FORK: 0x00000001,

@@ -1,4 +1,4 @@
-var NfAttributes = require('./nfattributes.js');
+var NlAttributes = require('../nl/nlattributes.js');
 var nlnetfilter = require('./nlnetfilter.js');
 var nlnf = require('../nl/nfnetlink.js');
 var util = require('util');
@@ -21,7 +21,7 @@ nfcommand = {
 				cb(err);
 			} else {
 
-				var attrs = new NfAttributes(opts.type, opts.params);
+				var attrs = new NlAttributes(opts.type, opts.params, nlnf.getAttributeMap );
 				nlnetfilter.netfilterSend.call(that, null, opts,
 					attrs, function(err,bufs){
 					if(err) {

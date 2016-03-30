@@ -82,7 +82,7 @@ Attribute.prototype.getValue = function(attrObject, key) {
 
 	var key_value = attrObject[key_name];
 	if(typeof key_value === 'undefined'){
-		throw Error("key [" + key + "] for attribute [" + this.attributeType + 
+		throw Error("key [" + key + "] for attribute [" + this.attributeType +
  			"] does not exist in command object: " + util.inspect(attrObject) );
 	}
 	return key_value;
@@ -208,7 +208,7 @@ Attribute.prototype.getGenericBuffer = function() {
 			} else {
 				val = bignum(strval,10);
 			}
-		
+
 		if(val === NaN) throw new Error("no way to parse: " + this.value);
 			buf = val.toBuffer({endian:'big', size:len})
 

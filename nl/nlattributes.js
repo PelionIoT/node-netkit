@@ -1,5 +1,5 @@
 
-var Attribute = require('./nfattr.js');
+var Attribute = require('../nl/nlattr.js');
 var cmn = require('../libs/common.js');
 var nf = require('../nl/nfnetlink.js');
 
@@ -8,9 +8,13 @@ var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 
 
-var NfAttributes = function(command_type, parameters) {
+var NlAttributes = function(command_type, parameters, attr_map_func) {
+	console.dir(command_type);
+
 	this.command_type = null;
 	this.attribute_array = [];
+	this.getAttributeMap = attr_map_func;
+
 	// The object that has the attribute defines
 	this.command_object = this.getCommandObject(command_type);
 
@@ -21,7 +25,7 @@ var NfAttributes = function(command_type, parameters) {
 	this.parseNfAttrs(this.parameters, this.command_object);
 };
 
-NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
+NlAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 	var size = 0;
 	for(var i = nstart; i < this.attribute_array.length; i++) {
 		var attr = this.attribute_array[i];
@@ -32,7 +36,7 @@ NfAttributes.prototype.updateNestHdrLen = function(a, nstart) {
 	//debug("** nest end - " + a.key + " : " + size.toString(16) );
 };
 
-NfAttributes.prototype.getCommandObject = function(type){
+NlAttributes.prototype.getCommandObject = function(type){
 	var command_object = nft['nft_' + type + '_attributes'];
 	if(typeof command_object === 'undefined'){
 		throw Error("command type " + type + " does not exist");
@@ -41,7 +45,7 @@ NfAttributes.prototype.getCommandObject = function(type){
 	return command_object;
 };
 
-NfAttributes.prototype.writeAttributes = function(bufs) {
+NlAttributes.prototype.writeAttributes = function(bufs) {
 	var that = this;
     var keys = Object.keys(this.attribute_array);
 	keys.forEach(function(attr) {
@@ -53,7 +57,7 @@ NfAttributes.prototype.writeAttributes = function(bufs) {
 	});
 };
 
-NfAttributes.prototype.logAttributeBuffers = function() {
+NlAttributes.prototype.logAttributeBuffers = function() {
 	var that = this;
     var keys = Object.keys(this.attribute_array);
 	keys.forEach(function(attr) {
@@ -64,7 +68,7 @@ NfAttributes.prototype.logAttributeBuffers = function() {
 	});
 };
 
-NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
+NlAttributes.prototype.generateNetfilterResponse = function(bufs) {
 	//console.dir(bufs);
 
 	var result_array = []; // array if this is a multipart message
@@ -104,7 +108,7 @@ NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
 					if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key])
 						filter = true;
 				});
-			}  
+			}
 			// mutlipart message add to array result
 			if(!filter) result_array[i] = cur_result;
 		} else {
@@ -115,66 +119,7 @@ NfAttributes.prototype.generateNetfilterResponse = function(bufs) {
 	return result_array;
 };
 
-NfAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
-	var ret = {};
-	var type = buffer.readUInt16LE(4) & 0x00FF;
-	//debug("buffer: " + buffer.toString('hex') );
-
-	if(!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
-		return ret;
-	} else {
-		var total_len = buffer.readUInt32LE(0);
-		if(total_len != buffer.length) {
-			return ret;
-		}
-
-		var index = 16; // start after the msghdr
-		var name = "";
-		var keys;
-		if(nf.NFT_MSG_NEWTABLE <= type && type <= nf.NFT_MSG_DELTABLE) {
-		    //debug('TABLE');
-			keys = nft.nft_table_attributes
-			name = 'table';
-		} else if(nf.NFT_MSG_NEWCHAIN <= type && type <= nf.NFT_MSG_DELCHAIN) {
-		    //debug('CHAIN');
-			keys = nft.nft_chain_attributes
-			name = 'chain';
-		} else if(nf.NFT_MSG_NEWRULE <= type && type <= nf.NFT_MSG_DELRULE) {
-		    //debug('RULE');
-			keys = nft.nft_rule_attributes
-			name = 'rule';
-		} else if(nf.NFT_MSG_NEWSET <= type && type <= nf.NFT_MSG_DELSET) {
-		    //debug('SET');
-			name = 'set';
-			throw new Error("set not implemented yet");
-		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
-		    //debug('SETELEM');
-			name = 'setelem';
-			throw new Error("setelem not implemented yet");
-		} else if(nf.NFT_MSG_NEWGEN <= type && type <= nf.NFT_MSG_DELGEN) {
-		    //debug('GEN');
-			name = 'gen';
-			throw new Error("gen not implemented yet");
-		}else {
-			console.warn("WARNING: ** Received unsupported message type from netlink socket(type="
-				+ type + ") **");
-			return ret;
-		}
-
-		// skip the nfgenmsg header
-		index += 4;
-
-		// debug('start index = ' + index);
-		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
-		//this.logAttributeBuffers();
-
-		ret['operation'] = nf.getNfTypeName(type);
-		ret[name] = payload;
-	}
-	return ret;
-};
-
-NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
+NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 	//debug("params");
 	//console.dir(params);
 	if(params == null) return;
@@ -222,7 +167,7 @@ NfAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 	});
 };
 
-NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, keys) {
+NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, keys) {
 	var ret = {};
 	var index = start;
 	var nested_attributes = [];
@@ -300,5 +245,37 @@ NfAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	return ret;
 };
 
+NlAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
+	var ret = {};
+	var type = buffer.readUInt16LE(4) & 0x00FF;
+	//debug("buffer: " + buffer.toString('hex') );
 
-module.exports = NfAttributes;
+	if(!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
+		return ret;
+	} else {
+		var total_len = buffer.readUInt32LE(0);
+		if(total_len != buffer.length) {
+			return ret;
+		}
+
+		var index = 16; // start after the msghdr
+
+		var attribute_map = this.getAttributeMap(type);
+		var name = attribute_map.name;
+		var keys = attribute_map.keys;
+
+		// skip the nfgenmsg header
+		index += 4;
+
+		// debug('start index = ' + index);
+		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
+		//this.logAttributeBuffers();
+
+		ret['operation'] = nf.getNfTypeName(type);
+		ret[name] = payload;
+	}
+	return ret;
+};
+
+
+module.exports = NlAttributes;

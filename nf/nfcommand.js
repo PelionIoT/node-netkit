@@ -27,7 +27,8 @@ nfcommand = {
 					if(err) {
 						return cb(err);
 					} else {
-						return cb(null, attrs.generateNetfilterResponse(bufs));
+						//console.dir(bufs);
+						return cb(null, attrs.generateNetlinkResponse(bufs));
 					}
 				});
 			}

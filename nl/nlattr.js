@@ -38,12 +38,15 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 };
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
-	//debug('attr_list = ' + util.inspect(attr_list));
+	// debug('attr_list = ' + util.inspect(attr_list));
+	debug("buffer: " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;
 	this.buffer_size = attr_buffer.length;
 	var index = attr_buffer.readUInt16LE(2);
+console.log('index = ' + index)
+
 	this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
 	this.attributeType = Object.keys(attr_list)[0].split('_')[1];
 	this.spec = this.getSpec(attr_list,this.key);
@@ -78,7 +81,7 @@ Attribute.prototype.getValue = function(attrObject, key) {
 
 	var key_value = attrObject[key_name];
 	if(typeof key_value === 'undefined'){
-		throw Error("key [" + key + "] for attribute [" + this.attributeType +
+		throw Error("key [" + key_name + "] for attribute [" + this.attributeType +
  			"] does not exist in command object: " + util.inspect(attrObject) );
 	}
 	return key_value;

@@ -6,7 +6,7 @@ var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 var util = require('util');
 var nl80211 = require('../iw/nl80211.js');
-
+var iwtypes = require('../iw/iwtypes.js');
 /*
 struct genlmsghdr {
 	__u8	cmd;
@@ -21,20 +21,67 @@ iwnl = {
 
 	nl: nl,
 	nl80211: nl80211,
+	commands: nl80211.commands,
 
 	GENL_ID_CTRL: nl.NLMSG_MIN_TYPE,
 
-	iw_types_name_map: [
-		"link",
-		"get_bss",
-		"get_sta"
-	],
+	types_name_map: nl80211.type_name_map,
+
+
+	getAttributeMap: function(type) {
+
+		var retVal = {};
+
+		if(iwnl.commands.NL80211_CMD_GET_STATION <= type && type <= iwnl.commands.NL80211_CMD_DEL_STATION) {
+		    //debug('TABLE');
+			retVal.keys = iwtypes.nl80211_sta_info
+			retVal.name = 'station';
+		}else {
+			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
+				+ type + ") **"
+			error(msg);
+			throw new Error(msg);
+		}
+
+		return retVal;
+	},
+
+	getCommandObject: function(type){
+		var command_object = iwtypes['nl80211_' + type + '_info'];
+		if(typeof command_object === 'undefined'){
+			throw Error("command type " + type + " does not exist");
+		}
+		this.command_type = type;
+		return command_object;
+	},
+
+	getNfTypeName: function(type) {
+		return iwnl.types_name_map[type];
+	},
+
+	get_prefix: function() {
+		return "NL80211_";
+	},
+
+	parseGenmsg: function(data) {
+		// get the generic netfiler generation
+		return iwnl.unpackIwgenmsg(data, 16);
+	},
+
+	getTypeFromBuffer: function(buffer) {
+		return buffer.readUInt8(16);
+	},
+
+
+	unpackIwgenmsg: function(data, pos) {
+		return bufferpack.unpack(generic_msg_fmt, data, pos);
+	},
 
 	getFlags: function(f) {
 		var flags_str = "";
-		for (var k in nf.flags){
-			if(nf.flags.hasOwnProperty(k)){
-		 		if(f === nf.flags[k]) {
+		for (var k in iwnl.flags){
+			if(iwnl.flags.hasOwnProperty(k)){
+		 		if(f === iwnl.flags[k]) {
 		 			if(flags_str.length)
 		 				flags_str += "|";
 		 			flags_str += k;

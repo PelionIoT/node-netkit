@@ -57,7 +57,7 @@ NlAttributes.prototype.logAttributeBuffers = function() {
 	});
 };
 
-NlAttributes.prototype.generateNetfilterResponse = function(bufs) {
+NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
 	//console.dir(bufs);
 
 	var result_array = []; // array if this is a multipart message
@@ -79,9 +79,9 @@ NlAttributes.prototype.generateNetfilterResponse = function(bufs) {
 		var cur_result = {};
 
 		// get the generic netfiler generation
-		var nfgenmsg = that.netlink_type.parseGenmsg(data);
+		var nfgenmsg = this.netlink_type.parseGenmsg(data);
 		cur_result['genmsg'] = nfgenmsg;
-		cur_result['payload'] = this.parseNfAttrsFromBuffer(data, type);
+		cur_result['payload'] = this.parseNlAttrsFromBuffer(data, type);
 
 		// get the message flags
 		var flags = data.readUInt16LE(6);
@@ -176,7 +176,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		//console.log('index = ' + index + ' round_len = ' + round_len);
 
 		var attribute = new Attribute(this);
-		attribute.makeFronBuffer(keys, remaining);
+		attribute.makeFromBuffer(keys, remaining);
 
 		this.attribute_array.push(attribute);
 
@@ -237,10 +237,11 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	return ret;
 };
 
-NlAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
+NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
+	debug("msghdr: " + buffer.slice(0,16).toString('hex') );
+
 	var ret = {};
-	var type = buffer.readUInt16LE(4) & 0x00FF;
-	//debug("buffer: " + buffer.toString('hex') );
+	var type = this.netlink_type.getTypeFromBuffer(buffer);
 
 	if(!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
 		return ret;
@@ -256,10 +257,11 @@ NlAttributes.prototype.parseNfAttrsFromBuffer = function(buffer, type) {
 		var name = attribute_map.name;
 		var keys = attribute_map.keys;
 
-		// skip the nfgenmsg header
+		// skip the genmsg header
 		index += 4;
 
-		// debug('start index = ' + index);
+		debug('start index = ' + index);
+		debug("buffer: " + buffer.slice(index).toString('hex') );
 		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
 		//this.logAttributeBuffers();
 

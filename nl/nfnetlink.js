@@ -165,7 +165,11 @@ nf = {
 
 	parseGenmsg: function(data) {
 		// get the generic netfiler generation
-		var nfgenmsg = nf.unpackNfgenmsg(data, 16);
+		return nf.unpackNfgenmsg(data, 16);
+	},
+
+	getTypeFromBuffer: function(buffer) {
+		return buffer.readUInt16LE(4) & 0x00FF;
 	},
 
 	attrType: function(obj) {

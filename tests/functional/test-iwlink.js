@@ -9,7 +9,7 @@ var nl = iwnl.nl;
 // };
 
 
-// var opts1 = {
+// var opts = {
 
 //     cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
 //     version:    nl80211.CTRL_VERSION,
@@ -19,7 +19,7 @@ var nl = iwnl.nl;
 //     data:       new Buffer("0C0002006E6C383032313100", 'hex')
 // };
 
-// var opts1 = {
+// var opts = {
 //     cmd:        nl80211.commands.NL80211_CMD_GET_SCAN, //controller.CTRL_CMD_GETFAMILY,
 //     //cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
 //     version:    nl80211.CTRL_VERSION,
@@ -29,7 +29,7 @@ var nl = iwnl.nl;
 //     data:       new Buffer("0800030004000000", 'hex')
 // };
 
-// var opts1 = {
+// var opts = {
 //     cmd:        nl80211.commands.NL80211_CMD_GET_WIPHY, //controller.CTRL_CMD_GETFAMILY,
 //     //cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
 //     version:    nl80211.CTRL_VERSION,
@@ -40,19 +40,22 @@ var nl = iwnl.nl;
 // };
 
 
-var opts1 = {
+var opts = {
     cmd:        nl80211.commands.NL80211_CMD_GET_STATION, //controller.CTRL_CMD_GETFAMILY,
     //cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
     version:    nl80211.CTRL_VERSION,
     flags:      nl.NLM_F_REQUEST | nl.NLM_F_ACK | nl.NLM_F_ROOT | nl.NLM_F_MATCH,
     type:       nl.NETLINK_GENERIC | 0x0a,
 
-    data:       new Buffer("0800030009000000", 'hex') // device index
+    data:       new Buffer("0800030004000000", 'hex'), // device index
+
+    infotype: 'sta',
+    params: iwnl.nl80211_sta_info,
 };
 
 
-console.dir(opts1);
-nk.iw(opts1, function(err,bufs) {
+//console.dir(opts);
+nk.iw(opts, function(err,bufs) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err));
 	} else {

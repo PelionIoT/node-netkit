@@ -1,16 +1,17 @@
 var util = require('util');
 var cmn = require("../libs/common.js");
 var fs = require("fs");
+var NlAttributes = require('../nl/nlattributes.js');
 var iwnl = require('../nl/iwnetlink.js');
 var nl = iwnl.nl;
 
 
 iwcommand = {
 
-	device_type: {
+	device_type: [
 		"NL80211_STA",
 		"NL80211_LINK"
-	}
+	],
 
 
 	iwsend: function(opts, cb) {
@@ -28,13 +29,15 @@ iwcommand = {
 				return cb(new Error("socket.create() Error: " + util.inspect(err)));
 			} else {
 
+				var attrs = new NlAttributes(opts.infotype, opts.params, iwnl );
+
 				iwnl.sendIwCommand(sock, opts, function(err,bufs){
 					if(err) {
 						sock.close();
 						return cb(err);
 					} else {
 						sock.close();
-						return cb(null, bufs);
+						return cb(null, attrs.generateNetlinkResponse(bufs));
 					}
 				});
 			}

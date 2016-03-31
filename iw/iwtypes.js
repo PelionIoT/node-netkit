@@ -136,25 +136,22 @@ var iwtypes = {
     //  *  a quarter of the base (20 MHz) rate
     //  * @__NL80211_RATE_INFO_AFTER_LAST: internal use
     //  */
-    // enum nl80211_rate_info {
-    //     __NL80211_RATE_INFO_INVALID,
-    //     NL80211_RATE_INFO_BITRATE,
-    //     NL80211_RATE_INFO_MCS,
-    //     NL80211_RATE_INFO_40_MHZ_WIDTH,
-    //     NL80211_RATE_INFO_SHORT_GI,
-    //     NL80211_RATE_INFO_BITRATE32,
-    //     NL80211_RATE_INFO_VHT_MCS,
-    //     NL80211_RATE_INFO_VHT_NSS,
-    //     NL80211_RATE_INFO_80_MHZ_WIDTH,
-    //     NL80211_RATE_INFO_80P80_MHZ_WIDTH,
-    //     NL80211_RATE_INFO_160_MHZ_WIDTH,
-    //     NL80211_RATE_INFO_10_MHZ_WIDTH,
-    //     NL80211_RATE_INFO_5_MHZ_WIDTH,
-
-    //     /* keep last */
-    //     __NL80211_RATE_INFO_AFTER_LAST,
-    //     NL80211_RATE_INFO_MAX = __NL80211_RATE_INFO_AFTER_LAST - 1
-    // };
+    nl80211_rate_info: {
+        NL80211_RATE_INVALID         : 0,
+        NL80211_RATE_BITRATE         : 1,
+        NL80211_RATE_MCS             : 2,
+        NL80211_RATE_40MHZWIDTH    : 3,
+        NL80211_RATE_SHORTGI        : 4,
+        NL80211_RATE_BITRATE32       : 5,
+        NL80211_RATE_VHTMCS         : 6,
+        NL80211_RATE_VHTNSS         : 7,
+        NL80211_RATE_80MHZWIDTH    : 8,
+        NL80211_RATE_80P80MHZWIDTH : 9,
+        NL80211_RATE_160MHZWIDTH   : 10,
+        NL80211_RATE_10MHZWIDTH    : 11,
+        NL80211_RATE_5MHZWIDTH     : 12,
+        NL80211_RATE_SPEC            : ['', 'n/16', 'n/8', 's', 's', 'n/32', 'n/8', 'n/8', 's', 's', 's', 's','s'],
+    },
 
     // /**
     //  * enum nl80211_sta_bss_param - BSS information collected by STA
@@ -173,18 +170,15 @@ var iwtypes = {
     //  * @NL80211_STA_BSS_PARAM_MAX: highest sta_bss_param number currently defined
     //  * @__NL80211_STA_BSS_PARAM_AFTER_LAST: internal use
     //  */
-    // enum nl80211_sta_bss_param {
-    //     __NL80211_STA_BSS_PARAM_INVALID,
-    //     NL80211_STA_BSS_PARAM_CTS_PROT,
-    //     NL80211_STA_BSS_PARAM_SHORT_PREAMBLE,
-    //     NL80211_STA_BSS_PARAM_SHORT_SLOT_TIME,
-    //     NL80211_STA_BSS_PARAM_DTIM_PERIOD,
-    //     NL80211_STA_BSS_PARAM_BEACON_INTERVAL,
-
-    //     /* keep last */
-    //     __NL80211_STA_BSS_PARAM_AFTER_LAST,
-    //     NL80211_STA_BSS_PARAM_MAX = __NL80211_STA_BSS_PARAM_AFTER_LAST - 1
-    // };
+    nl80211_stabss_info: {
+        NL80211_STABSS_INVALID         : 0,
+        NL80211_STABSS_CTSPROT        : 1,
+        NL80211_STABSS_SHORTPREAMBLE  : 2,
+        NL80211_STABSS_SHORTSLOTTIME : 3,
+        NL80211_STABSS_DTIMPERIOD     : 4,
+        NL80211_STABSS_BEACONINTERVAL : 5,
+        NL80211_STABSS_SPEC            : ['', 'n64', 'n/64', 'n/64', 'n8', 'n16'],
+    },
 
     // /**
     //  * enum nl80211_sta_info - station information
@@ -247,40 +241,78 @@ var iwtypes = {
     //  *  attributes carrying the actual values.
     //  * @__NL80211_STA_INFO_AFTER_LAST: internal
     //  * @NL80211_STA_INFO_MAX: highest possible station info attribute
-    //  */
+    //
+
+    /*
+        [NL80211_STA_INFO_INACTIVE_TIME] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_RX_BYTES] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_TX_BYTES] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_RX_PACKETS] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_TX_PACKETS] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_SIGNAL] = { .type = NLA_U8 },
+        [NL80211_STA_INFO_T_OFFSET] = { .type = NLA_U64 },
+        [NL80211_STA_INFO_TX_BITRATE] = { .type = NLA_NESTED },
+        [NL80211_STA_INFO_RX_BITRATE] = { .type = NLA_NESTED },
+        [NL80211_STA_INFO_LLID] = { .type = NLA_U16 },
+        [NL80211_STA_INFO_PLID] = { .type = NLA_U16 },
+        [NL80211_STA_INFO_PLINK_STATE] = { .type = NLA_U8 },
+        [NL80211_STA_INFO_TX_RETRIES] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_TX_FAILED] = { .type = NLA_U32 },
+        [NL80211_STA_INFO_STA_FLAGS] =
+            { .minlen = sizeof(struct nl80211_sta_flag_update) },
+        [NL80211_STA_INFO_LOCAL_PM] = { .type = NLA_U32},
+        [NL80211_STA_INFO_PEER_PM] = { .type = NLA_U32},
+        [NL80211_STA_INFO_NONPEER_PM] = { .type = NLA_U32},
+        [NL80211_STA_INFO_CHAIN_SIGNAL] = { .type = NLA_NESTED },
+        [NL80211_STA_INFO_CHAIN_SIGNAL_AVG] = { .type = NLA_NESTED },
+
+
+    */
+
+    nl80211_signal_info:  {
+        NL80211_SIGNAL_UNPEC:    0,
+        NL80211_SIGNAL_ELEM:     1,
+        NL80211_SIGNAL_SPEC:     ['','n/8'],
+    },
+
     nl80211_sta_info: {
-        NL80211_STA_INFO_INVALID             = 1,
-        NL80211_STA_INFO_INACTIVE_TIME       = 2,
-        NL80211_STA_INFO_RX_BYTES            = 3,
-        NL80211_STA_INFO_TX_BYTES            = 4,
-        NL80211_STA_INFO_LLID                = 5,
-        NL80211_STA_INFO_PLID                = 6,
-        NL80211_STA_INFO_PLINK_STATE         = 7,
-        NL80211_STA_INFO_SIGNAL              = 8,
-        NL80211_STA_INFO_TX_BITRATE          = 9,
-        NL80211_STA_INFO_RX_PACKETS          = 10,
-        NL80211_STA_INFO_TX_PACKETS          = 11,
-        NL80211_STA_INFO_TX_RETRIES          = 12,
-        NL80211_STA_INFO_TX_FAILED           = 13,
-        NL80211_STA_INFO_SIGNAL_AVG          = 14,
-        NL80211_STA_INFO_RX_BITRATE          = 15,
-        NL80211_STA_INFO_BSS_PARAM           = 16,
-        NL80211_STA_INFO_CONNECTED_TIME      = 17,
-        NL80211_STA_INFO_STA_FLAGS           = 18,
-        NL80211_STA_INFO_BEACON_LOSS         = 19,
-        NL80211_STA_INFO_T_OFFSET            = 20,
-        NL80211_STA_INFO_LOCAL_PM            = 21,
-        NL80211_STA_INFO_PEER_PM             = 22,
-        NL80211_STA_INFO_NONPEER_PM          = 23,
-        NL80211_STA_INFO_RX_BYTES64          = 24,
-        NL80211_STA_INFO_TX_BYTES64          = 25,
-        NL80211_STA_INFO_CHAIN_SIGNAL        = 26,
-        NL80211_STA_INFO_CHAIN_SIGNAL_AVG    = 27,
-        NL80211_STA_INFO_EXPECTED_THROUGHPUT = 28,
-        NL80211_STA_INFO_RX_DROP_MISC        = 29,
-        NL80211_STA_INFO_BEACON_RX           = 30,
-        NL80211_STA_INFO_BEACON_SIGNAL_AVG   = 31,
-        NL80211_STA_INFO_TID_STATS           = 32
+        NL80211_STA_INVALID            : 0,
+        NL80211_STA_INACTIVETIME      : 1,
+        NL80211_STA_RXBYTES           : 2,
+        NL80211_STA_TXBYTES           : 3,
+        NL80211_STA_LLID               : 4,
+        NL80211_STA_PLID               : 5,
+        NL80211_STA_PLINKSTATE        : 6,
+        NL80211_STA_SIGNAL             : 7,
+        NL80211_STA_TXBITRATE         : 8,
+        NL80211_STA_RXPACKETS         : 9,
+        NL80211_STA_TXPACKETS         : 10,
+        NL80211_STA_TXRETRIES         : 11,
+        NL80211_STA_TXFAILED          : 12,
+        NL80211_STA_SIGNALAVG         : 13,
+        NL80211_STA_RXBITRATE         : 14,
+        NL80211_STA_BSSPARAM          : 15,
+        NL80211_STA_CONNECTEDTIME     : 16,
+        NL80211_STA_FLAGS          : 17,
+        NL80211_STA_BEACONLOSS        : 18,
+        NL80211_STA_TOFFSET           : 19,
+        NL80211_STA_LOCALPM           : 20,
+        NL80211_STA_PEERPM            : 21,
+        NL80211_STA_NONPEERPM         : 22,
+        NL80211_STA_RXBYTES64         : 23,
+        NL80211_STA_TXBYTES64         : 24,
+        NL80211_STA_CHAINSIGNAL       : 25,
+        NL80211_STA_CHAINSIGNAL_AVG   : 26,
+        NL80211_STA_EXPECTEDTHROUGHPUT: 27,
+        NL80211_STA_RXDROPMISC       : 28,
+        NL80211_STA_BEACONRX          : 29,
+        NL80211_STA_BEACONSIGNALAVG  : 30,
+        NL80211_STA_TIDSTATS          : 31,
+        NL80211_STA_SPEC               : ['','n/32','n/32','n/32','n/16','n/16','n/8','u/8','r/nl80211_rate_info','n/32',
+                                               'n/32',  'n/32', 'n/32', 'n/8','r/nl80211_rate_info', 'l/nl80211_stabss_info',
+                                               'n/32', 'n64', 'n/32', 'n/64', 'n/32', 'n/32', 'n/32', 'n/64', 'n/64',
+                                               'l/nl80211_signal_info', 'l/nl80211_signal_info', 'n/32', 'n/64', 'n/64', 'n/8',
+                                               'r/nl80211_tidstats_info']
     },
 
     // /**
@@ -296,17 +328,14 @@ var iwtypes = {
     //  * @NUM_NL80211_TID_STATS: number of attributes here
     //  * @NL80211_TID_STATS_MAX: highest numbered attribute here
     //  */
-    // enum nl80211_tid_stats {
-    //     __NL80211_TID_STATS_INVALID,
-    //     NL80211_TID_STATS_RX_MSDU,
-    //     NL80211_TID_STATS_TX_MSDU,
-    //     NL80211_TID_STATS_TX_MSDU_RETRIES,
-    //     NL80211_TID_STATS_TX_MSDU_FAILED,
-
-    //     /* keep last */
-    //     NUM_NL80211_TID_STATS,
-    //     NL80211_TID_STATS_MAX = NUM_NL80211_TID_STATS - 1
-    // };
+    nl80211_tidstats_info : {
+        NL80211_TIDSTATS_INVALID:              0,
+        NL80211_TIDSTATS_RXMSDU:              1,
+        NL80211_TIDSTATS_TXMSDU:              2,
+        NL80211_TIDSTATS_TXMSDURETRIES:      3,
+        NL80211_TIDSTATS_TXMSDUFAILED:       4,
+        NL80211_TIDSTATS_SPEC:                 ['', 'n/64', 'n/64', 'n/64', 'n/64'],
+    },
 
     // /**
     //  * enum nl80211_mpath_flags - nl80211 mesh path flags
@@ -2430,4 +2459,4 @@ var iwtypes = {
 
 };
 
-module.export = iwtypes;
+module.exports = iwtypes;

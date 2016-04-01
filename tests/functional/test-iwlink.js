@@ -40,6 +40,8 @@ var nl = iwnl.nl;
 // };
 
 
+var ifname = 'wls1';
+
 var opts = {
     cmd:        nl80211.commands.NL80211_CMD_GET_STATION, //controller.CTRL_CMD_GETFAMILY,
     //cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
@@ -47,9 +49,9 @@ var opts = {
     flags:      nl.NLM_F_REQUEST | nl.NLM_F_ACK | nl.NLM_F_ROOT | nl.NLM_F_MATCH,
     type:       nl.NETLINK_GENERIC | 0x0a,
 
-    data:       new Buffer("0800030004000000", 'hex'), // device index
+    data:       new Buffer("0800030007000000", 'hex'), // device index
 
-    infotype: 'sta',
+    infotype: 'attr',
     params: iwnl.nl80211_sta_info,
 };
 
@@ -60,7 +62,7 @@ nk.iw(opts, function(err,bufs) {
 		console.error("** Error: " + util.inspect(err));
 	} else {
 		console.log("success!");
-        console.log(util.inspect(bufs));
+        console.log(util.inspect(bufs, {depth:null}));
 	}
 });
 

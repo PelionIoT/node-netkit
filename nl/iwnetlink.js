@@ -34,7 +34,7 @@ iwnl = {
 
 		if(iwnl.commands.NL80211_CMD_GET_STATION <= type && type <= iwnl.commands.NL80211_CMD_DEL_STATION) {
 		    //debug('TABLE');
-			retVal.keys = iwtypes.nl80211_sta_info
+			retVal.keys = iwtypes.nl80211_attr_info
 			retVal.name = 'station';
 		}else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
@@ -55,7 +55,7 @@ iwnl = {
 		return command_object;
 	},
 
-	getNfTypeName: function(type) {
+	getNlTypeName: function(type) {
 		return iwnl.types_name_map[type];
 	},
 
@@ -72,6 +72,13 @@ iwnl = {
 		return buffer.readUInt8(16);
 	},
 
+	readUInt16: function(buffer, idx) {
+		return buffer.readUInt16LE(idx);
+	},
+
+	readUInt32: function(buffer, idx) {
+		return buffer.readUInt32LE(idx);
+	},
 
 	unpackIwgenmsg: function(data, pos) {
 		return bufferpack.unpack(generic_msg_fmt, data, pos);

@@ -20,7 +20,7 @@ var NlAttributes = function(command_type, parameters, netlink_type) {
 	this.parameters = parameters;
 
 	// Get the array of Attribute objects
-	this.parseNfAttrs(this.parameters, this.command_object);
+	this.parseNlAttrs(this.parameters, this.command_object);
 };
 
 NlAttributes.prototype.updateNestHdrLen = function(a, nstart) {
@@ -108,7 +108,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
 	return result_array;
 };
 
-NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
+NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
 	//debug("params");
 	//console.dir(params);
 	if(params == null) return;
@@ -126,7 +126,7 @@ NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 
 			// recurse over the nested params
 			var nest_attrs = a.getNestedAttributes(that,params);
-			that.parseNfAttrs(a.value, nest_attrs, a.value.name);
+			that.parseNlAttrs(a.value, nest_attrs, a.value.name);
 
 			that.updateNestHdrLen(a, nstart);
 		} else if(a.isList){
@@ -137,7 +137,7 @@ NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 			 var elems = Object.keys(a.value);
 			 elems.forEach(function(elem){
 			 	var elem_attrs = a.getNestedAttributes(that,params);
-				that.parseNfAttrs(a.value[elem], elem_attrs);
+				that.parseNlAttrs(a.value[elem], elem_attrs);
 			});
 
 		 	that.updateNestHdrLen(a, lstart);
@@ -145,7 +145,7 @@ NlAttributes.prototype.parseNfAttrs = function(params, attrs, expr_name) {
 		} else if(a.isExpression){
 			var estart = that.attribute_array.push(a);
 			var expr_attrs = a.getNestedAttributes(that, expr_name);
-			that.parseNfAttrs(a.value, expr_attrs);
+			that.parseNlAttrs(a.value, expr_attrs);
 			that.updateNestHdrLen(a, estart);
 		} else if(a.isGeneric) {
 			// push a normal attribute
@@ -166,6 +166,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	var expression_count;
 	var expression_ret = null;
 	var element_ret = null;
+	var inIndex = false;
 	//console.dir(keys);
 
 	while(index < total_len) {
@@ -176,11 +177,17 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		//console.log('index = ' + index + ' round_len = ' + round_len);
 
 		var attribute = new Attribute(this);
-		attribute.makeFromBuffer(keys, remaining);
 
-		this.attribute_array.push(attribute);
+		if(!inIndex) {
+			attribute.makeFromBuffer(keys, remaining);
+			this.attribute_array.push(attribute);
+		}
 
-		if (attribute.isNested){
+		if(attribute.isIndexed) {
+			inIndex = true; // don't care about indexed recursions like TID STATS for now
+		}
+
+		if(attribute.isNested){
 			//console.log("nested");
 			nested_attributes.push(attribute);
 			nested_indexes.push(attribute.buffer_size + index);
@@ -194,7 +201,6 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			}
 
 		} else {
-			//console.log("normal");
 			expression = attribute.value;
 			index += round_len;
 
@@ -207,6 +213,10 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 					nested_indexes.pop();
 					var attr = nested_attributes.pop();
 					keys = attr.attribute_list;
+
+					if(attr.isIndexed) {
+						inIndex = false;
+					}
 
 					l = nested_indexes[nested_indexes.length - 1];
 				}
@@ -238,7 +248,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 };
 
 NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
-	debug("msghdr: " + buffer.slice(0,16).toString('hex') );
+	//debug("msghdr: " + buffer.slice(0,16).toString('hex') );
 
 	var ret = {};
 	var type = this.netlink_type.getTypeFromBuffer(buffer);
@@ -260,12 +270,12 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 		// skip the genmsg header
 		index += 4;
 
-		debug('start index = ' + index);
-		debug("buffer: " + buffer.slice(index).toString('hex') );
+		//debug('start index = ' + index);
+		//debug("buffer: " + buffer.slice(index).toString('hex') );
 		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
 		//this.logAttributeBuffers();
 
-		ret['operation'] = nf.getNfTypeName(type);
+		ret['operation'] = this.netlink_type.getNlTypeName(type);
 		ret[name] = payload;
 	}
 	return ret;

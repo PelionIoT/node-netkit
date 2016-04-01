@@ -15,11 +15,17 @@ var Attribute = function(that) {
 	this.netlink_type = that.netlink_type;
 };
 
-
 Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 	this.key = key;
 	this.attribute_list = params;
-	this.attributeType = Object.keys(attr_object)[0].split('_')[1];
+
+	try {
+		this.attributeType = Object.keys(attr_object)[0].split('_')[1];
+	} catch(e) {
+		throw Error("key [" + key_name + "] for attribute [" + this.attributeType +
+			"] does not exist in command object: " + util.inspect(attrObject) );
+	}
+
 	this.value = params[key];
 	this.spec = this.getSpec(attr_object,key);
     this.buffer = this.setBuffer();
@@ -38,17 +44,22 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 };
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
-	// debug('attr_list = ' + util.inspect(attr_list));
-	debug("buffer: " + attr_buffer.toString('hex') );
+	//debug('attr_list = ' + util.inspect(attr_list));
+	//debug("attr --> " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;
 	this.buffer_size = attr_buffer.length;
-	var index = attr_buffer.readUInt16LE(2);
-console.log('index = ' + index)
 
-	this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
+	var index = attr_buffer.readUInt16LE(2); // & (~0x20);
+	try {
+		this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
+	} catch(e) {
+		throw Error("index [" + index + "] does not exist in object: " + util.inspect(attr_list) );
+	}
+
 	this.attributeType = Object.keys(attr_list)[0].split('_')[1];
+
 	this.spec = this.getSpec(attr_list,this.key);
 	this.value = this.getBufferAsValue(attr_buffer);
 
@@ -71,15 +82,16 @@ Attribute.prototype.setIdentities = function() {
     this.isExpression = (this.spec.type === 'e') ? true : false;
     this.isList = (this.spec.type === 'l') ? true : false;
     this.isGeneric = (this.spec.type === 'g') ? true : false;
+    this.isIndexed = (this.spec.type === 'i') ? true : false;
     this.isPayloadLen = this.spec.type === 'pl' ? true : false;
-    this.isNested = this.isNest | this.isList | this.isExpression;
+    this.isNested = this.isNest | this.isList | this.isExpression | this.isIndexed;
 };
 
 Attribute.prototype.getValue = function(attrObject, key) {
 	// retrive the field specification string for that attribute subtype
 	var key_name = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_" + key.toUpperCase();
-
 	var key_value = attrObject[key_name];
+
 	if(typeof key_value === 'undefined'){
 		throw Error("key [" + key_name + "] for attribute [" + this.attributeType +
  			"] does not exist in command object: " + util.inspect(attrObject) );
@@ -88,19 +100,24 @@ Attribute.prototype.getValue = function(attrObject, key) {
 };
 
 Attribute.prototype.getSpec = function(attrObject,key){
+
 	// retrive the field specification string for that attribute subtype
 	var attr_subtype_specname = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_SPEC";
-
 	var spec_array = attrObject[attr_subtype_specname];
-	if(typeof spec_array === 'undefined'){
-		throw Error("command type " + this.attributeType + " does not exist");
-	}
 
+	if(typeof spec_array === 'undefined'){
+		throw Error("command type " + this.attributeType + " does not exist in object: " + util.inspect(attrObject));
+	}
 	var siz = -1;
 	var typ = null;
 
-	var keyval = this.getValue(attrObject, key);
-	var spec = spec_array[keyval];
+	var speckeyval = this.getValue(attrObject, key);
+	var spec = spec_array[speckeyval];
+
+	if(typeof spec === 'undefined') {
+		throw Error("spec ["+ speckeyval + "] not found  in " + util.inspect(spec_array));
+	}
+
 	var sl = spec.indexOf('/');
 	if(sl > -1){
 		typ = spec.slice(0,sl);
@@ -108,8 +125,7 @@ Attribute.prototype.getSpec = function(attrObject,key){
 	} else {
 		typ = spec;
 	}
-
-	return { typeval: keyval, type: typ, size: siz };
+	return { typeval: speckeyval, type: typ, size: siz };
 };
 
 Attribute.prototype.getNestedAttributes = function(that,params) {
@@ -117,12 +133,13 @@ Attribute.prototype.getNestedAttributes = function(that,params) {
 	var nest_attrs_type = null;
 	if(this.isExpression) {  //expression
 	 	nest_attrs_type =  params;
+	} else if(this.isIndexed) {
+		nest_attrs_type = this.spec.size.split('_')[1];
 	} else if(this.isList) {
 		nest_attrs_type = this.spec.size.split('_')[1];
 	} else {
 		nest_attrs_type = this.spec.size.split('_')[1];
 	}
-
 	var nest_attrs = this.netlink_type.getCommandObject(nest_attrs_type);
 	return nest_attrs;
 }
@@ -155,6 +172,7 @@ Attribute.prototype.setBuffer = function() {
 			buf = this.getNumberBuffer();
 			break;
 		case('r'): // nested type attribute
+		case('i'): // indexed type attribute
 			buf = this.getNestedBuf();
 			break;
 		case('g'): // nested type attribute
@@ -284,6 +302,7 @@ Attribute.prototype.getBufferAsValue = function(buffer) {
 			return this.getBufferAsNumber(buffer);
 			break;
 		case('r'): // nested type attribute
+		case('i'): // nested type attribute
 			break;
 		case('g'): // nested type attribute
 			return this.getBufferAsGeneric(buffer);
@@ -292,6 +311,10 @@ Attribute.prototype.getBufferAsValue = function(buffer) {
 			break;
 		case('e'): // nested element type attribute
 			break;
+		case('m'): // mac address type attribute
+			return cmn.bufferAsMacAddress(buffer.slice(4,10));
+			break;
+
 		default:
 			// No value
 	}
@@ -317,15 +340,15 @@ Attribute.prototype.getBufferAsNumber = function(buffer) {
 			val = buffer.readUInt8(4);
 			break;
 		case '16':
-			val = buffer.readUInt16BE(4);
+			val = this.netlink_type.readUInt16(buffer, 4);
 			break;
 		case '32':
-			val = buffer.readUInt32BE(4);
+			val = this.netlink_type.readUInt32(buffer,4);
 			break;
 		case '64':
 			// TODO: verify the ordering of the 4 byte chunks
-			val = buffer.readUInt32BE(4);
-			val |= buffer.readUInt32BE(8) << 32;
+			val = this.netlink_type.readUInt32(buffer,4);
+			val |= this.netlink_type.readUInt32(buffer,8) << 32;
 			break;
 		default:
 			throw new Error("bad number field size: " + this.spec.size);
@@ -343,15 +366,15 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			val = buf.readUInt8(0);
 			break;
 		case 2:
-			val = buf.readUInt16BE(0);
+			val = this.netlink_type.readUInt16(buf,0);
 			break;
 		case 4:
-			val = buf.readUInt32BE(0);
+			val = this.netlink_type.readUInt32(buf,0);
 			break;
 		case 8:
 			// TODO: verify the ordering of the 4 byte chunks
-			val = buf.readUInt32BE(0);
-			val |= buf.readUInt32BE(4) << 32;
+			val = this.netlink_type.readUInt32(buf,0);
+			val |= this.netlink_type.readUInt32(buf,4) << 32;
 			break;
 		default:
 			//throw new Error("bad generic number field size: " + this.spec.size);

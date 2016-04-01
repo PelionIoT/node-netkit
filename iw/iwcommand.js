@@ -8,10 +8,6 @@ var nl = iwnl.nl;
 
 iwcommand = {
 
-	device_type: [
-		"NL80211_STA",
-		"NL80211_LINK"
-	],
 
 
 	iwsend: function(opts, cb) {

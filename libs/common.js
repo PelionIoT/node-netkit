@@ -59,6 +59,18 @@ module.exports = {
 		return b.toString('hex');
 	},
 
+	bufferAsMacAddress: function(buf) {
+		var mac = '';
+		var sep = '';
+
+		for (var pair of buf.entries()) {
+			mac += sep + pair[1].toString(16);
+			sep = ':';
+		}
+
+		return mac;
+	},
+
 	logger: common_logger,
 
 	bufferpack: function() {

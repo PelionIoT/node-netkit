@@ -155,7 +155,7 @@ nf = {
 		return command_object;
 	},
 
-	getNfTypeName: function(type) {
+	getNlTypeName: function(type) {
 		return nf.nft_types_name_map[type];
 	},
 
@@ -170,6 +170,14 @@ nf = {
 
 	getTypeFromBuffer: function(buffer) {
 		return buffer.readUInt16LE(4) & 0x00FF;
+	},
+
+	readUInt16: function(buffer, idx) {
+		return buffer.readUInt16BE(idx);
+	},
+
+	readUInt32: function(buffer, idx) {
+		return buffer.readUInt32BE(idx);
 	},
 
 	attrType: function(obj) {

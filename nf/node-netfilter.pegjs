@@ -159,7 +159,7 @@ rule_expression
 					for(var elem in connection_track) {
 						exprs.push(connection_track[elem]);
 					}
-				}); 
+				});
 			}
 			if(meta != undefined) {
 				meta.forEach(function(m){
@@ -187,8 +187,8 @@ chain
 		}
 
 rule_handle
-	= "handle" _ rh:( hex / decimal ) 
-		{ 
+	= "handle" _ rh:( hex / decimal )
+		{
 			var hndl = rh.toBuffer({endian: 'big', size: 8});
 			command_object.params.handle = '0x' + hndl.toString('hex');
 		}
@@ -247,10 +247,10 @@ ip6
 	= "ip6"  { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
 
 
-/* 
+/*
 	Packet field definitions
 
-  	// Commented out fields are combined into the upper and 
+  	// Commented out fields are combined into the upper and
   	// lower portion of a field and not supported yet.
 */
 tcp_field
@@ -294,15 +294,23 @@ udp_field
 	/ "checksum" { return { offset: nft.udphdr_offsets.check, len: nft.udphdr_sizes.check };	}
 
 packet_field_value
-	= val:( number / address) { return val; }
+	= val:( number / ipaddress )
+	{
+		debug("packet_field_value");
+		return val;
+	}
 
-address
-	= ipv4 / ipv6
+ipaddress
+	= ipa:(ipv4address / ipv6address)
+	{
+		debug("ipaddress");
+		return ipa;
+	}
 
-ipv6
+ipv6address
 	= ipv6addr cidr? _
 
-ipv4
+ipv4address
 	= ipv4addr cidr? _
 
 number
@@ -605,51 +613,51 @@ meta_stmt
 meta_params
 	// see netfilter/nftables/src/meta.c line:363
 	= "len" _ val:decimal
-		{ return structs.build_meta_integer(nft.nft_meta_keys.LEN, val, 4); }  
-	/ "protocol" _ val:ether_type 
-		{ return structs.build_meta_integer(nft.nft_meta_keys.PROTOCOL, val, 2); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.LEN, val, 4); }
+	/ "protocol" _ val:ether_type
+		{ return structs.build_meta_integer(nft.nft_meta_keys.PROTOCOL, val, 2); }
 	/ "priority" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.PRIORITY, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.PRIORITY, val, 4); }
 	/ "mark" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.MARK, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.MARK, val, 4); }
 	/ "iif" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.IIF, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.IIF, val, 4); }
 	/ "oif" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.OIF, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.OIF, val, 4); }
 	/ "iifname" _ val:(string)
-		{ return structs.build_meta_string(nft.nft_meta_keys.IIFNAME, val, 14); }  
+		{ return structs.build_meta_string(nft.nft_meta_keys.IIFNAME, val, 14); }
 	/ "oifname" _ val:(string)
-		{ return structs.build_meta_string(nft.nft_meta_keys.OIFNAME, val, 14); }  
+		{ return structs.build_meta_string(nft.nft_meta_keys.OIFNAME, val, 14); }
 	/ "iiftype" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.IIFTYPE, val, 2); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.IIFTYPE, val, 2); }
 	/ "oiftype" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.OIFTYPE, val, 2); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.OIFTYPE, val, 2); }
 	/ "skuid" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.SKUID, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.SKUID, val, 4); }
 	/ "skgid" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.SKGID, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.SKGID, val, 4); }
 //	/ "nftrace" _ val:(hex / decimal)
 	/ "rtclassid" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.RTCLASSID, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.RTCLASSID, val, 4); }
 //	/ "secmark" _ val:(hex / decimal)
 	/ "nfproto" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.NFPROTO, val, 1); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.NFPROTO, val, 1); }
 	/ "l4proto" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.L4PROTO, val, 1); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.L4PROTO, val, 1); }
 	/ "bri_iifname" _ val:(hex / decimal)
-		{ return structs.build_meta_string(nft.nft_meta_keys.BRI_IIFNAME, val, 14); }  
+		{ return structs.build_meta_string(nft.nft_meta_keys.BRI_IIFNAME, val, 14); }
 	/ "bri_oifname" _ val:(hex / decimal)
-		{ return structs.build_meta_string(nft.nft_meta_keys.BRI_OIFNAME, val, 14); }  
+		{ return structs.build_meta_string(nft.nft_meta_keys.BRI_OIFNAME, val, 14); }
 	/ "pkttype" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.PKTYPE, val, 1); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.PKTYPE, val, 1); }
 	/ "cpu" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.CPU, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.CPU, val, 4); }
 	/ "iifgroup" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.IIFGROUP, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.IIFGROUP, val, 4); }
 	/ "oifgroup" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.OIFGROUP, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.OIFGROUP, val, 4); }
 	/ "cgroup" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.CGROUP, val, 4); }  
+		{ return structs.build_meta_integer(nft.nft_meta_keys.CGROUP, val, 4); }
 
 
 // include/uapi/linux/if_ether.h
@@ -715,7 +723,7 @@ quads
 		}
 
 startquad
-	= q:([0-9a-fA-F]+)? { val: return q.join(""); }
+	= q:([0-9a-fA-F]+) { val: return q.join(""); }
 
 nextequad
 	= q:(contquad / skipequad) { return q; }

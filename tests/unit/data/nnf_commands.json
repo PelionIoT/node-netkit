@@ -57,5 +57,7 @@
 	"delete ip6 rule filter input handle 5",
 
 	"flush ip6 table filter",
-	"flush ip chain filter input"
+	"flush ip chain filter input",
+
+	"add rule traffic output ip protocol 2 meta priority 0xffff0006"
 ]

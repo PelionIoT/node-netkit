@@ -203,7 +203,7 @@ var linktypes = {
      infotype_attributes: {
           IFLA_INFO_UNSPEC:        0,
           IFLA_INFO_KIND:          1,
-          IFLA_INFO_DATA:          2,
+          IFLA_INFO_INFODATA:      2,
           IFLA_INFO_XSTATS:        3,
           IFLA_INFO_SLAVE_KIND:    4,
           IFLA_INFO_SLAVE_DATA:    5,

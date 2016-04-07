@@ -180,13 +180,11 @@ netlinkLinkCommand = function(opts,sock, cb) {
 								throw(new Error("vlan_parameters link name must be string"));
 							}
 
-							debug("vlan link ---> " + link);
 							bufs.push(rt.buildRtattrBuf(linktypes.link_attributes.IFLA_IFNAME,
 								new Buffer(link)) );
 
 							var vlan_nest = [];
 
-							debug("nest hdr");
 							vlan_nest.push(rt.buildRtattrBuf(linktypes.info_types.IFLA_INFO_KIND,
 								new Buffer("vlan")) );
 
@@ -200,11 +198,8 @@ netlinkLinkCommand = function(opts,sock, cb) {
 							vlan_nest.push(rt.buildRtattrBuf(linktypes.vlan_attributes.IFLA_VLAN_ID, vlanid_buf) );
 
 							var vlan_nest_buf = new Buffer.concat(vlan_nest);
-							console.log("vlan_nest_buf.length = " + vlan_nest_buf.length);
 
 							vlan_nest_buf.writeUInt16LE(vlan_nest_buf.length, 0);
-
-							debug("vlan nest ---> " + vlan_nest_buf.toString('hex'));
 							bufs.push(vlan_nest_buf);
 
 

@@ -161,14 +161,14 @@ iwnl = {
 			}
 
 			if(opts.hasOwnProperty("type") && opts["type"] != null) {
-				debug('type=' + opts['type']);
+				//debug('type=' + opts['type']);
 				nl_hdr._type |= opts['type'];
 			} else {
 				return cb(new Error("no type option specified"));
 			}
 
 			if(opts.hasOwnProperty("flags") && opts["flags"] != null) {
-				debug('flags=' + opts['flags']);
+				//debug('flags=' + opts['flags']);
 				nl_hdr._flags |= opts['flags'];
 			} else {
 				return cb(new Error("no flags option specified"));

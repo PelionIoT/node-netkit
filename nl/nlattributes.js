@@ -239,10 +239,11 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			}
 		}
 
-debug('attribute.value -> ' + attribute.value);
-debug('attribute.key -> ' + attribute.key);
+		// debug('attribute.value -> ' + attribute.value);
+		// debug('attribute.key -> ' + attribute.key);
+		// debug('element_ret -> ' + element_ret);
+
 		if(typeof(attribute.value) !== 'undefined') {
-debug('element_ret -> ' + element_ret);
 			if(element_ret !== null) {
 				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
 			} else if(expression_ret !== null) {
@@ -257,7 +258,7 @@ debug('element_ret -> ' + element_ret);
 				expression_count = 0;
 				ret[attribute.key] = expression_ret;
 
-			} else if(attribute.key === 'elem' || attribute.key === 'data'){
+			} else if(attribute.key === 'elem' || attribute.key === 'infodata') {
 
 				element_ret = []; element_ret_count = 0;
 				expression_ret[expression_count++] = element_ret;

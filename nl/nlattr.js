@@ -63,7 +63,7 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	//debug('attr_list = ' + util.inspect(attr_list));
-	debug("attr --> " + attr_buffer.toString('hex') );
+	//debug("attr --> " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;
@@ -90,13 +90,13 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 		this.buffer = this.buffer.slice(0,4);
 	}
 
-	 debug("buf --> " + this.buffer.toString('hex'))
-	 var ns = this.isNested ? "(NEST)" : "";
-	 debug("key = " +this.key + ns +
-	 	" typeval = " + this.spec.typeval +
-	 	" type = " + this.spec.type +
-	 	" size = " + this.spec.size +
-	 	" val = " + this.value );
+	 // debug("buf --> " + this.buffer.toString('hex'))
+	 // var ns = this.isNested ? "(NEST)" : "";
+	 // debug("key = " +this.key + ns +
+	 // 	" typeval = " + this.spec.typeval +
+	 // 	" type = " + this.spec.type +
+	 // 	" size = " + this.spec.size +
+	 // 	" val = " + this.value );
 };
 
 Attribute.prototype.setIdentities = function() {
@@ -152,7 +152,6 @@ Attribute.prototype.getSpec = function(attrObject,key){
 };
 
 Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
-debug(util.inspect(this.spec.size));
 	var get_attr_type = this.netlink_type.getAttrType ||
 		function(spec) { return spec.split('_')[1];}
 
@@ -161,8 +160,6 @@ debug(util.inspect(this.spec.size));
 	 	nest_attrs_type =  params;
 	} else if(this.isFunction) {
 
-debug(util.inspect(params));
-debug(funcval);
         var func = params[this.spec.size];
         if(typeof func === 'function') {
             nest_attrs_type = func(funcval);
@@ -172,7 +169,7 @@ debug(funcval);
 	} else {
 		nest_attrs_type = get_attr_type(this.spec.size);
 	}
-debug(nest_attrs_type);
+
 	var nest_attrs = this.netlink_type.getCommandObject(nest_attrs_type);
 	return nest_attrs;
 }

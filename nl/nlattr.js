@@ -11,6 +11,24 @@ var bignum = require('bignum');
 *
 */
 
+
+/*
+	Atribute spec definitions
+
+	s  - string,  no size needed
+	n  - number, size in bytes needed
+	pl - payload length, used during byte string decode.
+		 indicates payload lengths
+	r  - recurse, or nested attribute by name only, no size
+	i  - increment, no size.  used to indcate following
+	     nested attribute array are all the same type with
+	     incremeinting type vals
+	g  - general, used to indicate a generic sized buffered number
+	l  - list, a list of all the same type
+	e  - expression, the nested type is specified by embedded name filed
+	m  - mac address, decode as such, encode as such - currently ip4 only
+*/
+
 var Attribute = function(that) {
 	this.netlink_type = that.netlink_type;
 };
@@ -45,7 +63,7 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	//debug('attr_list = ' + util.inspect(attr_list));
-	//debug("attr --> " + attr_buffer.toString('hex') );
+	debug("attr --> " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;
@@ -53,7 +71,11 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 
 	var index = attr_buffer.readUInt16LE(2); // & (~0x20);
 	try {
-		this.key = Object.keys(attr_list)[index].split('_')[2].toLowerCase();
+		var remain = Object.keys(attr_list)[index].split('_');
+		remain.shift();
+		remain.shift();
+		this.key = remain.join('_').toLowerCase();
+
 	} catch(e) {
 		throw Error("index [" + index + "] does not exist in object: " + util.inspect(attr_list) );
 	}
@@ -68,13 +90,13 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 		this.buffer = this.buffer.slice(0,4);
 	}
 
-	 // debug("buf --> " + this.buffer.toString('hex'))
-	 // var ns = this.isNested ? "(NEST)" : "";
-	 // debug("key = " +this.key + ns +
-	 // 	" typeval = " + this.spec.typeval +
-	 // 	" type = " + this.spec.type +
-	 // 	" size = " + this.spec.size +
-	 // 	" val = " + this.value );
+	 debug("buf --> " + this.buffer.toString('hex'))
+	 var ns = this.isNested ? "(NEST)" : "";
+	 debug("key = " +this.key + ns +
+	 	" typeval = " + this.spec.typeval +
+	 	" type = " + this.spec.type +
+	 	" size = " + this.spec.size +
+	 	" val = " + this.value );
 };
 
 Attribute.prototype.setIdentities = function() {
@@ -84,7 +106,8 @@ Attribute.prototype.setIdentities = function() {
     this.isGeneric = (this.spec.type === 'g') ? true : false;
     this.isIndexed = (this.spec.type === 'i') ? true : false;
     this.isPayloadLen = this.spec.type === 'pl' ? true : false;
-    this.isNested = this.isNest | this.isList | this.isExpression | this.isIndexed;
+    this.isFunction = this.spec.type === 'f' ? true : false;
+    this.isNested = this.isNest | this.isList | this.isExpression | this.isIndexed | this.isFunction;
 };
 
 Attribute.prototype.getValue = function(attrObject, key) {
@@ -100,7 +123,6 @@ Attribute.prototype.getValue = function(attrObject, key) {
 };
 
 Attribute.prototype.getSpec = function(attrObject,key){
-
 	// retrive the field specification string for that attribute subtype
 	var attr_subtype_specname = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_SPEC";
 	var spec_array = attrObject[attr_subtype_specname];
@@ -125,21 +147,32 @@ Attribute.prototype.getSpec = function(attrObject,key){
 	} else {
 		typ = spec;
 	}
+
 	return { typeval: speckeyval, type: typ, size: siz };
 };
 
-Attribute.prototype.getNestedAttributes = function(that,params) {
+Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
+debug(util.inspect(this.spec.size));
+	var get_attr_type = this.netlink_type.getAttrType ||
+		function(spec) { return spec.split('_')[1];}
 
 	var nest_attrs_type = null;
 	if(this.isExpression) {  //expression
 	 	nest_attrs_type =  params;
-	} else if(this.isIndexed) {
-		nest_attrs_type = this.spec.size.split('_')[1];
-	} else if(this.isList) {
-		nest_attrs_type = this.spec.size.split('_')[1];
+	} else if(this.isFunction) {
+
+debug(util.inspect(params));
+debug(funcval);
+        var func = params[this.spec.size];
+        if(typeof func === 'function') {
+            nest_attrs_type = func(funcval);
+        } else {
+            throw new Error("no function found by name " + func_name);
+        }
 	} else {
-		nest_attrs_type = this.spec.size.split('_')[1];
+		nest_attrs_type = get_attr_type(this.spec.size);
 	}
+debug(nest_attrs_type);
 	var nest_attrs = this.netlink_type.getCommandObject(nest_attrs_type);
 	return nest_attrs;
 }
@@ -378,12 +411,12 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			break;
 		default:
 			//throw new Error("bad generic number field size: " + this.spec.size);
-			var end = 0;
-			for(var pair of buf.entries()) {
-				if(pair[1] === 0) break;
-				end++;
-			}
-			return buf.slice(0,end).toString('ascii');
+			// var end = 0;
+			// for(var pair of buf.entries()) {
+			// 	if(pair[1] === 0) break;
+			// 	end++;
+			// }
+			return buf.slice(0,len);//.toString('ascii');
 			break;
 	}
 	return '0x' + Number(val).toString(16);

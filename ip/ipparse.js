@@ -104,6 +104,7 @@ var ipparse = {
 	},
 
 	parseAttributes: function(filters,links,buf) {
+
 		//debug("data --> " + buf.toJSON());
 		// debug("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
@@ -171,32 +172,25 @@ var ipparse = {
 		}
 	},
 
-	packageInfoLink: function(ch,links) {
+	packageInfoLink: function(link_result) {
+		//console.log("link -> ");console.dir(link_result);
 
+		var ch = link_result.payload.link;
 		try{
 			var opst = ch['operstate'];
-			var addr = ch['address'];
-			var brdcst = ch['broadcast'];
-			var ev = {};
-
-			ev.name = ch['operation'];
 			if(typeof opst !== 'undefined')
-				ev.state = ipparse.link_oper_states[opst.readUInt8(0)];
-			if(typeof addr !== 'undefined')
-				ev.address = ipparse.getBufferAsHexAddr(addr);
-			if(typeof brdcst !== 'undefined')
-				ev.broadcast =  ipparse.getBufferAsHexAddr(brdcst);
-			ev.flags = ipparse.getLinkDeviceFlags(ch['payload']['_if_flags']);
+				ch.state = ipparse.link_oper_states[ch.operstate];
+
+			ch.flags = ipparse.getLinkDeviceFlags(link_result.genmsg._if_flags);
+			ch.index = link_result.genmsg._if_index;
+
+			delete link_result.genmsg;
+
 		} catch(err) {
-			error("error parsing ling: " +util.inspect(err) + util.inspect(ch));
+			error("error parsing link: " +util.inspect(err) + util.inspect(ch));
 		}
 
-		var data = {
-			ifname: ch['ifname'], // the interface name as labeled by the OS
-			ifnum: nativelib.ifNameToIndex(ch['ifname']), // the interface number, as per system call
-			event:  ev };
-
-		return data;
+		return ch;
 	},
 
 	packageInfoAddress: function(ch,links) {

@@ -2,6 +2,7 @@
 var Attribute = require('../nl/nlattr.js');
 var cmn = require('../libs/common.js');
 var nf = require('../nl/nfnetlink.js');
+var util = require('util');
 
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
@@ -57,7 +58,7 @@ NlAttributes.prototype.logAttributeBuffers = function() {
 	});
 };
 
-NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
+NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform) {
 	//console.dir(bufs);
 
 	var result_array = []; // array if this is a multipart message
@@ -67,7 +68,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
 		var data = bufs[i];
 
 		// is this the done message of a multi-part message?
-		var type = data.readUInt16LE(4);// & 0x00FF;
+		var type = this.netlink_type.getTypeFromBuffer(bufs[i]);
 		if(type === nl.NLMSG_DONE) {
 			return result_array;
 		} else if(type === nl.NLMSG_ERROR) {
@@ -79,8 +80,9 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
 		var cur_result = {};
 
 		// get the generic netfiler generation
-		var nfgenmsg = this.netlink_type.parseGenmsg(data);
-		cur_result['genmsg'] = nfgenmsg;
+		var genmsg = this.netlink_type.parseGenmsg(data);
+
+		if(typeof genmsg !== 'undefined') cur_result['genmsg'] = genmsg;
 		cur_result['payload'] = this.parseNlAttrsFromBuffer(data, type);
 
 		// get the message flags
@@ -93,15 +95,27 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs) {
 			if(op.startsWith('new')) {
 				var that = this;
 				var entity = cur_result.payload[op.substring(3)];
-				Object.keys(this.parameters).forEach(function(key){
-					if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key])
-						filter = true;
-				});
+				if(typeof this.parameters === 'object') {
+
+					Object.keys(this.parameters).forEach(function(key){
+						if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key])
+							filter = true;
+					});
+				}
 			}
 			// mutlipart message add to array result
-			if(!filter) result_array[i] = cur_result;
+			if(!filter){
+				if(typeof transform != 'undefined') {
+					cur_result['payload'] = transform(cur_result);
+				}
+				result_array[i] = cur_result;
+			}
+
 		} else {
 			// just one response message so return it
+			if(typeof transform != 'undefined') {
+				cur_result['payload'] = transform(cur_result);
+			}
 			return cur_result;
 		}
 	}
@@ -162,7 +176,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	var index = start;
 	var nested_attributes = [];
 	var nested_indexes = [];
-	var expression = "";
+	var parent_value = "";
 	var expression_count;
 	var expression_ret = null;
 	var element_ret = null;
@@ -195,13 +209,15 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			index += 4;
 
 			if(attribute.isExpression) {
-				keys = attribute.getNestedAttributes(this, expression );
+				keys = attribute.getNestedAttributes(this, parent_value );
+			} else if(attribute.isFunction) {
+				keys = attribute.getNestedAttributes(this, keys, parent_value );
 			} else {
 				keys = attribute.getNestedAttributes(this, keys);
 			}
 
 		} else {
-			expression = attribute.value;
+			parent_value = attribute.value;
 			index += round_len;
 
 			// Are we parsing inside a nested attribute
@@ -223,25 +239,31 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			}
 		}
 
-		if(typeof(attribute.value) != 'undefined') {
+debug('attribute.value -> ' + attribute.value);
+debug('attribute.key -> ' + attribute.key);
+		if(typeof(attribute.value) !== 'undefined') {
+debug('element_ret -> ' + element_ret);
 			if(element_ret !== null) {
 				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
+			} else if(expression_ret !== null) {
+				expression_ret[expression_count++] = attribute.key + " = " + attribute.value;
 			} else {
 				ret[attribute.key] = attribute.value;
 			}
 		} else {
-			if(attribute.key == 'expressions') {
+			if(attribute.key ==='expressions' || attribute.key === 'linkinfo') {
 
 				expression_ret = [];
 				expression_count = 0;
-				ret['expressions'] = expression_ret;
+				ret[attribute.key] = expression_ret;
 
-			} else if(attribute.key == 'elem'){
+			} else if(attribute.key === 'elem' || attribute.key === 'data'){
 
 				element_ret = []; element_ret_count = 0;
 				expression_ret[expression_count++] = element_ret;
 			} //else {}
 		}
+
 	};
 
 	return ret;
@@ -251,7 +273,6 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 	//debug("msghdr: " + buffer.slice(0,16).toString('hex') );
 
 	var ret = {};
-	var type = this.netlink_type.getTypeFromBuffer(buffer);
 
 	if(!buffer || !Buffer.isBuffer(buffer) || buffer.length < 16) {
 		return ret;
@@ -267,8 +288,12 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 		var name = attribute_map.name;
 		var keys = attribute_map.keys;
 
-		// skip the genmsg header
-		index += 4;
+		// skip the header,header payload padding that rounds the message up to multiple of 16
+		if(this.netlink_type.getPayloadSize) {
+			index += this.netlink_type.getPayloadSize(type);
+		} else {
+			index += 4;
+		}
 
 		//debug('start index = ' + index);
 		//debug("buffer: " + buffer.slice(index).toString('hex') );

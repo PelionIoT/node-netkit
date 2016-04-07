@@ -1,6 +1,9 @@
+var linktypes = require('../ip/linktypes');
+var cmn = require('../libs/common.js');
+var debug = cmn.logger.debug;
+var error = cmn.logger.error;
 
 var bufferpack = require('../libs/bufferpack.js');
-
 
 // for documentation see: /usr/include/linux/neighbor.h
 var ndmsg_fmt = "<B(_family)B(_pad1)H(_pad2)L(_ifindex)H(_state)B(_flags)B(_type)";
@@ -461,6 +464,152 @@ rt = {
 		RTM_NEWMDB : 84,
 		RTM_DELMDB : 85,
 		RTM_GETMDB: 86,
+
+
+	getAttributeMap: function(type) {
+
+		var retVal = {};
+
+		if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
+		    //debug('LINK');
+			retVal.keys = linktypes.link_attributes;
+			retVal.name = 'link';
+		} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
+		    //debug('ADDR');
+			retVal.keys = linktypes.addr_attributes;
+			retVal.name = 'addr';
+		} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
+		    //debug('ROUTE');
+			retVal.keys = linktypes.route_attributes
+			retVal.name = 'route';
+		} else if(this.RTM_NEWNEIGH <= type && type <= this.RTM_GETNEIGH) {
+		    //debug('NEIGH');
+			retVal.keys = linktypes.neigh_attributes
+			retVal.name = 'neigh';
+		}else {
+			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
+				+ type + ") **"
+			error(msg);
+			throw new Error(msg);
+		}
+		return retVal;
+	},
+
+	getAttrType: function(spec) {
+		return spec.split('_')[0];
+	},
+
+	getCommandObject: function(type){
+		var command_object = linktypes[type + '_attributes'];
+		if(typeof command_object === 'undefined'){
+			throw Error("command type " + type + " does not exist");
+		}
+		this.command_type = type;
+		return command_object;
+	},
+
+	getPayloadSize: function(type) {
+		return rt.payload_sizes[type - 16];
+	},
+
+	getNlTypeName: function(type) {
+		return rt.rtm_types_name_map[type - 16];
+	},
+
+	get_prefix: function() {
+		return "IFLA_";
+	},
+
+	parseGenmsg: function(data) {
+		return rt.unpackRtgenmsg(data, 16);
+	},
+
+	getTypeFromBuffer: function(buffer) {
+		return buffer.readUInt16LE(4);// & 0x00FF;
+	},
+
+	readUInt16: function(buffer, idx) {
+		return buffer.readUInt16LE(idx);
+	},
+
+	readUInt32: function(buffer, idx) {
+		return buffer.readUInt32LE(idx);
+	},
+
+	unpackRtgenmsg: function(data, pos) {
+		return bufferpack.unpack(ifinfomsg_fmt, data, pos);
+	},
+
+	addCommandMessage: function(msgreq, opts, cb) {
+		rt.createCommandBuffer(opts, function(error, nl_hdr, bufs) {
+			if(error) {
+				cb(error);
+			} else {
+				nl.addNetlinkMessageToReq(msgreq, nl_hdr, bufs);
+				cb(null);
+			}
+		});
+	},
+
+	createCommandBuffer: function(opts, cb) {
+		var that = this;
+
+		var nl_hdr = nl.buildHdr();
+
+		// <B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
+		var info_msg = rt.buildInfomsg();
+
+		var fake = false;
+		if(opts.hasOwnProperty('fake')) {
+			fake = true;
+		}
+
+		if(opts.hasOwnProperty('ifname')) {
+			var ifndex = this.ifNameToIndex(opts['ifname']);
+			if(util.isError(ifndex)) {
+				error("* Error: " + util.inspect(ifndex));
+				cb(ifndex); // call w/ error
+				return;
+			}
+			if(!fake) info_msg._if_index = ifndex;
+		}
+
+		if(typeof(opts) !== 'undefined') {
+			if(opts.hasOwnProperty('type')) {
+				nl_hdr._type = opts['type'];
+			}
+			if(opts.hasOwnProperty('flags')) {
+				nl_hdr._flags = opts['flags'];
+			}
+
+			if(opts.hasOwnProperty('info_flags')) {
+				if(!fake) info_msg._if_flags |= opts['info_flags'];
+			}
+			if(opts.hasOwnProperty('info_change')) {
+				if(!fake) info_msg._if_change = opts['info_change'];
+			}
+		}
+
+		var bufs = [];
+
+		debug("info_msg---> " + cmn.asHexBuffer(info_msg.pack()));
+		bufs.push(info_msg.pack());
+
+		cb(null, nl_hdr, bufs);
+	},
+
+	sendRtCommand: function(sock, opts, cb) {
+
+	    var msgreq = sock.createMsgReq();
+
+	    rt.addCommandMessage(msgreq, opts, function(err){
+	    	if(err) {
+	    		return cb(err,null);
+	    	} else {
+				nl.sendNetlinkRequest(sock, msgreq, cb);
+	    	}
+	    });
+	},
 
 	getRtmTypeName: function(type) {
 		return rt.rtm_types_name_map[type - this.RTM_BASE];

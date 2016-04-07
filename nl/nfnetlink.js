@@ -180,6 +180,14 @@ nf = {
 		return buffer.readUInt32BE(idx);
 	},
 
+	writeUInt16: function(buffer, value, idx, len) {
+		return buffer.writeUInt16BE(value, idx, len);
+	},
+
+	writeUInt32: function(buffer, value, idx, len) {
+		return buffer.writeUInt32BE(value, idx, len);
+	},
+
 	attrType: function(obj) {
 	  return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
 	},

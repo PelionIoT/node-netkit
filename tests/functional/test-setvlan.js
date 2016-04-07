@@ -3,7 +3,12 @@ var util = require('util');
 var err = require('../../libs/common.js').err;
 
 var opts = {
-    operation: 'show',
+    operation: 'add',
+    parameters: {
+        link: nk.ifNameToIndex('enp0s8'),
+        ifname: 'enp0s8.100',
+        linkinfo: { kind:'vlan', infodata: { id: 100 } }
+    }
 };
 
 

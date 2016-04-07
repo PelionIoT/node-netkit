@@ -536,12 +536,20 @@ rt = {
 		return buffer.readUInt32LE(idx);
 	},
 
+	writeUInt16: function(buffer, value, idx, len) {
+		return buffer.writeUInt16LE(value, idx, len);
+	},
+
+	writeUInt32: function(buffer, value, idx, len) {
+		return buffer.writeUInt32LE(value, idx, len);
+	},
+
 	unpackRtgenmsg: function(data, pos) {
 		return bufferpack.unpack(ifinfomsg_fmt, data, pos);
 	},
 
-	addCommandMessage: function(msgreq, opts, cb) {
-		rt.createCommandBuffer(opts, function(error, nl_hdr, bufs) {
+	addCommandMessage: function(opts, msgreq, attrs, cb) {
+		rt.createCommandBuffer(opts, attrs, function(error, nl_hdr, bufs) {
 			if(error) {
 				cb(error);
 			} else {
@@ -551,9 +559,8 @@ rt = {
 		});
 	},
 
-	createCommandBuffer: function(opts, cb) {
+	createCommandBuffer: function(opts, attrs, cb) {
 		var that = this;
-
 		var nl_hdr = nl.buildHdr();
 
 		// <B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
@@ -595,14 +602,16 @@ rt = {
 		debug("info_msg---> " + cmn.asHexBuffer(info_msg.pack()));
 		bufs.push(info_msg.pack());
 
+		if(typeof(attrs) !== 'undefined') attrs.writeAttributes(bufs);
+
 		cb(null, nl_hdr, bufs);
 	},
 
-	sendRtCommand: function(sock, opts, cb) {
+	sendRtCommand: function(opts, sock, attrs, cb) {
 
 	    var msgreq = sock.createMsgReq();
 
-	    rt.addCommandMessage(msgreq, opts, function(err){
+	    rt.addCommandMessage(opts, msgreq, attrs, function(err){
 	    	if(err) {
 	    		return cb(err,null);
 	    	} else {

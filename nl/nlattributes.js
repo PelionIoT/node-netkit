@@ -123,8 +123,10 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform) {
 };
 
 NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
-	//debug("params");
-	//console.dir(params);
+	// debug("================= attrs ==================");
+	// console.dir(attrs);
+
+	var prior_value;
 	if(params == null) return;
 
     var that = this;
@@ -134,33 +136,44 @@ NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
 		var a = new Attribute(that)
 		a.makeFromKey(params,attrs,key);
 
-		if(a.isNest) {
+		if(a.isNest || a.isFunction) {
+
 			// push a nest header attribute
 			var nstart = that.attribute_array.push(a);
 
 			// recurse over the nested params
-			var nest_attrs = a.getNestedAttributes(that,params);
-			that.parseNlAttrs(a.value, nest_attrs, a.value.name);
+			var nest_attrs;
+			if(a.isFunction) {
+				nest_attrs = a.getNestedAttributes(that, attrs, prior_value);
+			} else {
+				nest_attrs = a.getNestedAttributes(that, params);
+			}
 
+			that.parseNlAttrs(a.value, nest_attrs, a.value.name);
 			that.updateNestHdrLen(a, nstart);
+
+
 		} else if(a.isList){
+
 			// push a normal attribute
 			var lstart = that.attribute_array.push(a);
 
 			// recurse over the list elements
 			 var elems = Object.keys(a.value);
 			 elems.forEach(function(elem){
-			 	var elem_attrs = a.getNestedAttributes(that,params);
+			 	var elem_attrs = a.getNestedAttributes(that, params);
 				that.parseNlAttrs(a.value[elem], elem_attrs);
 			});
 
 		 	that.updateNestHdrLen(a, lstart);
 
 		} else if(a.isExpression){
+
 			var estart = that.attribute_array.push(a);
 			var expr_attrs = a.getNestedAttributes(that, expr_name);
 			that.parseNlAttrs(a.value, expr_attrs);
 			that.updateNestHdrLen(a, estart);
+
 		} else if(a.isGeneric) {
 			// push a normal attribute
 			that.attribute_array.push(a);
@@ -168,6 +181,7 @@ NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
 			// push a normal attribute
 			that.attribute_array.push(a);
 		}
+		prior_value = a.value;
 	});
 };
 

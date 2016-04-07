@@ -39,23 +39,14 @@ module.exports.link = function(opts, cb) {
 		opts.info_flags = 0x00;  // down
 		opts.info_change = 0x01;
 	} else if(opts.operation === 'set') {
-		if(attrs === null || typeof attrs !== 'object') {
-			return cb(new Error("set link rquires attributes object"));
-		}
-
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
-		opts.ifname = ifname;
-		opts.attributes = attrs;
-	// } else if(operation === 'add') {
-	// 	link_opts = {
-	// 		type: rt.RTM_NEWLINK, // the command
-	// 		flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
-	// 		family: family,
-	// 		inetdest: inetdest,
-	// 		lladdr: lladdr,
-	// 		ifname: ifname
-	// 	}
+
+	} else if(opts.operation === 'add') {
+
+		opts.type = rt.RTM_NEWLINK; // the command
+		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK;
+		opts.family = family;
 	// } else if(operation === 'delete') {
 	// 	link_opts = {
 	// 		type: rt.RTM_DELLINK, // the command
@@ -78,9 +69,9 @@ module.exports.link = function(opts, cb) {
 			return cb(err);
 		} else {
 			//debug("Created netlink socket.");
-			var attrs = new NlAttributes("link", opts.params, rt );
+			var attrs = new NlAttributes("link", opts.parameters, rt );
 
-			rt.sendRtCommand(sock, opts, function(err,bufs){
+			rt.sendRtCommand(opts, sock, attrs, function(err,bufs){
 				if(err) {
 					sock.close();
 					return cb(err);

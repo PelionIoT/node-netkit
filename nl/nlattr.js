@@ -51,8 +51,8 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 	this.setIdentities();
 
-	// Output some debug parsing info
-	var ns = this.isNested ? "(NEST)" : "";
+	//Output some debug parsing info
+	// var ns = this.isNested ? "(NEST)" : "";
 	// debug("key = " + key + ns +
 	// 	" typeval = " + this.spec.typeval +
 	// 	" type = " + this.spec.type +
@@ -164,7 +164,7 @@ Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
         if(typeof func === 'function') {
             nest_attrs_type = func(funcval);
         } else {
-            throw new Error("no function found by name " + func_name);
+            throw new Error("no function found by name '" + this.spec.size + "' in object " + util.inspect(params));
         }
 	} else {
 		nest_attrs_type = get_attr_type(this.spec.size);
@@ -192,6 +192,7 @@ Attribute.prototype.getBuffer = function() {
 
 Attribute.prototype.setBuffer = function() {
 	// console.dir(this)
+	//debug('this.spec.type = ' + this.spec.type);
 	var buf = null;
 	switch(this.spec.type) {
 		case('s'): // string type attribute
@@ -203,6 +204,7 @@ Attribute.prototype.setBuffer = function() {
 			break;
 		case('r'): // nested type attribute
 		case('i'): // indexed type attribute
+		case('f'): // function type attribute
 			buf = this.getNestedBuf();
 			break;
 		case('g'): // nested type attribute
@@ -221,7 +223,7 @@ Attribute.prototype.setBuffer = function() {
 };
 
 Attribute.prototype.getStringBuffer = function() {
-	var buf = Buffer(this.value + '\0');
+	var buf = Buffer(this.value); // + '\0');
 	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
 	return full_attribute;
 };
@@ -282,10 +284,10 @@ Attribute.prototype.getNumberBuffer = function() {
 			buf.writeUInt8(this.value.valueOf(),0,len);
 			break;
 		case 2:
-			buf.writeUInt16BE(this.value.valueOf(),0,len);
+			this.netlink_type.writeUInt16(buf, this.value.valueOf(),0,len);
 			break;
 		case 4:
-			buf.writeUInt32BE(this.value.valueOf(),0,len);
+			this.netlink_type.writeUInt32(buf,this.value.valueOf(),0,len);
 			break;
 		case 8:
 			if(this.value.startsWith("0x")) {
@@ -304,7 +306,7 @@ Attribute.prototype.getNumberBuffer = function() {
 Attribute.prototype.getNestedBuf = function() {
 	var buf = Buffer([0,0,0,0]);
 	buf.writeUInt16LE(4, 0);
-	buf.writeUInt16LE(nf.flags.NLA_F_NESTED | this.spec.typeval, 2 );
+	buf.writeUInt16LE(/*nf.flags.NLA_F_NESTED |*/ this.spec.typeval, 2 );
 	return buf;
 };
 

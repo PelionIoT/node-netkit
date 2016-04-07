@@ -80,6 +80,14 @@ iwnl = {
 		return buffer.readUInt32LE(idx);
 	},
 
+	writeUInt16: function(buffer, value, idx, len) {
+		return buffer.writeUInt16LE(value, idx, len);
+	},
+
+	writeUInt32: function(buffer, value, idx, len) {
+		return buffer.writeUInt32LE(value, idx, len);
+	},
+
 	unpackIwgenmsg: function(data, pos) {
 		return bufferpack.unpack(generic_msg_fmt, data, pos);
 	},

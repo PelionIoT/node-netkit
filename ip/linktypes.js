@@ -227,10 +227,10 @@ var linktypes = {
           IFLA_VLAN_UNSPEC:        0,
           IFLA_VLAN_ID:            1,
           IFLA_VLAN_FLAGS:         2,
-          IFLA_VLAN_EGRESS_QOS:    3,
-          IFLA_VLAN_INGRESS_QOS:   4,
+          IFLA_VLAN_EGRESSQOS:    3,
+          IFLA_VLAN_INGRESSQOS:   4,
           IFLA_VLAN_PROTOCOL:      5,
-          IFLA_VLAN_SPEC:          ['', 'n/16','n/16','b', 'b', 'n/16' ],
+          IFLA_VLAN_SPEC:          ['', 'n/16','n/16','l/qosmapping_attributes', 'l/qosmapping_attributes', 'n/16' ],
      },
 
      // struct ifla_vlan_flags {
@@ -238,11 +238,11 @@ var linktypes = {
      //      __u32     mask;
      // };
 
-     // enum {
-     //      IFLA_VLAN_QOS_UNSPEC,
-     //      IFLA_VLAN_QOS_MAPPING,
-     //      __IFLA_VLAN_QOS_MAX
-     // };
+     qosmapping_attributes: {
+          IFLA_QOSMAPPING_UNSPEC: 0,
+          IFLA_QOSMAPPING_QOSMAPPING:        1,
+          IFLA_QOSMAPPING_SPEC:   ['', 'n/64'],
+     },
 
      // struct ifla_vlan_qos_mapping {
      //      __u32 from;

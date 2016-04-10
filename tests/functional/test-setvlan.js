@@ -5,9 +5,25 @@ var err = require('../../libs/common.js').err;
 var opts = {
     operation: 'add',
     parameters: {
-        link: nk.ifNameToIndex('enp0s8'),
+        link: nk.ifNameToIndex('enp0s25'),
         ifname: 'enp0s8.100',
-        linkinfo: { kind:'vlan', infodata: { id: 100 } }
+        linkinfo: {
+            kind:'vlan',
+            infodata: {
+                id: 2,
+                egressqos: [
+                    {
+                        qosmapping: "0x0000000003000000",
+                    },
+                    {
+                        qosmapping: "0x0100000002000000",
+                    },
+                    {
+                        qosmapping: "0x0200000006000000"
+                    }
+                ]
+            }
+        }
     }
 };
 

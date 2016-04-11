@@ -34,58 +34,111 @@ nfstructs = (function(){
 	}
 
 
-	var meta_int = function(meta_key, value, value_size) {
+	var meta_int = function(meta_key, value, value_size, set) {
+		if(set === null) {
+	        return [
+		        {
+		            elem:
+		            {
+						name: "meta",
+						data: {
+							KEY: 		meta_key,
+							DREG: 		nft.nft_registers.NFT_REG_1,
+		                }
+					}
+				},
+				{
+		            elem:
+		            {
+						name: "cmp",
+						data: {
+							SREG: 		nft.nft_registers.NFT_REG_1,
+							OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
+							DATA: 		{ VALUE: get_number_value(value, value_size) }
+		                }
+					}
+				}
+			];
+		} else {
+			// return a meta set expression
+	        return [
+		        {
+		            elem:
+		            {
+						name: "immediate",
+						data: {
+							DREG: 		nft.nft_registers.NFT_REG_1,
+							DATA: 		{ VALUE: get_number_value(value, value_size) }
+		                }
+					}
+				},
+				{
+		            elem:
+		            {
+						name: "meta",
+						data: {
+							KEY: 		meta_key,
+							SREG: 		nft.nft_registers.NFT_REG_1,
+		                }
+					}
+				}
 
-        return [ 
-	        {
-	            elem:
-	            {
-					name: "meta",
-					data: {
-						KEY: 		meta_key,
-						DREG: 		nft.nft_registers.NFT_REG_1,
-	                }
-				}
-			},
-			{
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
-						DATA: 		{ VALUE: get_number_value(value, value_size) }
-	                }
-				}
-			}
-		];
+			];
+		}
 	}
 
-	var meta_string = function(meta_key, value, value_size) {
+	var meta_string = function(meta_key, value, value_size, set) {
+		if(set === null) {
+			// just return a meta match expression
+	        return [
+		        {
+		            elem:
+		            {
+						name: "meta",
+						data: {
+							KEY: 		meta_key,
+							DREG: 		nft.nft_registers.NFT_REG_1,
+		                }
+					}
+				},
+				{
+		            elem:
+		            {
+						name: "cmp",
+						data: {
+							SREG: 		nft.nft_registers.NFT_REG_1,
+							OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
+							DATA: 		{ VALUE: get_string_value(value, value_size) }
+		                }
+					}
+				}
+			];
+		} else {
+			// return a meta set expression
+	        return [
+		        {
+		            elem:
+		            {
+						name: "immediate",
+						data: {
+							DREG: 		nft.nft_registers.NFT_REG_1,
+							DATA: 		{ VALUE: get_string_value(value, value_size) }
+		                }
+					}
+				},
+				{
+		            elem:
+		            {
+						name: "meta",
+						data: {
+							KEY: 		meta_key,
+							SREG: 		nft.nft_registers.NFT_REG_1,
+		                }
+					}
+				}
 
-        return [
-	        {
-	            elem:
-	            {
-					name: "meta",
-					data: {
-						KEY: 		meta_key,
-						DREG: 		nft.nft_registers.NFT_REG_1,
-	                }
-				}
-			},
-			{
-	            elem:
-	            {
-					name: "cmp",
-					data: {
-						SREG: 		nft.nft_registers.NFT_REG_1,
-						OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
-						DATA: 		{ VALUE: get_string_value(value, value_size) }
-	                }
-				}
-			}
-		];
+			];
+		}
 	}
 
 	var packet_selector = function(pt) {

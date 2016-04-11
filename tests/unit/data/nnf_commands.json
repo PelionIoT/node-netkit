@@ -32,10 +32,15 @@
 	"add rule filter input tcp dport 22 ct state invalid log prefix \"New SSH connection\" group 0 accept",
 
 
+	// matching by meta data
 	"add rule filter forward meta protocol ip",
 	"add rule filter forward meta protocol arp",
 	"add rule filter forward meta protocol ip6",
 	"add rule filter forward meta protocol vlan",
+
+	// setting meta fields only supported for priority and mark
+	"add rule mangle postrouting ip protocol 1 meta priority set 2",
+	"add rule mangle postrouting ip protocol 1 meta mark set 2",
 
 	"delete table filter",
 	"delete chain filter input",
@@ -57,7 +62,7 @@
 	"delete ip6 rule filter input handle 5",
 
 	"flush ip6 table filter",
-	"flush ip chain filter input",
+	"flush ip chain filter input"
 
-	"add rule traffic output ip protocol 2 meta priority 0xffff0006"
+
 ]

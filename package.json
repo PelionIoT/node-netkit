@@ -16,7 +16,8 @@
     "pegjs": "*",
     "nodeunit": "^0.9.1",
     "es6-promise": "*",
-    "bignum": "^0.11.0"
+    "bignum": "^0.11.0",
+    "jsonminify": "*"
   },
 
   "repository": {

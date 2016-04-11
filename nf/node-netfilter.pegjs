@@ -616,10 +616,10 @@ meta_params
 		{ return structs.build_meta_integer(nft.nft_meta_keys.LEN, val, 4); }
 	/ "protocol" _ val:ether_type
 		{ return structs.build_meta_integer(nft.nft_meta_keys.PROTOCOL, val, 2); }
-	/ "priority" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.PRIORITY, val, 4); }
-	/ "mark" _ val:(hex / decimal)
-		{ return structs.build_meta_integer(nft.nft_meta_keys.MARK, val, 4); }
+	/ "priority" _ s:"set"?__ val:(hex / decimal)
+		{ return structs.build_meta_integer(nft.nft_meta_keys.PRIORITY, val, 4, s); }
+	/ "mark" _ s:"set"?__ val:(hex / decimal)
+		{ return structs.build_meta_integer(nft.nft_meta_keys.MARK, val, 4, s); }
 	/ "iif" _ val:(hex / decimal)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.IIF, val, 4); }
 	/ "oif" _ val:(hex / decimal)

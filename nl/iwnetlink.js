@@ -69,7 +69,7 @@ iwnl = {
 	},
 
 	getTypeFromBuffer: function(buffer) {
-		return buffer.readUInt8(16);
+		return buffer.readUInt16LE(4);
 	},
 
 	readUInt16: function(buffer, idx) {

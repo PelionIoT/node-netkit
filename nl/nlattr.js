@@ -114,7 +114,7 @@ Attribute.prototype.getValue = function(attrObject, key) {
 	// retrive the field specification string for that attribute subtype
 	var key_name = this.netlink_type.get_prefix() + this.attributeType.toUpperCase() + "_" + key.toUpperCase();
 	var key_value = attrObject[key_name];
-
+	// console.log("key_name = " + key_name);
 	if(typeof key_value === 'undefined'){
 		throw Error("key [" + key_name + "] for attribute [" + this.attributeType +
  			"] does not exist in command object: " + util.inspect(attrObject) );
@@ -135,6 +135,9 @@ Attribute.prototype.getSpec = function(attrObject,key){
 
 	var speckeyval = this.getValue(attrObject, key);
 	var spec = spec_array[speckeyval];
+
+	// console.log("speckeyval = " + speckeyval);
+	// console.log("spec = " + spec);
 
 	if(typeof spec === 'undefined') {
 		throw Error("spec ["+ speckeyval + "] not found  in " + util.inspect(spec_array));
@@ -364,8 +367,8 @@ Attribute.prototype.getBufferAsString = function(buffer) {
 };
 
 Attribute.prototype.getBufferAsNumber = function(buffer) {
-	//console.log('this.spec.size = ' + this.spec.size);
-	//debug("buf --> " + buffer.toString('hex'))
+	// debug('this.spec.size = ' + this.spec.size);
+	// debug("buf --> " + buffer.toString('hex'))
 	var val = 0;
 	switch (this.spec.size) {
 		case '8':

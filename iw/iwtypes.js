@@ -1307,11 +1307,11 @@ var iwtypes = {
     //  */
     nl80211_stabss_info: {
         NL80211_STABSS_INVALID         : 0,
-        NL80211_STABSS_CTSPROT        : 1,
-        NL80211_STABSS_SHORTPREAMBLE  : 2,
-        NL80211_STABSS_SHORTSLOTTIME : 3,
-        NL80211_STABSS_DTIMPERIOD     : 4,
-        NL80211_STABSS_BEACONINTERVAL : 5,
+        NL80211_STABSS_CTSPROT         : 1,
+        NL80211_STABSS_SHORTPREAMBLE   : 2,
+        NL80211_STABSS_SHORTSLOTTIME   : 3,
+        NL80211_STABSS_DTIMPERIOD      : 4,
+        NL80211_STABSS_BEACONINTERVAL  : 5,
         NL80211_STABSS_SPEC            : ['', 'n64', 'n/64', 'n/64', 'n8', 'n16'],
     },
 
@@ -1422,7 +1422,7 @@ var iwtypes = {
         NL80211_STA_RXBITRATE         : 14,
         NL80211_STA_BSSPARAM          : 15,
         NL80211_STA_CONNECTEDTIME     : 16,
-        NL80211_STA_FLAGS          : 17,
+        NL80211_STA_FLAGS             : 17,
         NL80211_STA_BEACONLOSS        : 18,
         NL80211_STA_TOFFSET           : 19,
         NL80211_STA_LOCALPM           : 20,
@@ -1438,10 +1438,10 @@ var iwtypes = {
         NL80211_STA_BEACONSIGNALAVG  : 30,
         NL80211_STA_TIDSTATS          : 31,
         NL80211_STA_SPEC               : ['','n/32','n/32','n/32','n/16','n/16','n/8','u/8','r/nl80211_rate_info','n/32',
-                                               'n/32',  'n/32', 'n/32', 'n/8','r/nl80211_rate_info', 'l/nl80211_stabss_info',
+                                               'n/32',  'n/32', 'n/32', 'n/8','r/nl80211_rate_info', '',//l/nl80211_stabss_info',
                                                'n/32', 'n64', 'n/32', 'n/64', 'n/32', 'n/32', 'n/32', 'n/64', 'n/64',
                                                'l/nl80211_signal_info', 'l/nl80211_signal_info', 'n/32', 'n/64', 'n/64', 'n/8',
-                                               'i/nl80211_tidstatscontainer_info']
+                                               ''] //i/nl80211_tidstatscontainer_info']
     },
 
     nl80211_signal_info:  {

@@ -81,6 +81,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform) {
 
 		// get the generic netfiler generation
 		var genmsg = this.netlink_type.parseGenmsg(data);
+		if(typeof genmsg._cmd !== 'undefined') type = genmsg._cmd;
 
 		if(typeof genmsg !== 'undefined') cur_result['genmsg'] = genmsg;
 		cur_result['payload'] = this.parseNlAttrsFromBuffer(data, type);
@@ -299,7 +300,10 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 
 		var index = 16; // start after the msghdr
 
+
 		var attribute_map = this.netlink_type.getAttributeMap(type);
+		if(type === -1) return {};
+
 		var name = attribute_map.name;
 		var keys = attribute_map.keys;
 

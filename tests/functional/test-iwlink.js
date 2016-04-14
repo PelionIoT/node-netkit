@@ -40,7 +40,7 @@ var nl = iwnl.nl;
 // };
 
 
-var ifname = 'wls1';
+var ifname = 'wlp3s0';
 
 var opts = {
     cmd:        nl80211.commands.NL80211_CMD_GET_STATION, //controller.CTRL_CMD_GETFAMILY,
@@ -49,7 +49,7 @@ var opts = {
     flags:      nl.NLM_F_REQUEST | nl.NLM_F_ACK | nl.NLM_F_ROOT | nl.NLM_F_MATCH,
     type:       nl.NETLINK_GENERIC | 0x0a,
 
-    data:       new Buffer("0800030007000000", 'hex'), // device index
+    data:       new Buffer("0800030005000000", 'hex'), // device index
 
     infotype: 'attr',
     params: iwnl.nl80211_sta_info,

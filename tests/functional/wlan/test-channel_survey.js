@@ -1,4 +1,4 @@
-var nk = require('../../index.js');
+var nk = require('../../../index.js');
 var util = require('util');
 var iw = nk.iw;
 var nl80211 = iwnl.nl80211;
@@ -43,13 +43,13 @@ var nl = iwnl.nl;
 var ifname = 'wlp3s0';
 
 var opts = {
-    cmd:        nl80211.commands.NL80211_CMD_GET_STATION, //controller.CTRL_CMD_GETFAMILY,
+    cmd:        nl80211.commands.NL80211_CMD_GET_SURVEY, //controller.CTRL_CMD_GETFAMILY,
     //cmd:        nl80211.controller.CTRL_CMD_GETFAMILY,
     version:    nl80211.CTRL_VERSION,
     flags:      nl.NLM_F_REQUEST | nl.NLM_F_ACK | nl.NLM_F_ROOT | nl.NLM_F_MATCH,
     type:       nl.NETLINK_GENERIC | 0x0a,
 
-    data:       new Buffer("0800030005000000", 'hex'), // device index
+    data:       new Buffer("0800030006000000", 'hex'), // device index
 
     infotype: 'attr',
     params: iwnl.nl80211_sta_info,

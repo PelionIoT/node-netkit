@@ -36,7 +36,13 @@ iwnl = {
 		    //debug('TABLE');
 			retVal.keys = iwtypes.nl80211_attr_info
 			retVal.name = 'station';
-		}else {
+
+		} else if(iwnl.commands.NL80211_CMD_GET_SURVEY <= type && type <= iwnl.commands.NL80211_CMD_NEW_SURVEY_RESULTS) {
+		    //debug('TABLE');
+			retVal.keys = iwtypes.nl80211_attr_info
+			retVal.name = 'survey';
+
+		} else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
 				+ type + ") **"
 			error(msg);

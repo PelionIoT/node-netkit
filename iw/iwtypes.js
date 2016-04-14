@@ -1134,6 +1134,7 @@ var iwtypes = {
                                                             6            : 'm',
                                                             46           : 'n/32',
                                                             21           : 'r/nl80211_sta_info',
+                                                            84           : 'r/nl80211_survey_info'
                                                     }
     },
 
@@ -1888,48 +1889,46 @@ var iwtypes = {
     //     NL80211_USER_REG_HINT_INDOOR    = 2,
     // };
 
-    // /**
-    //  * enum nl80211_survey_info - survey information
-    //  *
-    //  * These attribute types are used with %NL80211_ATTR_SURVEY_INFO
-    //  * when getting information about a survey.
-    //  *
-    //  * @__NL80211_SURVEY_INFO_INVALID: attribute number 0 is reserved
-    //  * @NL80211_SURVEY_INFO_FREQUENCY: center frequency of channel
-    //  * @NL80211_SURVEY_INFO_NOISE: noise level of channel (u8, dBm)
-    //  * @NL80211_SURVEY_INFO_IN_USE: channel is currently being used
-    //  * @NL80211_SURVEY_INFO_TIME: amount of time (in ms) that the radio
-    //  *  was turned on (on channel or globally)
-    //  * @NL80211_SURVEY_INFO_TIME_BUSY: amount of the time the primary
-    //  *  channel was sensed busy (either due to activity or energy detect)
-    //  * @NL80211_SURVEY_INFO_TIME_EXT_BUSY: amount of time the extension
-    //  *  channel was sensed busy
-    //  * @NL80211_SURVEY_INFO_TIME_RX: amount of time the radio spent
-    //  *  receiving data (on channel or globally)
-    //  * @NL80211_SURVEY_INFO_TIME_TX: amount of time the radio spent
-    //  *  transmitting data (on channel or globally)
-    //  * @NL80211_SURVEY_INFO_TIME_SCAN: time the radio spent for scan
-    //  *  (on this channel or globally)
-    //  * @NL80211_SURVEY_INFO_MAX: highest survey info attribute number
-    //  *  currently defined
-    //  * @__NL80211_SURVEY_INFO_AFTER_LAST: internal use
-    //  */
-    // enum nl80211_survey_info {
-    //     __NL80211_SURVEY_INFO_INVALID,
-    //     NL80211_SURVEY_INFO_FREQUENCY,
-    //     NL80211_SURVEY_INFO_NOISE,
-    //     NL80211_SURVEY_INFO_IN_USE,
-    //     NL80211_SURVEY_INFO_TIME,
-    //     NL80211_SURVEY_INFO_TIME_BUSY,
-    //     NL80211_SURVEY_INFO_TIME_EXT_BUSY,
-    //     NL80211_SURVEY_INFO_TIME_RX,
-    //     NL80211_SURVEY_INFO_TIME_TX,
-    //     NL80211_SURVEY_INFO_TIME_SCAN,
+    /**
+     * enum nl80211_survey_info - survey information
+     *
+     * These attribute types are used with %NL80211_ATTR_SURVEY_INFO
+     * when getting information about a survey.
+     *
+     * @__NL80211_SURVEY_INFO_INVALID: attribute number 0 is reserved
+     * @NL80211_SURVEY_INFO_FREQUENCY: center frequency of channel
+     * @NL80211_SURVEY_INFO_NOISE: noise level of channel (u8, dBm)
+     * @NL80211_SURVEY_INFO_IN_USE: channel is currently being used
+     * @NL80211_SURVEY_INFO_TIME: amount of time (in ms) that the radio
+     *  was turned on (on channel or globally)
+     * @NL80211_SURVEY_INFO_TIME_BUSY: amount of the time the primary
+     *  channel was sensed busy (either due to activity or energy detect)
+     * @NL80211_SURVEY_INFO_TIME_EXT_BUSY: amount of time the extension
+     *  channel was sensed busy
+     * @NL80211_SURVEY_INFO_TIME_RX: amount of time the radio spent
+     *  receiving data (on channel or globally)
+     * @NL80211_SURVEY_INFO_TIME_TX: amount of time the radio spent
+     *  transmitting data (on channel or globally)
+     * @NL80211_SURVEY_INFO_TIME_SCAN: time the radio spent for scan
+     *  (on this channel or globally)
+     * @NL80211_SURVEY_INFO_MAX: highest survey info attribute number
+     *  currently defined
+     * @__NL80211_SURVEY_INFO_AFTER_LAST: internal use
+     */
+    nl80211_survey_info: {
+        NL80211_SURVEY_UNSPEC:          0,
+        NL80211_SURVEY_FREQUENCY:       1,
+        NL80211_SURVEY_NOISE:           2,
+        NL80211_SURVEY_IN_USE:          3,
+        NL80211_SURVEY_TIME:            4,
+        NL80211_SURVEY_TIME_BUSY:       5,
+        NL80211_SURVEY_TIME_EXT_BUSY:   6,
+        NL80211_SURVEY_TIME_RX:         7,
+        NL80211_SURVEY_TIME_TX:         8,
+        NL80211_SURVEY_TIME_SCAN:       9,
+        NL80211_SURVEY_SPEC:            ['', 'n/32', 'n/8', '', 'n/64', 'n/64', 'n/64', 'n/64', 'n/64', 'n/64']
 
-    //     /* keep last */
-    //     __NL80211_SURVEY_INFO_AFTER_LAST,
-    //     NL80211_SURVEY_INFO_MAX = __NL80211_SURVEY_INFO_AFTER_LAST - 1
-    // };
+    },
 
     // /* keep old names for compatibility */
     // #define NL80211_SURVEY_INFO_CHANNEL_TIME        NL80211_SURVEY_INFO_TIME

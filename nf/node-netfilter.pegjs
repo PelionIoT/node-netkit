@@ -145,7 +145,7 @@ rule_specifier
 	= __ table_identifier __ chain_identifier?
 
 rule_expression
-	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action?
+	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? misc:rule_misc?
 		{
 
 			var exprs = [];
@@ -170,6 +170,7 @@ rule_expression
 			}
 			if(lgst != undefined) exprs.push(lgst);
 			if(act != undefined) exprs.push(act);
+			if(misc != undefined) exprs.push(misc);
 
 			command_object.params.expressions = exprs;
 		}
@@ -194,10 +195,13 @@ rule_handle
 		}
 
 rule_action
-	= ra:(drop / accept)
+	= ra:(drop / accept) __
 		{
 			return(ra);
 		}
+
+rule_misc
+	= rm:(counter)
 
 rule_position
 	= "position" _ p:( hex / decimal )
@@ -439,6 +443,18 @@ accept
 			});
 		}
 
+counter
+	= "counter"
+		{
+	        return(
+	        {
+	            elem:
+	            {
+					name: "counter"
+				}
+			});
+		}
+
 ////////////////////////////////////////////////////////////////////////////
 hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
@@ -607,7 +623,7 @@ log_flags
 		{ return d.toNumber(); }
 
 meta_stmt
-	= "meta" _ mp:meta_params
+	= "meta" _ mp:meta_params __
 		{ return mp; }
 
 meta_params

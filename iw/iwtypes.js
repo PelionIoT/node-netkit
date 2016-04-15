@@ -1130,11 +1130,20 @@ var iwtypes = {
         NL80211_ATTR_MAX_SCAN_PLAN_ITERATIONS       : 224,
         NL80211_ATTR_SCHED_SCAN_PLANS               : 225,
         NL80211_ATTR_SPEC                           :  {
+                                                            1            : 'n/32',
                                                             3            : 'n/32',
+                                                            4            : 's',
+                                                            5            : 'n/32',
                                                             6            : 'm',
+                                                            38           : 'n/32',
+                                                            39           : 'n/32',
                                                             46           : 'n/32',
                                                             21           : 'r/nl80211_sta_info',
-                                                            84           : 'r/nl80211_survey_info'
+                                                            84           : 'r/nl80211_survey_info',
+                                                           153           : 'n/64',
+                                                           159           : 'n/32',
+                                                           160           : 'n/32',
+                                                           161           : 'n/32'
                                                     }
     },
 
@@ -1166,24 +1175,20 @@ var iwtypes = {
     //  * to set the type of an interface.
     //  *
     //  */
-    // enum nl80211_iftype {
-    //     NL80211_IFTYPE_UNSPECIFIED,
-    //     NL80211_IFTYPE_ADHOC,
-    //     NL80211_IFTYPE_STATION,
-    //     NL80211_IFTYPE_AP,
-    //     NL80211_IFTYPE_AP_VLAN,
-    //     NL80211_IFTYPE_WDS,
-    //     NL80211_IFTYPE_MONITOR,
-    //     NL80211_IFTYPE_MESH_POINT,
-    //     NL80211_IFTYPE_P2P_CLIENT,
-    //     NL80211_IFTYPE_P2P_GO,
-    //     NL80211_IFTYPE_P2P_DEVICE,
-    //     NL80211_IFTYPE_OCB,
-
-    //     /* keep last */
-    //     NUM_NL80211_IFTYPES,
-    //     NL80211_IFTYPE_MAX = NUM_NL80211_IFTYPES - 1
-    // };
+    // enum_nl80211_iftype: {
+    //     NL80211_IFTYPE_UNSPECIFIED:     0,
+    //     NL80211_IFTYPE_ADHOC:           1,
+    //     NL80211_IFTYPE_STATION:         2,
+    //     NL80211_IFTYPE_AP:              3,
+    //     NL80211_IFTYPE_AP_VLAN:         4,
+    //     NL80211_IFTYPE_WDS:             5,
+    //     NL80211_IFTYPE_MONITOR:         6,
+    //     NL80211_IFTYPE_MESH_POINT:      7,
+    //     NL80211_IFTYPE_P2P_CLIENT:      8,
+    //     NL80211_IFTYPE_P2P_GO:          9,
+    //     NL80211_IFTYPE_P2P_DEVICE:      10,
+    //     NL80211_IFTYPE_OCB:             11,
+    // },
 
     // /**
     //  * enum nl80211_sta_flags - station flags

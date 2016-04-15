@@ -33,14 +33,17 @@ iwnl = {
 		var retVal = {};
 
 		if(iwnl.commands.NL80211_CMD_GET_STATION <= type && type <= iwnl.commands.NL80211_CMD_DEL_STATION) {
-		    //debug('TABLE');
 			retVal.keys = iwtypes.nl80211_attr_info
 			retVal.name = 'station';
 
 		} else if(iwnl.commands.NL80211_CMD_GET_SURVEY <= type && type <= iwnl.commands.NL80211_CMD_NEW_SURVEY_RESULTS) {
-		    //debug('TABLE');
 			retVal.keys = iwtypes.nl80211_attr_info
 			retVal.name = 'survey';
+
+		} else if(iwnl.commands.NL80211_CMD_GET_INTERFACE <= type && type <= iwnl.commands.NL80211_CMD_DEL_INTERFACE) {
+			retVal.keys = iwtypes.nl80211_attr_info
+			retVal.name = 'interface';
+
 
 		} else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="

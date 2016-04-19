@@ -67,6 +67,7 @@ nfcommand = {
 				break;
 			case "delete":
 				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
+				break;
 			case "flush":
 				switch(type) {
 					case "TABLE":

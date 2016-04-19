@@ -571,17 +571,10 @@ rt = {
 			fake = true;
 		}
 
-		if(opts.hasOwnProperty('ifname')) {
-			var ifndex = this.ifNameToIndex(opts['ifname']);
-			if(util.isError(ifndex)) {
-				error("* Error: " + util.inspect(ifndex));
-				cb(ifndex); // call w/ error
-				return;
-			}
-			if(!fake) info_msg._if_index = ifndex;
-		}
-
 		if(typeof(opts) !== 'undefined') {
+			if(opts.hasOwnProperty('link')) {
+				if(!fake) info_msg._if_index = opts['link'];
+			}
 			if(opts.hasOwnProperty('type')) {
 				nl_hdr._type = opts['type'];
 			}
@@ -601,6 +594,11 @@ rt = {
 
 		debug("info_msg---> " + cmn.asHexBuffer(info_msg.pack()));
 		bufs.push(info_msg.pack());
+
+		if(opts.hasOwnProperty('address')) {
+    		var attr_num = rt.link_attributes["IFLA_ADDRESS"];
+			bufs.push(rt.buildRtattrBuf(attr_num,opts['address']));
+		}
 
 		if(typeof(attrs) !== 'undefined') attrs.writeAttributes(bufs);
 

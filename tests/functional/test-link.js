@@ -12,7 +12,14 @@ var err = require('../../libs/common.js').err;
 // 	}
 // });
 
-nk.link("set","enp0s25", {"address" : "080027dce400"} , function(err) {
+var opts = {
+    operation: 'set',
+    ifname: 'wlp3s0',
+    address: '080027dce402'
+};
+
+
+nk.link(opts, function(err) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err));
 	} else {

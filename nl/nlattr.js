@@ -205,6 +205,9 @@ Attribute.prototype.setBuffer = function() {
 		case('pl'):
 			buf = this.getNumberBuffer();
 			break;
+		case('m'): // mac address element
+			buf = new Buffer(this.value,'hex');
+			break;
 		case('r'): // nested type attribute
 		case('i'): // indexed type attribute
 		case('f'): // function type attribute

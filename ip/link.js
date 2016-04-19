@@ -7,6 +7,7 @@ var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
 var linktypes = require('./linktypes.js');
 var NlAttributes = require('../nl/nlattributes.js');
+var util = require('util');
 
 var asHexBuffer = cmn.asHexBuffer;
 var debug = cmn.logger.debug;
@@ -21,6 +22,33 @@ module.exports.link = function(opts, cb) {
 	if(typeof opts !== 'object') {
 		throw new Error("opttions parameter has to be an object");
 	}
+
+	if(opts.hasOwnProperty('ifname')) {
+		var ifndex = this.ifNameToIndex(opts['ifname']);
+		if(util.isError(ifndex)) {
+			error("* Error: " + util.inspect(ifndex));
+			return cb(ifndex); // call w/ error
+		}
+		opts.link = ifndex;
+	}
+
+	if(opts.hasOwnProperty('address')) {
+		var addr = opts.address;
+		if(typeof addr === 'string') {
+			var macbuf = netkitObject.util.bufferifyMacString(addr,6); // we want 6 bytes no matter what
+			if(!macbuf) {
+
+				if(addr.length === 12) {
+					macbuf = new Buffer(addr, 'hex');
+				} else {
+					throw(new Error("bad address, not a mac address: " + addr));
+				}
+			}
+
+			opts.address = macbuf;
+		}
+	}
+
 
 	if(!opts.operation || opts.operation === 'show') {
 		opts.type = 	rt.RTM_GETLINK;
@@ -84,125 +112,3 @@ module.exports.link = function(opts, cb) {
 	});
 };
 
-
-netlinkLinkCommand = function(opts,sock, cb) {
-
-	var that = this;
-
-	var nl_hdr = nl.buildHdr();
-
-	// <B(_family)B(_if_pad)H(_if_type)i(_if_index)I(_if_flags)I(_if_change)";
-	var info_msg = rt.buildInfomsg();
-
-	var fake = false;
-	if(opts.hasOwnProperty('fake')) {
-		fake = true;
-	}
-
-	if(opts.hasOwnProperty('ifname')) {
-		var ifndex = this.ifNameToIndex(opts['ifname']);
-		if(util.isError(ifndex)) {
-			error("* Error: " + util.inspect(ifndex));
-			cb(ifndex); // call w/ error
-			return;
-		}
-		if(!fake) info_msg._if_index = ifndex;
-	}
-
-	if(typeof(opts) !== 'undefined') {
-		if(opts.hasOwnProperty('type')) {
-			nl_hdr._type = opts['type'];
-		}
-		if(opts.hasOwnProperty('flags')) {
-			nl_hdr._flags = opts['flags'];
-		}
-
-		if(opts.hasOwnProperty('info_flags')) {
-			if(!fake) info_msg._if_flags |= opts['info_flags'];
-		}
-		if(opts.hasOwnProperty('info_change')) {
-			if(!fake) info_msg._if_change = opts['info_change'];
-		}
-
-	}
-
-	var bufs = [];
-
-	debug("info_msg---> " + asHexBuffer(info_msg.pack()));
-	bufs.push(info_msg.pack());
-
-	if(typeof opts.attributes !== 'undefined')
-	{
-		try {
-			var keys = Object.keys(opts.attributes);
-		    keys.forEach(function(key) {
-		    	if(rt.link_info_attr_name_map.indexOf(key.toLowerCase()) !== -1){
-		    		var attr_num = rt.link_attributes["IFLA_" + key.toUpperCase()];
-		    		var attr_val = opts.attributes[key];
-
-		    		if(key === 'address') {
-			    		if(typeof attr_val === 'string') {
-							var macbuf = that.util.bufferifyMacString(attr_val,6); // we want 6 bytes no matter what
-							if(!macbuf) {
-
-								if(attr_val.length === 12) {
-									macbuf = new Buffer(attr_val, 'hex');
-								} else {
-									throw(new Error("bad address, not a mac address: " + attr_val));
-								}
-							}
-
-							debug("info_msg---> " + asHexBuffer(macbuf));
-							bufs.push(rt.buildRtattrBuf(attr_num,macbuf));
-						}
-					} else if(key === 'linkinfo' && attr_val === 'vlan') {
-							var vlan_params = opts.attributes.vlan_parameters;
-
-
-							console.dir(opts);
-
-
-							if(typeof vlan_params !== 'object') {
-								throw(new Error("vlan_parameters must be type object"));
-							}
-
-							var link = vlan_params.link;
-							if(typeof link !== 'string') {
-								throw(new Error("vlan_parameters link name must be string"));
-							}
-
-							bufs.push(rt.buildRtattrBuf(linktypes.link_attributes.IFLA_IFNAME,
-								new Buffer(link)) );
-
-							var vlan_nest = [];
-
-							vlan_nest.push(rt.buildRtattrBuf(linktypes.info_types.IFLA_INFO_KIND,
-								new Buffer("vlan")) );
-
-							var vlanid = vlan_params.id;
-							if(typeof vlanid !== 'number'){
-								throw(new Error("vlan_parameters id name must be a number"));
-							}
-
-							var vlanid_buf = new Buffer(2);
-							vlanid_buf.writeUInt16LE(vlanid, 0);
-							vlan_nest.push(rt.buildRtattrBuf(linktypes.vlan_attributes.IFLA_VLAN_ID, vlanid_buf) );
-
-							var vlan_nest_buf = new Buffer.concat(vlan_nest);
-
-							vlan_nest_buf.writeUInt16LE(vlan_nest_buf.length, 0);
-							bufs.push(vlan_nest_buf);
-
-
-					}
-		    	} else {
-		    		throw(new Error(key + " is not a link attribute"));
-		    	}
-		    });
-		} catch(err) {
-			return cb(err);
-		}
-	}
-
- 	return nl.sendNetlinkCommand(sock,nl_hdr,bufs,cb);
-};

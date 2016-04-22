@@ -11,7 +11,10 @@
   "license": "MIT",
   "dependencies": {
     "nan": "^2.1.0"
-    },
+    "es6-promise": "*",
+    "bignum": "^0.11.0",
+    "jsonminify": "*"
+  },
   "devDependencies": {
     "pegjs": "*",
     "nodeunit": "^0.9.1",

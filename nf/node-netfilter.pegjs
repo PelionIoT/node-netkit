@@ -298,11 +298,9 @@ udp_field
 	/ "checksum" { return { offset: nft.udphdr_offsets.check, len: nft.udphdr_sizes.check };	}
 
 packet_field_value
-	= val:( number / ipaddress )
-	{
-		debug("packet_field_value");
-		return val;
-	}
+	= nm:number { return nm; }
+	/ other:([a-z]*) { throw new Error("Only numeric field types currently supported"); }
+	/ ad:ipaddress { return ad; }
 
 ipaddress
 	= ipa:(ipv4address / ipv6address)
@@ -459,7 +457,7 @@ counter
 hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
-			command_object.type = ht;
+			command_object.params.type = ht;
 			command_object.params.hook = {};
 			command_object.params.hook.hooknum = hn;
 			command_object.params.hook.priority = hp;
@@ -476,7 +474,7 @@ hooknum
 	/	"postrouting"	{ return 4; }
 
 hookprio
-	= pr:[0-9]+ { return pr.join(""); }
+	= sg:"-"? pr:([0-9]+) { var ret = (sg) ? sg : ""; ret += pr.join(""); return ret; }
 
 // nftables/src/ct.c
 nft_ct_key

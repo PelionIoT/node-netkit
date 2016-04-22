@@ -63,7 +63,7 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	//debug('attr_list = ' + util.inspect(attr_list));
-	// debug("attr --> " + attr_buffer.toString('hex') );
+	//debug("attr --> " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;

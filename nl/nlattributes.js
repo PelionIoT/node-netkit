@@ -110,7 +110,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 				}
 
 				if(typeof cur_result.payload != 'undefined') {
-					result_array[i] = cur_result;
+					result_array.push(cur_result);
 				}
 			}
 
@@ -120,7 +120,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 				cur_result['payload'] = transform(cur_result, filter_object);
 			}
 			if(typeof cur_result.payload != 'undefined') {
-				result_array[i] = cur_result;
+				result_array.push(cur_result);
 			}
 		}
 	}
@@ -197,7 +197,9 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	var nested_indexes = [];
 	var parent_value = "";
 	var expression_count;
+	var info_ret;
 	var expression_ret = null;
+	var info_ret = null;
 	var element_ret = null;
 	var inIndex = false;
 	//console.dir(keys);
@@ -258,29 +260,37 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			}
 		}
 
-		// debug('attribute.value -> ' + attribute.value);
 		// debug('attribute.key -> ' + attribute.key);
-		// debug('element_ret -> ' + element_ret);
+		// debug('attribute.value -> ' + attribute.value);
+		// debug('info_ret -> ' + util.inspect(info_ret,{depth:null}));
 
 		if(typeof(attribute.value) !== 'undefined') {
 			if(element_ret !== null) {
 				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
 			} else if(expression_ret !== null) {
 				expression_ret[expression_count++] = attribute.key + " = " + attribute.value;
+			 } else if(info_ret !== null) {
+			 	info_ret[attribute.key] = attribute.value;
 			} else {
 				ret[attribute.key] = attribute.value;
 			}
 		} else {
-			if(attribute.key ==='expressions' || attribute.key === 'linkinfo') {
+			if(attribute.key ==='expressions') {
 
-				expression_ret = [];
-				expression_count = 0;
+				expression_ret = []; expression_count = 0;
 				ret[attribute.key] = expression_ret;
 
-			} else if(attribute.key === 'elem' || attribute.key === 'infodata') {
+			} else if(attribute.key === 'linkinfo') {
+
+				info_ret = {}; info_count = 0;
+				ret[attribute.key] = info_ret;
+
+			} else if(attribute.key === 'elem') {
 
 				element_ret = []; element_ret_count = 0;
 				expression_ret[expression_count++] = element_ret;
+			} else if(attribute.key === 'infodata') {
+				//
 			} //else {}
 		}
 

@@ -188,6 +188,7 @@ var ipparse = {
 
 			ch.flags = ipparse.getLinkDeviceFlags(link_result.genmsg._if_flags);
 			ch.index = link_result.genmsg._if_index;
+			ch.type = link_result.genmsg._if_type;
 
 			delete link_result.genmsg;
 

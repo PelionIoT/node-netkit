@@ -209,9 +209,13 @@ var linktypes = {
           IFLA_INFO_SLAVE_DATA:    5,
           IFLA_INFO_SPEC:          ['','s','f/infotype_parser','','',''],
           infotype_parser: function(type) {
+               console.log("type = " + type);
                switch(type) {
                     case 'vlan':
                          return 'vlan';
+                         break;
+                    case 'bridge':
+                         return 'bridge';
                          break;
                     default:
                          throw new Error("type [" + type + "] does not exist for IFLA_INFO_KIND");
@@ -227,11 +231,33 @@ var linktypes = {
           IFLA_VLAN_UNSPEC:        0,
           IFLA_VLAN_ID:            1,
           IFLA_VLAN_FLAGS:         2,
-          IFLA_VLAN_EGRESSQOS:    3,
-          IFLA_VLAN_INGRESSQOS:   4,
+          IFLA_VLAN_EGRESSQOS:     3,
+          IFLA_VLAN_INGRESSQOS:    4,
           IFLA_VLAN_PROTOCOL:      5,
           IFLA_VLAN_SPEC:          ['', 'n/16','n/16','l/qosmapping_attributes', 'l/qosmapping_attributes', 'n/16' ],
      },
+
+
+     /* Bridge management nested attributes
+      * [IFLA_LINK_AF_SPECC] = {
+      *     [IFLA_BRIDGE_FLAGS]
+      *     [IFLA_BRIDGE_MODE]
+      *     [IFLA_BRIDGE_VLAN_INFO]
+      * }
+      */
+     bridge_attributes: {
+          IFLA_BRIDGE_USPEC:       0,
+          IFLA_BRIDGE_FLAGS:       1,
+          IFLA_BRIDGE_MODE:        2,
+          IFLA_BRIDGE_VLAN:        3,
+          IFLA_BRIDGE_A1:          4,
+          IFLA_BRIDGE_A2:          5,
+          IFLA_BRIDGE_A3:          6,
+          IFLA_BRIDGE_A4:          7,
+          IFLA_BRIDGE_A5:          8,
+          IFLA_BRIDGE_SPEC:        ['', 'n/16', 'n/16','','','','','','']
+     },
+
 
      // struct ifla_vlan_flags {
      //      __u32     flags;

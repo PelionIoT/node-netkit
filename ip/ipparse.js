@@ -103,12 +103,13 @@ var ipparse = {
 		0x80:	"permanent"
 	},
 
-	parseAttributes: function(filters,links,buf) {
+	parseAttributes: function(filters, links, buf) {
 
 		//debug("data --> " + buf.toJSON());
 		// debug("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
-		if(typeof(at['operation']) !== 'undefined') {
+
+		if(typeof at['operation'] !== 'undefined') {
 			//console.dir(at);
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
 			//debug("handler_name = " + handler_name);
@@ -120,59 +121,63 @@ var ipparse = {
 				error(util.inspect(err) + " attributes = " + util.inspect(at));
 			}
 
-			 if(data === undefined) {
-			 	return data;
-			 }
-
-			var filters_array = [];
-			if(typeof( filters ) === 'undefined'){
+			ipparse.filter(filters, data);
+			if(data === undefined) {
 				return data;
-			} else if( Object.prototype.toString.call( filters ) === '[object Array]' ) {
-				filters_array = filters;
-			} else if(Object.prototype.toString.call( filters ) !== '[object]'){
-				filters_array.push(filters);
-			}
-
-			//console.dir(data);
-			//console.dir(filters_array);
-			// Assume no matches will happen
-			var applies = false;
-
-			if(filters_array.length == 0) {
-				applies = true;
-			} else {
-				for(var f in filters_array) {
-					var object_match = true;
-					for(fkey in filters_array[f]) {
-						//debug("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
-						if(typeof(data[fkey]) !== 'undefined') {
-							if(data.hasOwnProperty(fkey) && (data[fkey] !== filters_array[f][fkey])) {
-								object_match = false;
-								break;
-							}
-						} else {
-							var ev = data['event'];
-							//debug("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
-							if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
-								object_match = false;
-								break;
-							}
-						}
-					}
-					//debug("object_match = " + object_match + " applies = " + applies);
-					applies |= object_match;
-				}
-			}
-
-			if(applies) {
-				return data;
-			} else {
-				return;
 			}
 		}
 	},
 
-	packageInfoLink: function(link_result) {
+	filter: function(filters, data) {
+
+		var filters_array = [];
+		if(typeof( filters ) === 'undefined'){
+			return data;
+		} else if( Object.prototype.toString.call( filters ) === '[object Array]' ) {
+			filters_array = filters;
+		} else if(Object.prototype.toString.call( filters ) !== '[object]'){
+			filters_array.push(filters);
+		}
+
+		//console.dir(data);
+		//console.dir(filters_array);
+		// Assume no matches will happen
+		var applies = false;
+
+		if(filters_array.length == 0) {
+			applies = true;
+		} else {
+			for(var f in filters_array) {
+				var object_match = true;
+				for(fkey in filters_array[f]) {
+					// debug("fkey = " + fkey + " data[fkey] = " + data[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+					if(typeof(data[fkey]) !== 'undefined') {
+						if(data.hasOwnProperty(fkey) && (data[fkey] !== filters_array[f][fkey])) {
+							object_match = false;
+							break;
+						}
+					} else {
+						var ev = data['event'];
+						// debug("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+						if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
+							object_match = false;
+							break;
+						}
+					}
+				}
+				// debug("object_match = " + object_match + " applies = " + applies);
+				applies |= object_match;
+			}
+		}
+
+		if(applies) {
+			return data;
+		} else {
+			return;
+		}
+	},
+
+	packageInfoLink: function(link_result, filters) {
 		//console.log("link -> ");console.dir(link_result);
 
 		var ch = link_result.payload.link;
@@ -190,6 +195,7 @@ var ipparse = {
 			error("error parsing link: " +util.inspect(err) + util.inspect(ch));
 		}
 
+		ch = ipparse.filter(filters, ch);
 		return ch;
 	},
 

@@ -58,9 +58,8 @@ NlAttributes.prototype.logAttributeBuffers = function() {
 	});
 };
 
-NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform) {
+NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filter_object) {
 	//console.dir(bufs);
-
 	var result_array = []; // array if this is a multipart message
 
 	// parse all response messages
@@ -107,17 +106,22 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform) {
 			// mutlipart message add to array result
 			if(!filter){
 				if(typeof transform != 'undefined') {
-					cur_result['payload'] = transform(cur_result);
+					cur_result['payload'] = transform(cur_result, filter_object);
 				}
-				result_array[i] = cur_result;
+
+				if(typeof cur_result.payload != 'undefined') {
+					result_array[i] = cur_result;
+				}
 			}
 
 		} else {
 			// just one response message so return it
 			if(typeof transform != 'undefined') {
-				cur_result['payload'] = transform(cur_result);
+				cur_result['payload'] = transform(cur_result, filter_object);
 			}
-			return cur_result;
+			if(typeof cur_result.payload != 'undefined') {
+				result_array[i] = cur_result;
+			}
 		}
 	}
 	return result_array;

@@ -105,7 +105,7 @@ module.exports.link = function(opts, cb) {
 					return cb(err);
 				} else {
 					sock.close();
-					return cb(null, attrs.generateNetlinkResponse(bufs,ipparse.packageInfoLink));
+					return cb(null, attrs.generateNetlinkResponse(bufs, ipparse.packageInfoLink, opts.filter));
 				}
 			});
 		}

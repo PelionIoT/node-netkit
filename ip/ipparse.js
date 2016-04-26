@@ -121,7 +121,7 @@ var ipparse = {
 				error(util.inspect(err) + " attributes = " + util.inspect(at));
 				throw (err);
 			}
-			ipparse.filter(filters, data);
+			data = ipparse.filter(filters, data);
 			if(data !== undefined) {
 				return data;
 			}

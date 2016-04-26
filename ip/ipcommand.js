@@ -79,7 +79,6 @@ var ipcommand = {
 						for(var i = 0; i < bufs.length; i++) {
 							var l = rt.parseRtattributes(bufs[i]);
 							links[i] = l;
-							//console.dir(l);
 						}
 
 						if(!command) {
@@ -151,7 +150,6 @@ var ipcommand = {
 				nl_hdr.family = opts['family'];
 				info_msg._family |= opts['family'];
 			}
-
 		}
 
 		var bufs = [];

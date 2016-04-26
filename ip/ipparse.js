@@ -108,21 +108,21 @@ var ipparse = {
 		//debug("data --> " + buf.toJSON());
 		// debug("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
-
 		if(typeof at['operation'] !== 'undefined') {
 			//console.dir(at);
 			var handler_name = 'packageInfo' + at['operation'].slice(3);
 			//debug("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 
+			var data;
 			try {
-				var data = boundApply(at,links);
+				data = boundApply(at,links);
 			} catch(err) {
 				error(util.inspect(err) + " attributes = " + util.inspect(at));
+				throw (err);
 			}
-
 			ipparse.filter(filters, data);
-			if(data === undefined) {
+			if(data !== undefined) {
 				return data;
 			}
 		}
@@ -222,7 +222,6 @@ var ipparse = {
 	},
 
 	packageInfoRoute: function(ch,links) {
-
 		var oif = ch['oif'].readUInt32LE(0);
 		var ev = ipparse.getRouteEventObj(ch);
 		var data = {
@@ -230,7 +229,6 @@ var ipparse = {
 			ifnum: oif,
 			event: ev
 		};
-
 		return data;
 	},
 

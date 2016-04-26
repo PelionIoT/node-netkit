@@ -5,6 +5,7 @@ var util = require('util');
 var ipparse = require('../ip/ipparse.js');
 var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
+var NlAttributes = require('../nl/nlattributes.js');
 
 var asHexBuffer = cmn.asHexBuffer;
 var debug = cmn.logger.debug;
@@ -95,7 +96,13 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 				} else {
 					var filters = {};
 					if(ifname) filters['ifname'] = ifname;
-					var mObject = ipparse.parseAttributes(filters,links,bufs[0]);
+					var mObject;
+					if(event_type === 'link') {
+						var attrs = new NlAttributes("link", null, rt );
+						mObject = attrs.generateNetlinkResponse(bufs, ipparse.packageInfoLink, null);
+					} else {
+						mObject = ipparse.parseAttributes(filters,links,bufs[0]);
+					}
 					if(typeof(mObject) != 'undefined') {
 							cb(null, mObject);
 					}

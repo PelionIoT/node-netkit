@@ -544,7 +544,7 @@ int NetlinkSocket::do_recvmsg(Request_t* req, SocketMode mode) {
 			// to what we sent
 			if (nladdr.nl_pid != 0 && (nlhdr->nlmsg_seq < req->first_seq ||
 					nlhdr->nlmsg_seq > req->last_seq) ) {
-					GLOG_WARN("Warning. Ignore inbound NETLINK_ROUTE message.");
+					GLOG_DEBUG("Warning. Ignore inbound NETLINK_ROUTE message.");
 			} else {
 				req->replies++; // mark this request as having replies, so we can do the correct
 				              // action in the callback which will run in the v8 thread.

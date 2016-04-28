@@ -86,8 +86,12 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 					} else {
 						mObject = ipparse.parseAttributes(filters,links,bufs[0]);
 					}
-					if(typeof(mObject) != 'undefined') {
-							cb(null, mObject);
+
+					var retval = mObject[0].payload;
+					if(typeof(retval) != 'undefined') {
+						if((Array.isArray(retval) && retval.length > 0) || !Array.isArray(retval)) {
+							cb(null, retval);
+						}
 					}
 				}
 			});

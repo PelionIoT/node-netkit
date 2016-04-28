@@ -130,6 +130,8 @@ var ipparse = {
 
 	filter: function(filters, data) {
 
+		if(typeof data === 'undefined') return;
+
 		var filters_array = [];
 		if(typeof( filters ) === 'undefined'){
 			return data;
@@ -158,10 +160,12 @@ var ipparse = {
 						}
 					} else {
 						var ev = data['event'];
-						// debug("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
-						if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
-							object_match = false;
-							break;
+						if(typeof ev !== 'undefined') {
+							// debug("fkey = " + fkey + " ev[fkey] = " + ev[fkey] + " filters_array[f][fkey] = " + filters_array[f][fkey]);
+							if(ev.hasOwnProperty(fkey) && (ev[fkey] !== filters_array[f][fkey])) {
+								object_match = false;
+								break;
+							}
 						}
 					}
 				}
@@ -178,26 +182,64 @@ var ipparse = {
 	},
 
 	packageInfoLink: function(link_result, filters) {
-		//console.log("link -> ");console.dir(link_result);
 
-		var ch = link_result.payload.link;
-		try{
-			var opst = ch['operstate'];
-			if(typeof opst !== 'undefined')
-				ch.state = ipparse.link_oper_states[ch.operstate];
-
-			ch.flags = ipparse.getLinkDeviceFlags(link_result.genmsg._if_flags);
-			ch.index = link_result.genmsg._if_index;
-			ch.type = link_result.genmsg._if_type;
-
-			delete link_result.genmsg;
-
-		} catch(err) {
-			error("error parsing link: " +util.inspect(err) + util.inspect(ch));
+		var ch;
+		var genmsg;
+		if(typeof link_result['operation'] !== 'undefined') {
+			ch = link_result;
+			genmsg = link_result.payload;
+			// error('FIRST = ' + util.inspect(ch, {depth:null}));
+		} else {
+			ch = link_result.payload.link;
+			genmsg = link_result.genmsg;
+			// error('SECOND = ' + util.inspect(ch, {depth:null}));
 		}
 
-		ch = ipparse.filter(filters, ch);
-		return ch;
+		if(typeof ch['operstate'] === 'undefined') {
+			return [];
+		}
+
+		var ret = {};
+		try{
+			ret.name = ch['operation'] ? ch['operation'] : 'newLink';
+			ret.ifnum = genmsg._if_index;
+			ret.event = {};
+
+			var opst = ch['operstate'];
+			if(typeof opst !== 'undefined') {
+				if(Buffer.isBuffer(opst)) {
+					ret.event.state = ipparse.link_oper_states[ch.operstate.readUInt8()];
+				} else {
+					ret.event.state = ipparse.link_oper_states[ch.operstate];
+				}
+			}
+
+			ret.event.ifname = ch['ifname'];
+			if(Buffer.isBuffer(ch['address'])) {
+				ret.event.address = ipparse.getBufferAsHexAddr(ch['address']);
+			} else {
+				ret.event.address = ch['address'];
+			}
+
+			if(Buffer.isBuffer(ch['broadcast'])) {
+				ret.event.broadcast = ipparse.getBufferAsHexAddr(ch['broadcast']);
+			} else {
+				ret.event.broadcast = ch['broadcast'];
+			}
+
+			ret.event.flags = ipparse.getLinkDeviceFlags(genmsg._if_flags);
+
+			if(typeof ret.genmsg !== 'undefined') delete ret.genmsg;
+
+		} catch(err) {
+			error("error parsing link: " + util.inspect(err) +
+				" : " + util.inspect(ch, {depth:null}));
+		}
+
+		//error('result = ' + util.inspect(ret, {depth:null}));
+
+		ret = ipparse.filter(filters, ret);
+		return ret;
 	},
 
 	packageInfoAddress: function(ch,links) {

@@ -87,7 +87,7 @@ nk.onNetworkChange("wlp3s0", "link", function (err, data) {
 		return console.log("Error with onNetworkChange: " + util.inspect(err));
 	}
 	console.log("changed...");
-	console.dir(data);
+	console.log(util.inspect(data, {depth:null}));
 });
 
 // nk.onNetworkChange("eth2", "address", function (err, data) {

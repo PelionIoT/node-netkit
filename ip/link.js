@@ -5,7 +5,7 @@ var util = require('util');
 var ipparse = require('../ip/ipparse.js');
 var ipcommand = require('../ip/ipcommand.js');
 var cmn = require('../libs/common.js');
-var linktypes = require('./linktypes.js');
+var rttypes = require('./rttypes.js');
 var NlAttributes = require('../nl/nlattributes.js');
 var util = require('util');
 

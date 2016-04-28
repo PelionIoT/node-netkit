@@ -1,4 +1,4 @@
-var linktypes = require('../ip/linktypes');
+var rttypes = require('../ip/rttypes');
 var cmn = require('../libs/common.js');
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
@@ -472,19 +472,19 @@ rt = {
 
 		if(this.RTM_NEWLINK <= type && type <= this.RTM_GETLINK) {
 		    //debug('LINK');
-			retVal.keys = linktypes.link_attributes;
+			retVal.keys = rttypes.link_attributes;
 			retVal.name = 'link';
 		} else if(this.RTM_NEWADDR <= type && type <= this.RTM_GETADDR) {
 		    //debug('ADDR');
-			retVal.keys = linktypes.addr_attributes;
+			retVal.keys = rttypes.addr_attributes;
 			retVal.name = 'addr';
 		} else if(this.RTM_NEWROUTE <= type && type <= this.RTM_GETROUTE) {
 		    //debug('ROUTE');
-			retVal.keys = linktypes.route_attributes
+			retVal.keys = rttypes.route_attributes
 			retVal.name = 'route';
 		} else if(this.RTM_NEWNEIGH <= type && type <= this.RTM_GETNEIGH) {
 		    //debug('NEIGH');
-			retVal.keys = linktypes.neigh_attributes
+			retVal.keys = rttypes.neigh_attributes
 			retVal.name = 'neigh';
 		}else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
@@ -500,7 +500,7 @@ rt = {
 	},
 
 	getCommandObject: function(type){
-		var command_object = linktypes[type + '_attributes'];
+		var command_object = rttypes[type + '_attributes'];
 		if(typeof command_object === 'undefined'){
 			throw Error("command type " + type + " does not exist");
 		}
@@ -720,7 +720,7 @@ rt = {
 			}
 
 			var type = data.readUInt16LE(4);
-			//console.error("type = " + type);
+			//error("type = " + type);
 			if(type === module.exports.NLMSG_DONE) {
 				return ret;
 			}
@@ -783,7 +783,7 @@ rt = {
 				} else {
 					ret[key] = data.slice(index, index + len);// bytes;
 				}
-				// debug('added [' + key + '] = ' + ret[key])
+				//debug('added [' + key + '] = ' + ret[key])
 			}
 
 			// get to next attribute padding to mod 4

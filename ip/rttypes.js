@@ -40,7 +40,7 @@ var link_attributes_spec = {
 
 
 
-var linktypes = {
+var rttypes = {
 
 
 /*
@@ -568,6 +568,59 @@ var linktypes = {
      //      __IFLA_HSR_MAX,
      // };
 
+
+
+
+
+     addr_attributes: {
+          IFLA_ADDR_UNSPEC: 0,
+          IFLA_ADDR_ADDRESS: 1,
+          IFLA_ADDR_LOCAL: 2,
+          IFLA_ADDR_LABEL: 3,
+          IFLA_ADDR_BROADCAST: 4,
+          IFLA_ADDR_ANYCAST: 5,
+          IFLA_ADDR_CACHEINFO: 6,
+          IFLA_ADDR_MULTICAST: 7,
+          IFLA_ADDR_FLAGS: 8,
+          IFLA_ADDR_SPEC: ['','g', 's', 's', 'g', '', '', 's', 'n/32', '', 'n/32' ]
+     },
+
+     route_attributes: {
+          IFLA_ROUTE_UNSPEC: 0,
+          IFLA_ROUTE_DST: 1,
+          IFLA_ROUTE_SRC: 2,
+          IFLA_ROUTE_IIF: 3,
+          IFLA_ROUTE_OIF: 4,
+          IFLA_ROUTE_GATEWAY: 5,
+          IFLA_ROUTE_PRIORITY: 6,
+          IFLA_ROUTE_PREFSRC: 7,
+          IFLA_ROUTE_METRICS: 8,
+          IFLA_ROUTE_MULTIPATH: 9,
+          IFLA_ROUTE_PROTOINFO: 10, /* no longer used */
+          IFLA_ROUTE_FLOW: 11,
+          IFLA_ROUTE_CACHEINFO: 12,
+          IFLA_ROUTE_SESSION: 13, /* no longer used */
+          IFLA_ROUTE_MP_ALGO: 14, /* no longer used */
+          IFLA_ROUTE_TABLE: 15,
+          IFLA_ROUTE_MARK: 16,
+          IFLA_ROUTE_MFC_STATS: 17,
+          IFLA_ROUTE_SPEC: ['','g','g','n/32','n/32','s','n/32','s', '','','','','','','','s', 'n/32','']
+     },
+
+     neigh_attributes: {
+          IFLA_NEIGH_UNSPEC: 0,
+          IFLA_NEIGH_DST: 1,
+          IFLA_NEIGH_LLADDR: 2,
+          IFLA_NEIGH_CACHEINFO: 3,
+          IFLA_NEIGH_PROBES: 4,
+          IFLA_NEIGH_VLAN: 5,
+          IFLA_NEIGH_PORT: 6,
+          IFLA_NEIGH_VNI: 7,
+          IFLA_NEIGH_IFINDEX: 8,
+          IFLA_NEIGH_MASTER: 9,
+          IFLA_NEIGH_SPEC: ['','m','m', 'g', 'n/32', 'n/16', 'n/16', 'n32', 'n/32', 'n/32']
+     },
+
 };
 
-module.exports = linktypes;
+module.exports = rttypes;

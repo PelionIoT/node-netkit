@@ -19,30 +19,13 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 
 	var sock = netkitObject.newNetlinkSocket();
 	var sock_opts;
-	if(!event_type || event_type === 'all') {
-		sock_opts = {
-			subscriptions:
-
-							  rt.make_group(rt.RTNLGRP_LINK)
-
-							| rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
-							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
-							| rt.make_group(rt.RTNLGRP_IPV6_PREFIX)
-
-							| rt.make_group(rt.RTNLGRP_IPV4_ROUTE)
-							| rt.make_group(rt.RTN_GRP_IPV6_ROUTE)
-							| rt.make_group(rt.RTNLGRP_IPV4_MROUTE)
-							| rt.make_group(rt.RTNLGRP_IPV6_MROUTE)
-
-							| rt.make_group(rt.RTN_GRP_NEIGH)
-							| rt.make_group(rt.RTNLGRP_IPV4_NETCONF)
-							| rt.make_group(rt.RTNLGRP_IPV6_NETCONF)
-		}
+	if(!event_type) {
+		throw new Error("specify event type: [link,addr,route,neigh]");
 	} else if(event_type === 'link') {
 		sock_opts = {
 			subscriptions: 	  rt.make_group(rt.RTNLGRP_IPV4_LINK)
 		}
-	} else if(event_type === 'address') {
+	} else if(event_type === 'addr') {
 		sock_opts = {
 			subscriptions: 	  rt.make_group(rt.RTN_GRP_IPV4_IFADDR)
 							| rt.make_group(rt.RTN_GRP_IPV6_IFADDR)
@@ -59,7 +42,7 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 							| rt.make_group(rt.RTNLGRP_IPV6_NETCONF)
 		}
 	} else {
-		console.error("event type = '" + event_type + "'' : Not supported");
+		console.error("event type = '" + event_type + "'' : Not supported - use [link,addr,route,neigh]");
 		return;
 	}
 

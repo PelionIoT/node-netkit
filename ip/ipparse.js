@@ -242,6 +242,52 @@ var ipparse = {
 		return ret;
 	},
 
+	transformInfoLinkFull: function(link_result, filters) {
+
+		var ch = link_result.payload.link;
+		var genmsg = link_result.genmsg;
+
+		if(typeof ch['operstate'] === 'undefined' || typeof ch['wireless'] !== 'undefined') {
+			return [];
+		}
+
+		try {
+			ch.ifnum = genmsg._if_index;
+			var opst = ch['operstate'];
+			if(typeof opst !== 'undefined') {
+				if(Buffer.isBuffer(opst)) {
+					ch.operstate.state = ipparse.link_oper_states[ch.operstate.readUInt8()];
+				} else {
+					ch.operstate = ipparse.link_oper_states[ch.operstate];
+				}
+			}
+
+			if(Buffer.isBuffer(ch['address'])) {
+				ch.address = ipparse.getBufferAsHexAddr(ch['address']);
+			} else {
+				ch.address = ch['address'];
+			}
+
+			if(Buffer.isBuffer(ch['broadcast'])) {
+				ch.broadcast = ipparse.getBufferAsHexAddr(ch['broadcast']);
+			} else {
+				ch.broadcast = ch['broadcast'];
+			}
+
+			ch.flags = ipparse.getLinkDeviceFlags(genmsg._if_flags);
+
+
+		} catch(err) {
+			error("error parsing link: " + util.inspect(err) +
+				" : " + util.inspect(ch, {depth:null}));
+		}
+
+		//error('result = ' + util.inspect(ret, {depth:null}));
+
+		ch = ipparse.filter(filters, ch);
+		return ch;
+	},
+
 	packageInfoAddress: function(ch,links) {
 
 		var addr_ar =  rt.bufToArray(ch['address'], 0, ch['address'].length);

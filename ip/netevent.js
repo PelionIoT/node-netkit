@@ -82,7 +82,7 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 					var mObject;
 					if(event_type === 'link') {
 						var attrs = new NlAttributes("link", null, rt );
-						mObject = attrs.generateNetlinkResponse(bufs, ipparse.packageInfoLink, null);
+						mObject = attrs.generateNetlinkResponse(bufs, ipparse.transformInfoLinkFull, null);
 					} else {
 						mObject = ipparse.parseAttributes(filters,links,bufs[0]);
 					}

@@ -209,7 +209,6 @@ var linktypes = {
           IFLA_INFO_SLAVE_DATA:    5,
           IFLA_INFO_SPEC:          ['','s','f/infotype_parser','','',''],
           infotype_parser: function(type) {
-               console.log("type = " + type);
                switch(type) {
                     case 'vlan':
                          return 'vlan';

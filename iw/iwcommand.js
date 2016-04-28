@@ -66,43 +66,6 @@ iwcommand = {
 	    	}
 	    };
 	},
-
-
-	// set_cmd: function(opts, cb) {
-
-	// 	var command = opts['command'];
-	// 	var type = opts['type'].toUpperCase();
-	// 	switch(command) {
-	// 		case "link":
-	// 			opts['cmd'] = nl.NLMSG_MIN_TYPE;
-	// 			opts['verison'] = NLMSG_MIN_TYPE;
-	// 			break;
-	// 		default:
-	// 			return cb(new Error(command +
-	// 				" command not supported: get, add, del, update"));
-	// 			break;
-	// 	}
-	// },
-
-	// set_type: function(opts, cb) {
-
-	// 	var command = opts['command'];
-	// 	var type = opts['type'];
-	// 	switch(command) {
-	// 		case "link":
-	// 			switch(type){
-	// 				default:
-	// 					opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ACK;
-	// 					break;
-	// 			}
-	// 			break;
-	// 		default:
-	// 			return cb(new Error(command +
-	// 				" command not supported: get, add, del, update"));
-	// 			break;
-	// 	}
-	// },
-
 };
 
 module.exports = iwcommand;

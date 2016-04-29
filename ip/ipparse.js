@@ -274,6 +274,7 @@ var ipparse = {
 				ch.broadcast = ch['broadcast'];
 			}
 
+			ch.type = genmsg._if_type;
 			ch.flags = ipparse.getLinkDeviceFlags(genmsg._if_flags);
 
 

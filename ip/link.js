@@ -105,7 +105,9 @@ module.exports.link = function(opts, cb) {
 					return cb(err);
 				} else {
 					sock.close();
-					return cb(null, attrs.generateNetlinkResponse(bufs, ipparse.transformInfoLinkFull, opts.filter));
+					var result = attrs.generateNetlinkResponse(bufs, ipparse.transformInfoLinkFull, opts.filter);
+					// error(util.inspect(result, {depth: null}));
+					return cb(null, result);
 				}
 			});
 		}

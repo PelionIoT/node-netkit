@@ -106,10 +106,10 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 			// mutlipart message add to array result
 			if(!filter){
 				if(typeof transform != 'undefined') {
-					cur_result['payload'] = transform(cur_result, filter_object);
+					cur_result = transform(cur_result, filter_object);
 				}
 
-				if(typeof cur_result.payload != 'undefined') {
+				if(typeof cur_result != 'undefined') {
 					result_array.push(cur_result);
 				}
 			}
@@ -117,9 +117,9 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		} else {
 			// just one response message so return it
 			if(typeof transform != 'undefined') {
-				cur_result['payload'] = transform(cur_result, filter_object);
+				cur_result = transform(cur_result, filter_object);
 			}
-			if(typeof cur_result.payload != 'undefined') {
+			if(typeof cur_result != 'undefined') {
 				result_array.push(cur_result);
 			}
 		}

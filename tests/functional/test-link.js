@@ -12,12 +12,16 @@ var err = require('../../libs/common.js').err;
 // 	}
 // });
 
-var opts = {
-    operation: 'set',
-    ifname: 'wlp3s0',
-    address: '080027dce402'
-};
+// var opts = {
+//     operation: 'set',
+//     ifname: 'wlp3s0',
+//     address: '080027dce402'
+// };
 
+var opts = {
+    operation: 'down',
+    ifname: 'wlp3s0'
+};
 
 nk.link(opts, function(err) {
 	if(err) {

@@ -57,13 +57,11 @@ module.exports.link = function(opts, cb) {
 	} else if(opts.operation === 'up') {
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
-		opts.ifname = ifname;
 		opts.info_flags = 0x01; // up
 		opts.info_change = 0x01;
 	} else if(opts.operation === 'down') {
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
-		opts.ifname = ifname;
 		opts.info_flags = 0x00;  // down
 		opts.info_change = 0x01;
 	} else if(opts.operation === 'set') {

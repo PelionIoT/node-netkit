@@ -88,7 +88,7 @@ module.exports.onNetworkChange = function(ifname, event_type, cb) {
 					}
 
 					if(typeof mObject[0] !== 'undefined') {
-						var retval = mObject[0]['payload'];
+						var retval = mObject[0];
 						if(typeof(retval) != 'undefined') {
 							if((Array.isArray(retval) && retval.length > 0) || !Array.isArray(retval)) {
 								cb(null, retval);

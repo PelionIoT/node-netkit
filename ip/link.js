@@ -1,3 +1,4 @@
+'use strict';
 
 var rt = require('../nl/rtnetlink.js');
 var nl = require('../nl/netlink.js')
@@ -24,7 +25,7 @@ module.exports.link = function(opts, cb) {
 	}
 
 	if(opts.hasOwnProperty('ifname')) {
-		var ifndex = this.ifNameToIndex(opts['ifname']);
+		var ifndex = this.ifNameToIndex(opts.ifname);
 		if(util.isError(ifndex)) {
 			error("* Error: " + util.inspect(ifndex));
 			return cb(ifndex); // call w/ error
@@ -104,7 +105,7 @@ module.exports.link = function(opts, cb) {
 				} else {
 					sock.close();
 					var result = attrs.generateNetlinkResponse(bufs, ipparse.transformInfoLinkFull, opts.filter);
-					// error(util.inspect(result, {depth: null}));
+					//error(util.inspect(result, {depth: null}));
 					return cb(null, result);
 				}
 			});

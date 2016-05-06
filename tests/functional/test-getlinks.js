@@ -12,7 +12,6 @@ nk.link(opts , function(opts, links) {
 	if(err) {
 		console.error("** Error: " + util.inspect(err) + err.stack);
 	} else {
-        links = links.map(function(l) { return l.payload; });
 		console.log(util.inspect(links,{depth:null}));
 	}
 });

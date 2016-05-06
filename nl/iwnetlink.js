@@ -1,3 +1,5 @@
+'use strict';
+
 var nl = require('../nl/netlink.js');
 var cmn = require('../libs/common.js');
 
@@ -17,7 +19,7 @@ struct genlmsghdr {
 var generic_msg_fmt = "<B(_cmd)B(_version)H(_pad1)";
 
 
-iwnl = {
+var iwnl = {
 
 	nl: nl,
 	nl80211: nl80211,
@@ -33,21 +35,19 @@ iwnl = {
 		var retVal = {};
 
 		if(iwnl.commands.NL80211_CMD_GET_STATION <= type && type <= iwnl.commands.NL80211_CMD_DEL_STATION) {
-			retVal.keys = iwtypes.nl80211_attr_info
+			retVal.keys = iwtypes.nl80211_wlanattr_info;
 			retVal.name = 'station';
 
 		} else if(iwnl.commands.NL80211_CMD_GET_SURVEY <= type && type <= iwnl.commands.NL80211_CMD_NEW_SURVEY_RESULTS) {
-			retVal.keys = iwtypes.nl80211_attr_info
+			retVal.keys = iwtypes.nl80211_wlanattr_info;
 			retVal.name = 'survey';
 
 		} else if(iwnl.commands.NL80211_CMD_GET_INTERFACE <= type && type <= iwnl.commands.NL80211_CMD_DEL_INTERFACE) {
-			retVal.keys = iwtypes.nl80211_attr_info
+			retVal.keys = iwtypes.nl80211_wlanattr_info;
 			retVal.name = 'interface';
 
-
 		} else {
-			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
-				+ type + ") **"
+			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="	+ type + ") **";
 			error(msg);
 			throw new Error(msg);
 		}
@@ -163,30 +163,30 @@ iwnl = {
 			// } else {
 			// 	return cb(new Error("no family option specified"));
 			// }
-			if(opts.hasOwnProperty("cmd") && opts["cmd"] != null) {
+			if(opts.hasOwnProperty("cmd") && opts.cmd !== null) {
 				//debug('cmd=' + opts['cmd']);
-				gen_hdr._cmd = opts['cmd'];
+				gen_hdr._cmd = opts.cmd;
 			} else {
 				return cb(new Error("no cmd option specified"));
 			}
 
-			if(opts.hasOwnProperty("version") && opts["version"] != null) {
+			if(opts.hasOwnProperty("version") && opts.version !== null) {
 				//debug('version=' + opts['version']);
-				gen_hdr._version = opts['version'];
+				gen_hdr._version = opts.version;
 			} else {
 				return cb(new Error("no version option specified"));
 			}
 
-			if(opts.hasOwnProperty("type") && opts["type"] != null) {
+			if(opts.hasOwnProperty("type") && opts.type !== null) {
 				//debug('type=' + opts['type']);
-				nl_hdr._type |= opts['type'];
+				nl_hdr._type |= opts.type;
 			} else {
 				return cb(new Error("no type option specified"));
 			}
 
-			if(opts.hasOwnProperty("flags") && opts["flags"] != null) {
+			if(opts.hasOwnProperty("flags") && opts.flags !== null) {
 				//debug('flags=' + opts['flags']);
-				nl_hdr._flags |= opts['flags'];
+				nl_hdr._flags |= opts.flags;
 			} else {
 				return cb(new Error("no flags option specified"));
 			}

@@ -1,10 +1,12 @@
+'use strict';
+
 var cmn = require('../libs/common.js');
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;
 var util = require('util');
 var bignum = require('bignum');
-
+var rt = require('./rtnetlink.js');
 /*
 * Attribute creator
 * @params -
@@ -62,8 +64,8 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 };
 
 Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
-	//debug('attr_list = ' + util.inspect(attr_list));
-	//debug("attr --> " + attr_buffer.toString('hex') );
+	// debug('attr_list = ' + util.inspect(attr_list));
+	// debug("attr --> " + attr_buffer.toString('hex') );
 
 	this.attribute_list = attr_list;
 	this.buffer = attr_buffer;
@@ -90,7 +92,7 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 		this.buffer = this.buffer.slice(0,4);
 	}
 
-	 // debug("buf --> " + this.buffer.toString('hex'))
+//	 debug("buf --> " + this.buffer.toString('hex'))
 	 // var ns = this.isNested ? "(NEST)" : "";
 	 // debug("key = " +this.key + ns +
 	 // 	" typeval = " + this.spec.typeval +
@@ -140,7 +142,7 @@ Attribute.prototype.getSpec = function(attrObject,key){
 	// console.log("spec = " + spec);
 
 	if(typeof spec === 'undefined') {
-		throw Error("spec ["+ speckeyval + "] not found  in " + util.inspect(spec_array));
+		throw Error("spec ["+ speckeyval + "] not found  in " + attr_subtype_specname + " : " + util.inspect(spec_array));
 	}
 
 	var sl = spec.indexOf('/');
@@ -156,7 +158,7 @@ Attribute.prototype.getSpec = function(attrObject,key){
 
 Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
 	var get_attr_type = this.netlink_type.getAttrType ||
-		function(spec) { return spec.split('_')[1];}
+		function(spec) { return spec.split('_')[1]; };
 
 	var nest_attrs_type = null;
 	if(this.isExpression) {  //expression
@@ -265,8 +267,8 @@ Attribute.prototype.getGenericBuffer = function() {
 				val = bignum(strval,10);
 			}
 
-		if(val === NaN) throw new Error("no way to parse: " + this.value);
-			buf = val.toBuffer({endian:'big', size:len})
+		if(isNaN(val)) throw new Error("no way to parse: " + this.value);
+			buf = val.toBuffer({endian:'big', size:len});
 
 		} else {
 			buf = new Buffer(len);
@@ -334,27 +336,20 @@ Attribute.prototype.getBufferAsValue = function(buffer) {
 	switch(this.spec.type) {
 		case('s'): // string type attribute
 			return this.getBufferAsString(buffer);
-			break;
 		case('n'): // number type attribute
 		case('pl'):
 			return this.getBufferAsNumber(buffer);
-			break;
 		case('r'): // nested type attribute
 		case('i'): // nested type attribute
 			break;
 		case('g'): // nested type attribute
 			return this.getBufferAsGeneric(buffer);
-			break;
 		case('l'): // nested type attribute
 			break;
 		case('e'): // nested element type attribute
 			break;
 		case('m'): // mac address type attribute
 			return cmn.bufferAsMacAddress(buffer.slice(4,10));
-			break;
-
-		default:
-			// No value
 	}
 	return;
 };
@@ -390,7 +385,6 @@ Attribute.prototype.getBufferAsNumber = function(buffer) {
 			break;
 		default:
 			throw new Error("bad number field size: " + this.spec.size);
-			break;
 	}
 	return val;
 };
@@ -399,6 +393,7 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 	//debug("buf --> " + buffer.toString('hex'))
 	var len = buffer.readUInt16LE(0) - 4; // take away attribute header len
 	var buf = buffer.slice(4,4 + len);
+	var val;
 	switch (len) {
 		case 1:
 			val = buf.readUInt8(0);

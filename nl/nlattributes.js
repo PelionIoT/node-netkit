@@ -1,3 +1,4 @@
+'use strict';
 
 var Attribute = require('../nl/nlattr.js');
 var cmn = require('../libs/common.js');
@@ -10,12 +11,12 @@ var error = cmn.logger.error;
 
 
 var NlAttributes = function(command_type, parameters, netlink_type) {
-	this.command_type = null;
+	this.command_type = command_type;
 	this.attribute_array = [];
 	this.netlink_type = netlink_type;
 
 	// The object that has the attribute defines
-	this.command_object = this.netlink_type.getCommandObject(command_type);
+	this.command_object = this.netlink_type.getCommandObject(this.command_type);
 
 	// The command line attribute object passed in
 	this.parameters = parameters;
@@ -75,15 +76,14 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		}
 
 		// get the total message length and parse all the raw attributes
-		var total_len = data.readUInt32LE(0);
 		var cur_result = {};
 
 		// get the generic netfiler generation
 		var genmsg = this.netlink_type.parseGenmsg(data);
 		if(typeof genmsg._cmd !== 'undefined') type = genmsg._cmd;
 
-		if(typeof genmsg !== 'undefined') cur_result['genmsg'] = genmsg;
-		cur_result['payload'] = this.parseNlAttrsFromBuffer(data, type);
+		if(typeof genmsg !== 'undefined') cur_result.genmsg = genmsg;
+		cur_result.payload = this.parseNlAttrsFromBuffer(data, type);
 
 		// get the message flags
 		var flags = data.readUInt16LE(6);
@@ -132,13 +132,13 @@ NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
 	// console.dir(attrs);
 
 	var prior_value;
-	if(params == null) return;
+	if(params === null || typeof params === 'undefined') return;
 
     var that = this;
     var keys = Object.keys(params);
 	keys.forEach(function(key) {
 
-		var a = new Attribute(that)
+		var a = new Attribute(that);
 		a.makeFromKey(params,attrs,key);
 
 		if(a.isNest || a.isFunction) {
@@ -197,10 +197,11 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 	var nested_indexes = [];
 	var parent_value = "";
 	var expression_count;
-	var info_ret;
 	var expression_ret = null;
-	var info_ret = null;
 	var element_ret = null;
+	var element_ret_count;
+	var info_ret = null;
+	var info_parents = [];
 	var inIndex = false;
 	//console.dir(keys);
 
@@ -210,7 +211,6 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		var remaining = buffer.slice(index, index + round_len);
 		//console.log('\n');
 		//console.log('index = ' + index + ' round_len = ' + round_len);
-
 		var attribute = new Attribute(this);
 
 		if(!inIndex) {
@@ -245,25 +245,26 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			if(nested_attributes.length > 0) {
 				// Have we reached the end of the current nest?
 				var l = nested_indexes[nested_indexes.length - 1];
-				while(index >= l) {
-					// Yes, so get the attribute list of what we were parsing before
-					nested_indexes.pop();
-					var attr = nested_attributes.pop();
-					keys = attr.attribute_list;
+				if(index >= l) {
+					attribute.nestEnd = true;
 
-					if(attr.isIndexed) {
-						inIndex = false;
+					while(index >= l) {
+						// Yes, so get the attribute list of what we were parsing before
+						nested_indexes.pop();
+						var attr = nested_attributes.pop();
+						keys = attr.attribute_list;
+
+						if(attr.isIndexed) {
+							inIndex = false;
+						}
+
+						l = nested_indexes[nested_indexes.length - 1];
 					}
-
-					l = nested_indexes[nested_indexes.length - 1];
 				}
 			}
 		}
 
-		// debug('attribute.key -> ' + attribute.key);
-		// debug('attribute.value -> ' + attribute.value);
-		// debug('info_ret -> ' + util.inspect(info_ret,{depth:null}));
-
+		//debug('attribute.key --> ' + attribute.key + ' attribute.value -> ' + attribute.value + " nest = " + attribute.isNested);
 		if(typeof(attribute.value) !== 'undefined') {
 			if(element_ret !== null) {
 				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
@@ -271,30 +272,41 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 				expression_ret[expression_count++] = attribute.key + " = " + attribute.value;
 			 } else if(info_ret !== null) {
 			 	info_ret[attribute.key] = attribute.value;
+			 	if(typeof attribute.nestEnd !== 'undefined') {
+		 			info_ret = info_parents.pop();
+			 	}
+
 			} else {
 				ret[attribute.key] = attribute.value;
 			}
 		} else {
 			if(attribute.key ==='expressions') {
-
 				expression_ret = []; expression_count = 0;
 				ret[attribute.key] = expression_ret;
 
-			} else if(attribute.key === 'linkinfo') {
-
-				info_ret = {}; info_count = 0;
-				ret[attribute.key] = info_ret;
-
 			} else if(attribute.key === 'elem') {
-
 				element_ret = []; element_ret_count = 0;
 				expression_ret[expression_count++] = element_ret;
 			} else if(attribute.key === 'infodata') {
 				//
-			} //else {}
+			} else if(this.command_type === 'wlanattr') {
+				if(attribute.isNested) {
+					if(info_ret !== null) {
+						var new_ret = {};
+						info_parents.push(info_ret);
+
+						info_ret[attribute.key] = new_ret;
+						info_ret = new_ret;
+					} else {
+						info_parents.push(ret);
+						info_ret = {};
+						ret[attribute.key] = info_ret;
+					}
+				}
+			}
 		}
 
-	};
+	}
 
 	return ret;
 };
@@ -313,7 +325,6 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 		}
 
 		var index = 16; // start after the msghdr
-
 
 		var attribute_map = this.netlink_type.getAttributeMap(type);
 		if(type === -1) return {};

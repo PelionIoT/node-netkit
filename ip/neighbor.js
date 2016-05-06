@@ -135,7 +135,7 @@ module.exports.addIPv6Neighbor = function(ifname,inet6dest,lladdr,cb,sock) {
 		} else
 			var destbuf = inet6dest;
 		var rt_attr = this.rt.buildRtattrBuf(this.rt.neigh_attributes.NDA_DST,destbuf.bytes);
-		console.dir(destbuf);
+		// /console.dir(destbuf);
 		debug("destbuf---> " + asHexBuffer(destbuf.bytes));
 		debug("rt_attr---> " + asHexBuffer(rt_attr));
 		bufs.push(rt_attr);

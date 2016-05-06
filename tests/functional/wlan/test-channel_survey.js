@@ -49,7 +49,7 @@ var opts = {
     flags:      nl.NLM_F_REQUEST | nl.NLM_F_ACK | nl.NLM_F_ROOT | nl.NLM_F_MATCH,
     type:       nl.NETLINK_GENERIC | 0x0a,
 
-    data:       new Buffer("0800030006000000", 'hex'), // device index
+    data:       new Buffer("080003000E000000", 'hex'), // device index
 
     infotype: 'attr',
     params: iwnl.nl80211_sta_info,

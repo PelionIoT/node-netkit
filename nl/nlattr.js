@@ -181,8 +181,6 @@ Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
 
 Attribute.prototype.incrementNestLength = function(size) {
 	var len = this.buffer.readUInt16LE(0);
-	var val = len + size;
-	//debug("curr_len = " + len + " size = " + size + " len = " + val);
 	this.buffer.writeUInt16LE(size + len, 0 );
 };
 

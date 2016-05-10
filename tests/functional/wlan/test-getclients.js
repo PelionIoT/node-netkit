@@ -4,7 +4,7 @@ var util = require('util');
 
 var opts = {
     command: "get_station",
-    ifname:  "wlp3s0"
+    ifname:  "wls1"
 };
 
 

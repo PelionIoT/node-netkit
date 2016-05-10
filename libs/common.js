@@ -1,3 +1,5 @@
+'use strict'
+
 var colors = require('./colors.js');
 
 var common_logger = function(){
@@ -64,7 +66,9 @@ module.exports = {
 		var sep = '';
 
 		for (var pair of buf.entries()) {
-			mac += sep + pair[1].toString(16);
+			var byte = pair[1].toString(16);
+			if(byte.length === 1) byte = '0' + byte;
+			mac += sep + byte;
 			sep = ':';
 		}
 

@@ -8,11 +8,40 @@ var transform = (function(){
 
     return {
         get_station: function(opt) {
-            // opt.station.connectedtime = opt.station.connectedtime + " seconds";
-            // opt.station.inactivetime = opt.station.inactivetime + " millseconds";
-            // delete opt.station.bitrate32;
-            // opt.station.bitrate = opt.station.bitrate / 10 + " MBits/s";
-            return opt;
+            //console.log(util.inspect(opt,{depth:null}));
+            var ret;
+            ret  = opt.payload.station.stainfo;
+            ret.mac_addr = opt.payload.station.mac;
+
+            ret.tx_bytes = ret.txbytes || ret.txbytes64;
+            ret.rx_bytes = ret.rxbytes || ret.rxbytes64;
+            delete ret.txbytes;
+            delete ret.rxbytes;
+            delete ret.txbytes64;
+            delete ret.rxbytes64;
+
+            ret.rx_packets = ret.rxpackets;
+            ret.tx_packets = ret.txpackets;
+            delete ret.txpackets;
+            delete ret.rxpackets;
+
+            ret.tx_retries = ret.txretries;
+            ret.tx_failed = ret.txfailed;
+            delete ret.txretries;
+            delete ret.txfailed;
+
+            delete ret.txbitrate;
+            delete ret.rxbitrate;
+            delete ret.signalavg;
+
+            delete ret.connectedtime;
+            delete ret.inactivetime;
+            delete ret.beaconloss;
+            delete ret.rxdropmisc;
+            delete ret.tx_retries;
+
+
+            return ret;
         },
 
     };

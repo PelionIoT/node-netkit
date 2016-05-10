@@ -34,7 +34,7 @@ var iwcommand = (function() {
 
 	var build_command = function(opts,cb) {
 
-		console.dir(opts);
+		//console.dir(opts);
 
 		var cmd = opts.command.toUpperCase();
 		if(typeof cmd === 'undefined') {
@@ -75,6 +75,8 @@ var iwcommand = (function() {
 		switch(cmd) {
 			case nl80211.commands.NL80211_CMD_GET_STATION:
 				break;
+			case nl80211.commands.NL80211_CMD_GET_INTERFACE:
+				break;
 			default:
 				throw new Error("command option not supported yet");
 		}
@@ -89,7 +91,10 @@ var iwcommand = (function() {
 
 	 	var ret = [];
 	 	for( var client = 0; client < obj.length; client++ ) {
-			ret.push( transformer(obj[client]));	 		
+	 		var result = transformer(obj[client]);
+	 		if(result) {
+				ret.push(result);
+	 		}
 	 	} 
 
 	 	return ret;

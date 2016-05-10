@@ -44,6 +44,13 @@ var transform = (function(){
             return ret;
         },
 
+        get_interface: function(opt) {
+            opt = opt.payload.interface;
+            if(typeof opt.ifindex === 'undefined' ) {
+                return null;
+            }
+            return opt;
+        }
     };
 })();
 

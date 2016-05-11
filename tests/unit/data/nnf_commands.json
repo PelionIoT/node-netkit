@@ -43,8 +43,9 @@
 	"add rule mangle postrouting ip protocol 1 meta mark set 2",
 
 	// google fiber routing rules use in conjunction with link's egress-qos-map
-	"add rule mangle postrouting ip protocol 1 meta priority set 2 counter"
-	"add chain mangle postrouting { type filter hook output priority -150 }"
+	"add table mangle",
+	"add chain mangle postrouting { type filter hook postrouting priority -150 }",
+	"add rule mangle postrouting ip protocol 1 meta priority set 2 counter",
 
 	"delete table filter",
 	"delete chain filter input",

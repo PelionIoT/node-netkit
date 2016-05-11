@@ -12,10 +12,10 @@ nfstructs = (function(){
 				b.writeUInt8(value);
 				break;
 			case 2:
-				b.writeUInt16BE(value);
+				b.writeUInt16LE(value);
 				break;
 			case 4:
-				b.writeUInt32BE(value);
+				b.writeUInt32LE(value);
 				break;
 			// case 8:
 			// 	b.writeUInt

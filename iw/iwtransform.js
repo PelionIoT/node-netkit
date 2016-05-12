@@ -11,6 +11,8 @@ var transform = (function(){
             //console.log(util.inspect(opt,{depth:null}));
             var ret;
             ret  = opt.payload.station.stainfo;
+
+            ret.ifname = cmn.nativelib.ifIndexToName(opt.payload.station.ifindex);
             ret.mac_addr = opt.payload.station.mac;
 
             ret.tx_bytes = ret.txbytes || ret.txbytes64;

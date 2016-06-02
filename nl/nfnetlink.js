@@ -131,7 +131,7 @@ nf = {
 		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
 		    //debug('SETELEM');
 			retVal.name = 'setelem';
-			throw new Error("setelem not implemented yet");
+			retVal.keys = nft.nft_set_elem_attributes
 		} else if(nf.NFT_MSG_NEWGEN <= type && type <= nf.NFT_MSG_DELGEN) {
 		    //debug('GEN');
 			retVal.name = 'gen';

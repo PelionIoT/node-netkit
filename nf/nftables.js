@@ -661,21 +661,20 @@ nft = {
 // 	NFT_SET_ELEM_INTERVAL_END	= 0x1,
 // };
 
-// /**
-//  * enum nft_set_elem_attributes - nf_tables set element netlink attributes
-//  *
-//  * @NFTA_SET_ELEM_KEY: key value (NLA_NESTED: nft_data)
-//  * @NFTA_SET_ELEM_DATA: data value of mapping (NLA_NESTED: nft_data_attributes)
-//  * @NFTA_SET_ELEM_FLAGS: bitmask of nft_set_elem_flags (NLA_U32)
-//  */
-// enum nft_set_elem_attributes {
-// 	NFTA_SET_ELEM_UNSPEC,
-// 	NFTA_SET_ELEM_KEY,
-// 	NFTA_SET_ELEM_DATA,
-// 	NFTA_SET_ELEM_FLAGS,
-// 	__NFTA_SET_ELEM_MAX
-// };
-// #define NFTA_SET_ELEM_MAX	(__NFTA_SET_ELEM_MAX - 1)
+	/**
+	 * enum nft_set_elem_attributes - nf_tables set element netlink attributes
+	 *
+	 * @NFTA_SET_ELEM_KEY: key value (NLA_NESTED: nft_data)
+	 * @NFTA_SET_ELEM_DATA: data value of mapping (NLA_NESTED: nft_data_attributes)
+	 * @NFTA_SET_ELEM_FLAGS: bitmask of nft_set_elem_flags (NLA_U32)
+	 */
+	nft_set_elem_attributes: {
+		NFTA_SET_ELEM_UNSPEC: 	0,
+		NFTA_SET_ELEM_KEY: 		1,
+		NFTA_SET_ELEM_DATA: 	2,
+		NFTA_SET_ELEM_FLAGS: 	3,
+		NFTA_SET_ELEM_SPEC: 	['','r/nft_data', 'r/nft_data_attributes', 'n/32'],
+	},
 
 // /**
 //  * enum nft_set_elem_list_attributes - nf_tables set element list netlink attributes

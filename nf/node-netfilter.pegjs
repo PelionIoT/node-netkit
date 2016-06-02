@@ -97,6 +97,9 @@ add_entity
 	/ "rule" _ table_identifier _ chain_identifier _ rule_expression
 		{ command_object.type = "rule"; }
 
+	/ "set" _ table_identifier _ set_name _ settype_expression
+		{ command_object.type = "set"; }
+
 addtable_entity
 	= table_name
 		{ command_object.type = "table"; }
@@ -464,6 +467,29 @@ counter
 				}
 			});
 		}
+
+////////////////////////////////////////////////////////////////////////////
+// Sets
+settype_expression
+	= "{" __ "type" _ st:set_type _ sid:set_id __ "}"
+		{
+			command_object.params.set 
+			command_object.params.flags = 0;
+			command_object.params.key_type = st.skt;
+			command_object.params.key_len = st.skl;
+			command_object.params.id = sid;
+		}
+
+set_type
+	= "ipv4_addr" 	{ return { skt: 7, skl: 4 }; }
+	/ "ipv6_addr" 	{ return { skt: 8, skl: 16 }; }
+	/ "ether_addr" 	{ return { skt: 9, skl: 6 }; }
+	/ "inet_proto" 	{ return { skt: 12, skl: 1 }; }
+	/ "inet_service" 	{ return { skt: 13, skl: 2 }; }
+	/ "mark" 			{ return { skt: 19, skl: 4 }; }
+
+set_id
+	= "id" _ decimal / hex
 
 ////////////////////////////////////////////////////////////////////////////
 hook_expression          //{ type filter hook input priority 0 }

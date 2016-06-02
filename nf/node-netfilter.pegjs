@@ -84,6 +84,9 @@ list_entity
 	/ "rules"__ table_identifier __ chain_identifier
 		{ command_object.type = "rule"; }
 
+	/ "set" _ set_name
+		{ command_object.type = "set"; }
+
 add_entity
 	= "table" _ table_name
 		{ command_object.type = "table"; }
@@ -144,6 +147,9 @@ chain_specifier
 rule_specifier
 	= __ table_identifier __ chain_identifier?
 
+set_name
+	= st:set { command_object.params.name = st; }
+
 rule_expression
 	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? misc:rule_misc?
 		{
@@ -185,6 +191,12 @@ chain
 	= chain:[a-zA-Z]+
 		{
 			return chain.join("");
+		}
+
+set
+	= set:[a-zA-Z]+
+		{
+			return set.join("");
 		}
 
 rule_handle

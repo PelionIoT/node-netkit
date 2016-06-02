@@ -612,47 +612,45 @@ nft = {
 // 	NFT_SET_POL_MEMORY,
 // };
 
-// /**
-//  * enum nft_set_desc_attributes - set element description
-//  *
-//  * @NFTA_SET_DESC_SIZE: number of elements in set (NLA_U32)
-//  */
-// enum nft_set_desc_attributes {
-// 	NFTA_SET_DESC_UNSPEC,
-// 	NFTA_SET_DESC_SIZE,
-// 	__NFTA_SET_DESC_MAX
-// };
-// #define NFTA_SET_DESC_MAX	(__NFTA_SET_DESC_MAX - 1)
+	/**
+	 * enum nft_set_desc_attributes - set element description
+	 *
+	 * @NFTA_SET_DESC_SIZE: number of elements in set (NLA_U32)
+	 */
+	nft_set_desc_attributes: {
+		NFTA_SET_DESC_UNSPEC: 	0,
+		NFTA_SET_DESC_SIZE: 	1,
+		NFTA_SET_DESC_SPEC: 	['','n/32']
+	},
 
-// /**
-//  * enum nft_set_attributes - nf_tables set netlink attributes
-//  *
-//  * @NFTA_SET_TABLE: table name (NLA_STRING)
-//  * @NFTA_SET_NAME: set name (NLA_STRING)
-//  * @NFTA_SET_FLAGS: bitmask of enum nft_set_flags (NLA_U32)
-//  * @NFTA_SET_KEY_TYPE: key data type, informational purpose only (NLA_U32)
-//  * @NFTA_SET_KEY_LEN: key data length (NLA_U32)
-//  * @NFTA_SET_DATA_TYPE: mapping data type (NLA_U32)
-//  * @NFTA_SET_DATA_LEN: mapping data length (NLA_U32)
-//  * @NFTA_SET_POLICY: selection policy (NLA_U32)
-//  * @NFTA_SET_DESC: set description (NLA_NESTED)
-//  * @NFTA_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
-//  */
-// enum nft_set_attributes {
-// 	NFTA_SET_UNSPEC,
-// 	NFTA_SET_TABLE,
-// 	NFTA_SET_NAME,
-// 	NFTA_SET_FLAGS,
-// 	NFTA_SET_KEY_TYPE,
-// 	NFTA_SET_KEY_LEN,
-// 	NFTA_SET_DATA_TYPE,
-// 	NFTA_SET_DATA_LEN,
-// 	NFTA_SET_POLICY,
-// 	NFTA_SET_DESC,
-// 	NFTA_SET_ID,
-// 	__NFTA_SET_MAX
-// };
-// #define NFTA_SET_MAX		(__NFTA_SET_MAX - 1)
+	/**
+	 * enum nft_set_attributes - nf_tables set netlink attributes
+	 *
+	 * @NFTA_SET_TABLE: table name (NLA_STRING)
+	 * @NFTA_SET_NAME: set name (NLA_STRING)
+	 * @NFTA_SET_FLAGS: bitmask of enum nft_set_flags (NLA_U32)
+	 * @NFTA_SET_KEY_TYPE: key data type, informational purpose only (NLA_U32)
+	 * @NFTA_SET_KEY_LEN: key data length (NLA_U32)
+	 * @NFTA_SET_DATA_TYPE: mapping data type (NLA_U32)
+	 * @NFTA_SET_DATA_LEN: mapping data length (NLA_U32)
+	 * @NFTA_SET_POLICY: selection policy (NLA_U32)
+	 * @NFTA_SET_DESC: set description (NLA_NESTED)
+	 * @NFTA_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
+	 */
+	nft_set_attributes: {
+		NFTA_SET_UNSPEC: 		0,
+		NFTA_SET_TABLE: 		1,
+		NFTA_SET_NAME: 			2,
+		NFTA_SET_FLAGS: 		3,
+		NFTA_SET_KEY_TYPE: 		4,
+		NFTA_SET_KEY_LEN: 		5,
+		NFTA_SET_DATA_TYPE: 	6,
+		NFTA_SET_DATA_LEN: 		7,
+		NFTA_SET_POLICY: 		8,
+		NFTA_SET_DESC: 			9,
+		NFTA_SET_ID: 			10,
+		NFTA_SET_SPEC: 			['','s','s','n/32','n/32','n/32','n/32','n/32','n/32','r/nft_set_desc_attributes','n/32']
+	},
 
 // /**
 //  * enum nft_set_elem_flags - nf_tables set element flags
@@ -768,23 +766,22 @@ nft = {
 // 	NFT_CMP_GT,
 // 	NFT_CMP_GTE,
 // };
-// /**
-//  * enum nft_lookup_attributes - nf_tables set lookup expression netlink attributes
-//  *
-//  * @NFTA_LOOKUP_SET: name of the set where to look for (NLA_STRING)
-//  * @NFTA_LOOKUP_SREG: source register of the data to look for (NLA_U32: nft_registers)
-//  * @NFTA_LOOKUP_DREG: destination register (NLA_U32: nft_registers)
-//  * @NFTA_LOOKUP_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
-//  */
-// enum nft_lookup_attributes {
-// 	NFTA_LOOKUP_UNSPEC,
-// 	NFTA_LOOKUP_SET,
-// 	NFTA_LOOKUP_SREG,
-// 	NFTA_LOOKUP_DREG,
-// 	NFTA_LOOKUP_SET_ID,
-// 	__NFTA_LOOKUP_MAX
-// };
-// #define NFTA_LOOKUP_MAX		(__NFTA_LOOKUP_MAX - 1)
+	/**
+	 * enum nft_lookup_attributes - nf_tables set lookup expression netlink attributes
+	 *
+	 * @NFTA_LOOKUP_SET: name of the set where to look for (NLA_STRING)
+	 * @NFTA_LOOKUP_SREG: source register of the data to look for (NLA_U32: nft_registers)
+	 * @NFTA_LOOKUP_DREG: destination register (NLA_U32: nft_registers)
+	 * @NFTA_LOOKUP_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
+	 */
+	nft_lookup_attributes: {
+		NFTA_LOOKUP_UNSPEC: 	0,
+		NFTA_LOOKUP_SET: 		1,
+		NFTA_LOOKUP_SREG: 		2,
+		NFTA_LOOKUP_DREG: 		3,
+		NFTA_LOOKUP_SET_ID: 	4,
+		NFTA_LOOKUP_SPEC: 		['','n/32','n/32','n/32']
+	},
 
 // /**
 //  * enum nft_payload_bases - nf_tables payload expression offset bases

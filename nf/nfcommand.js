@@ -149,6 +149,12 @@ nfcommand = {
 					case "chain":
 						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
 						break;
+					case "set":
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					default:
+						return cb(new Error(command + " not implemented for type " + type));
+						break;
 				}
 				break;
 			default:

@@ -126,8 +126,8 @@ nf = {
 			retVal.name = 'rule';
 		} else if(nf.NFT_MSG_NEWSET <= type && type <= nf.NFT_MSG_DELSET) {
 		    //debug('SET');
+			retVal.keys = nft.nft_set_attributes
 			retVal.name = 'set';
-			throw new Error("set not implemented yet");
 		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
 		    //debug('SETELEM');
 			retVal.name = 'setelem';

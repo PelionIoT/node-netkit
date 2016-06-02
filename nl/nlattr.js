@@ -130,7 +130,7 @@ Attribute.prototype.getSpec = function(attrObject,key){
 	var spec_array = attrObject[attr_subtype_specname];
 
 	if(typeof spec_array === 'undefined'){
-		throw Error("command type " + this.attributeType + " does not exist in object: " + util.inspect(attrObject));
+		throw Error("command " +attr_subtype_specname + " does not exist in object: " + util.inspect(attrObject));
 	}
 	var siz = -1;
 	var typ = null;

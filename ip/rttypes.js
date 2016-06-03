@@ -80,23 +80,23 @@ var rttypes = {
           IFLA_LINK_OPERSTATE:          16,
           IFLA_LINK_LINKMODE:           17,
           IFLA_LINK_LINKINFO:           18,
-          IFLA_LINK_NET_NS_PID:         19,
+          IFLA_LINK_NETNSPID:         19,
           IFLA_LINK_IFALIAS:            20,
-          IFLA_LINK_NUM_VF:             21,
-          IFLA_LINK_VFINFO_LIST:        22,
+          IFLA_LINK_NUMVF:             21,
+          IFLA_LINK_VFINFOLIST:        22,
           IFLA_LINK_STATS64:            23,
-          IFLA_LINK_VF_PORTS:           24,
-          IFLA_LINK_PORT_SELF:          25,
-          IFLA_LINK_AF_SPEC:            26,
+          IFLA_LINK_VFPORTS:           24,
+          IFLA_LINK_PORTSELF:          25,
+          IFLA_LINK_AFSPEC:            26,
           IFLA_LINK_GROUP:              27,
-          IFLA_LINK_NET_NS_FD:          28,
-          IFLA_LINK_EXT_MASK:           29,
+          IFLA_LINK_NETNSFD:          28,
+          IFLA_LINK_EXTMASK:           29,
           IFLA_LINK_PROMISCUITY:        30,
-          IFLA_LINK_NUM_TX_QUEUES:      31,
-          IFLA_LINK_NUM_RX_QUEUES:      32,
+          IFLA_LINK_NUMTXQUEUES:      31,
+          IFLA_LINK_NUMRXQUEUES:      32,
           IFLA_LINK_CARRIER:            33,
-          IFLA_LINK_PHYS_PORT_ID:       34,
-          IFLA_LINK_CARRIER_CHANGES:    35,
+          IFLA_LINK_PHYSPORTID:       34,
+          IFLA_LINK_CARRIERCHANGES:    35,
           IFLA_LINK_SPEC:               link_attributes_spec
      },
 
@@ -146,7 +146,7 @@ var rttypes = {
           IFLA_INET6_CACHEINFO:    5,    /* time values and max reasm size */
           IFLA_INET6_ICMP6STATS:   6,   /* statistics (icmpv6)        */
           IFLA_INET6_TOKEN:        7,   /* device token               */
-          IFLA_INET6_ADDR_GEN_MODE:8, /* implicit address generator mode */
+          IFLA_INET6_ADDRGENMODE:8, /* implicit address generator mode */
           IFLA_INET6_SPEC:    []
      },
 
@@ -183,12 +183,12 @@ var rttypes = {
           IFLA_BRPORT_MODE:        4,   /* mode (hairpin)          */
           IFLA_BRPORT_GUARD:       5,  /* bpdu guard              */
           IFLA_BRPORT_PROTECT:     6,     /* root port protection    */
-          IFLA_BRPORT_FAST_LEAVE:  7,  /* multicast fast leave    */
+          IFLA_BRPORT_FASTLEAVE:  7,  /* multicast fast leave    */
           IFLA_BRPORT_LEARNING:    8,    /* mac learning */
-          IFLA_BRPORT_UNICAST_FLOOD: 9, /* flood unicast traffic */
+          IFLA_BRPORT_UNICASTFLOOD: 9, /* flood unicast traffic */
           IFLA_BRPORT_PROXYARP:    10,    /* proxy ARP */
-          IFLA_BRPORT_LEARNING_SYNC: 11, /* mac learning sync from device */
-          IFLA_BRPORT_PROXYARP_WIFI: 12, /* proxy ARP for Wi-Fi */
+          IFLA_BRPORT_LEARNINGSYNC: 11, /* mac learning sync from device */
+          IFLA_BRPORT_PROXYARPWIFI: 12, /* proxy ARP for Wi-Fi */
           IFLA_BRPORT_SPEC: ['', 'n/8', 'n/16', 'n/32', 'n/8', 'n/8', 'n/8', 'n/8','n/8', 'n/8','n/8', 'n/8', 'n/8']
      },
 
@@ -205,8 +205,8 @@ var rttypes = {
           IFLA_INFO_KIND:          1,
           IFLA_INFO_INFODATA:      2,
           IFLA_INFO_XSTATS:        3,
-          IFLA_INFO_SLAVE_KIND:    4,
-          IFLA_INFO_SLAVE_DATA:    5,
+          IFLA_INFO_SLAVEKIND:    4,
+          IFLA_INFO_SLAVEDATA:    5,
           IFLA_INFO_SPEC:          ['','s','f/infotype_parser','','',''],
           infotype_parser: function(type) {
                switch(type) {
@@ -600,7 +600,7 @@ var rttypes = {
           IFLA_ROUTE_FLOW: 11,
           IFLA_ROUTE_CACHEINFO: 12,
           IFLA_ROUTE_SESSION: 13, /* no longer used */
-          IFLA_ROUTE_MP_ALGO: 14, /* no longer used */
+          IFLA_ROUTE_MPALGO: 14, /* no longer used */
           IFLA_ROUTE_TABLE: 15,
           IFLA_ROUTE_MARK: 16,
           IFLA_ROUTE_MFC_STATS: 17,

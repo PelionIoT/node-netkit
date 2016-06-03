@@ -69,6 +69,6 @@
 	"flush ip6 table filter",
 	"flush ip chain filter input",
 
-	"add set filter blackhole { type ipv4_addr id 1 }",
+	"add set filter blackhole { type ipv4_addr }",
 	"list set blackhole"
 ]

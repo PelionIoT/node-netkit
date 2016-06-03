@@ -1,3 +1,5 @@
+'use strict';
+
 var NlAttributes = require('../nl/nlattributes.js');
 var nlnetfilter = require('./nlnetfilter.js');
 var nlnf = require('../nl/nfnetlink.js');
@@ -6,7 +8,7 @@ var cmn = require("../libs/common.js");
 var fs = require("fs");
 var parser = require("./node-netfilter.js");
 
-nfcommand = {
+var nfcommand = {
 
 	command: function(command, cb) {
 		//console.dir(command);
@@ -14,7 +16,7 @@ nfcommand = {
 		var nft = that.nf.nft;
 
 		var opts = parser.parse(command);
-		opts['sybsys'] = nlnf.NFNL_SUBSYS_NFTABLES;
+		opts.sybsys = nlnf.NFNL_SUBSYS_NFTABLES;
 		nfcommand.build_command(opts,function(err){
 			//console.log(util.inspect(opts, {depth: null}));
 			if(err) {
@@ -89,7 +91,14 @@ nfcommand = {
 				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
 				break;
 			case "list":
-				opts['cmd'] =  nf['NFT_MSG_GET' + type];
+				switch(type) {
+					case "SET":
+						opts['cmd'] =  nf.NFT_MSG_GETSETELEM;
+						break;
+					default:
+						opts['cmd'] =  nf['NFT_MSG_GET' + type];
+						break;
+				}
 				break;
 			default:
 				return cb(new Error(command +
@@ -164,6 +173,9 @@ nfcommand = {
 						break;
 					case "set":
 						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						break;
+					case "set_elem_list":
+						opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_ACK;
 						break;
 					default:
 						return cb(new Error(command + " not implemented for type " + type));

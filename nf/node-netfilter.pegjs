@@ -87,6 +87,12 @@ list_entity
 	/ "set" _ set_name
 		{ command_object.type = "set"; }
 
+	/ "elements" _ table_identifier _ set_name
+		{ 
+			command_object.type = "set"; 
+			command_object.params.id = 1; 
+		}
+
 add_entity
 	= "table" _ table_name
 		{ command_object.type = "table"; }
@@ -478,13 +484,13 @@ counter
 ////////////////////////////////////////////////////////////////////////////
 // Sets
 settype_expression
-	= "{" __ "type" _ st:set_type _ sid:set_id __ "}"
+	= "{" __ "type" _ st:set_type "}"
 		{
 			command_object.params.set 
 			command_object.params.flags = 0;
 			command_object.params.key_type = st.skt;
 			command_object.params.key_len = st.skl;
-			command_object.params.id = sid;
+			command_object.params.id = 1; //sid;
 		}
 
 set_type

@@ -78,10 +78,7 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	var index = attr_buffer.readUInt16LE(2); // & (~0x20);
 	try {
 		var remain = Object.keys(attr_list)[index].split('_');
-		remain.shift();
-		remain.shift();
-		this.key = remain.join('_').toLowerCase();
-
+		this.key = remain.pop().toLowerCase();;
 	} catch(e) {
 		throw Error("index [" + index + "] does not exist in object: " + util.inspect(attr_list) );
 	}
@@ -90,7 +87,6 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	t.shift();
 	t.pop();
 	this.attributeType = t.join('_').toLowerCase();
-
 
 	this.spec = this.getSpec(attr_list,this.key);
 	this.value = this.getBufferAsValue(attr_buffer);

@@ -94,12 +94,13 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 			var op = cur_result.payload.operation;
 			if(op.startsWith('new')) {
 				var that = this;
-				var entity = cur_result.payload[op.substring(3)];
+				var entity = cur_result.payload[op.substring(3)]; 
 				if(typeof this.parameters === 'object') {
 
 					Object.keys(this.parameters).forEach(function(key){
-						if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key])
-							filter = true;
+						if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key]){
+							//filter = true;
+						}
 					});
 				}
 			}
@@ -344,9 +345,10 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
 		//this.logAttributeBuffers();
 
-		ret['operation'] = this.netlink_type.getNlTypeName(type);
+		ret.operation = this.netlink_type.getNlTypeName(type);
 		ret[name] = payload;
 	}
+
 	return ret;
 };
 

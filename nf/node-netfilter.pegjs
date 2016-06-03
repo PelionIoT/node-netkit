@@ -500,15 +500,17 @@ set_id
 		{ return d.toNumber(); }
 
 element_expression
-	= "{" __ el:ipv4addr_element __ "}"
+	= "{" __ el:ipv4addr_element* __ "}"
 	{
 		command_object.params.elements = [];
-		command_object.params.elements.push(el);
+		el.forEach(function(e) {
+			command_object.params.elements.push(e);
+		})
 	}
 
 
 ipv4addr_element
-	= octets:octets
+	= ","? __ octets:octets
 		{  debug("ipv4addr");
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
 			var addr = new Buffer(4);

@@ -40,7 +40,11 @@ Attribute.prototype.makeFromKey = function(params, attr_object, key) {
 	this.attribute_list = params;
 
 	try {
-		this.attributeType = Object.keys(attr_object)[0].split('_')[1];
+		var t = Object.keys(attr_object)[0].split('_');
+		t.shift();
+		t.pop();
+		this.attributeType = t.join('_').toLowerCase();
+
 	} catch(e) {
 		throw Error("key [" + key_name + "] for attribute [" + this.attributeType +
 			"] does not exist in command object: " + util.inspect(attrObject) );
@@ -82,7 +86,11 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 		throw Error("index [" + index + "] does not exist in object: " + util.inspect(attr_list) );
 	}
 
-	this.attributeType = Object.keys(attr_list)[0].split('_')[1];
+	var t = Object.keys(attr_list)[0].split('_');
+	t.shift();
+	t.pop();
+	this.attributeType = t.join('_').toLowerCase();
+
 
 	this.spec = this.getSpec(attr_list,this.key);
 	this.value = this.getBufferAsValue(attr_buffer);
@@ -158,7 +166,13 @@ Attribute.prototype.getSpec = function(attrObject,key){
 
 Attribute.prototype.getNestedAttributes = function(that,params,funcval) {
 	var get_attr_type = this.netlink_type.getAttrType ||
-		function(spec) { return spec.split('_')[1]; };
+		function(spec) { 
+			// return spec.split('_')[1]; 
+			var t = spec.split('_');
+			t.shift();
+			t.pop();
+			return (t.join('_').toLowerCase());
+		};
 
 	var nest_attrs_type = null;
 	if(this.isExpression) {  //expression
@@ -229,7 +243,7 @@ Attribute.prototype.setBuffer = function() {
 };
 
 Attribute.prototype.getStringBuffer = function() {
-	var buf = Buffer(this.value); // + '\0');
+	var buf = Buffer(this.value + '\0');
 	var full_attribute = rt.buildRtattrBuf(this.spec.typeval, buf);
 	return full_attribute;
 };
@@ -312,7 +326,7 @@ Attribute.prototype.getNumberBuffer = function() {
 Attribute.prototype.getNestedBuf = function() {
 	var buf = Buffer([0,0,0,0]);
 	buf.writeUInt16LE(4, 0);
-	buf.writeUInt16LE(/*nf.flags.NLA_F_NESTED |*/ this.spec.typeval, 2 );
+	buf.writeUInt16LE(nf.flags.NLA_F_NESTED | this.spec.typeval, 2 );
 	return buf;
 };
 

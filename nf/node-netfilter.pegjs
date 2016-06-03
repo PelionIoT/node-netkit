@@ -100,6 +100,9 @@ add_entity
 	/ "set" _ table_identifier _ set_name _ settype_expression
 		{ command_object.type = "set"; }
 
+	/ "element" _ set_identifier _ element_expression
+		{ command_object.type = "set_elem_list"; }
+
 addtable_entity
 	= table_name
 		{ command_object.type = "table"; }
@@ -152,6 +155,10 @@ rule_specifier
 
 set_name
 	= st:set { command_object.params.name = st; }
+
+set_identifier
+	= ti:table _ st:set
+		{ command_object.params.set = st; command_object.params.table = ti; }
 
 rule_expression
 	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? misc:rule_misc?
@@ -314,8 +321,8 @@ udp_field
 
 packet_field_value
 	= nm:number { return nm; }
-	/ other:([a-z]*) { throw new Error("Only numeric field types currently supported"); }
 	/ ad:ipaddress { return ad; }
+	/ other:([a-z]*) { throw new Error("Only numeric field types currently supported"); }
 
 ipaddress
 	= ipa:(ipv4address / ipv6address)
@@ -489,7 +496,38 @@ set_type
 	/ "mark" 			{ return { skt: 19, skl: 4 }; }
 
 set_id
-	= "id" _ decimal / hex
+	= "id" _ d:decimal
+		{ return d.toNumber(); }
+
+element_expression
+	= "{" __ el:ipv4addr_element __ "}"
+	{
+		command_object.params.elements = [];
+		command_object.params.elements.push(el);
+	}
+
+
+ipv4addr_element
+	= octets:octets
+		{  debug("ipv4addr");
+			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
+			var addr = new Buffer(4);
+			addr.writeUInt8( parseInt(octets[0], 10), 0);
+			addr.writeUInt8( parseInt(octets[1], 10), 1);
+			addr.writeUInt8( parseInt(octets[2], 10), 2);
+			addr.writeUInt8( parseInt(octets[3], 10), 3);
+
+			return {
+	            key:
+	            {
+	            	VALUE: {
+						// overkill but throws for bad hex val
+						VALUE: "0x" + addr.toString('hex')
+	            	}
+				}
+			};
+		}
+
 
 ////////////////////////////////////////////////////////////////////////////
 hook_expression          //{ type filter hook input priority 0 }

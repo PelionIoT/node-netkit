@@ -53,7 +53,14 @@ nfcommand = {
 				opts['cmd'] = nf['NFT_MSG_GET'+ type];
 				break;
 			case "add":
-				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
+				switch(type) {
+					case "SET_ELEM_LIST":
+						opts['cmd'] =  nf.NFT_MSG_NEWSETELEM;
+						break;
+					default:
+						opts['cmd'] =  nf['NFT_MSG_NEW' + type];
+						break;
+				}
 				break;
 			case "insert":
 				switch(type) {
@@ -113,6 +120,12 @@ nfcommand = {
 				switch(type) {
 					case "rule":
 						opts['type_flags'] =  nl.NLM_F_APPEND | nl.NLM_F_CREATE |nl.NLM_F_ACK;
+						break;
+					case "set_elem_list":
+						opts['type_flags'] =  nl.NLM_F_ATOMIC;
+						break;
+					case "set":
+						opts['type_flags'] =  nl.NLM_F_ATOMIC;
 						break;
 					default:
 						opts['type_flags'] =  nl.NLM_F_ACK;

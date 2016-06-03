@@ -673,47 +673,50 @@ nft = {
 		NFTA_SET_ELEM_KEY: 		1,
 		NFTA_SET_ELEM_DATA: 	2,
 		NFTA_SET_ELEM_FLAGS: 	3,
-		NFTA_SET_ELEM_SPEC: 	['','r/nft_data', 'r/nft_data_attributes', 'n/32'],
+		NFTA_SET_ELEM_SPEC: 	['','r/nft_datadata_attributes', 'r/nft_data_attributes', 'n/32'],
 	},
 
-// /**
-//  * enum nft_set_elem_list_attributes - nf_tables set element list netlink attributes
-//  *
-//  * @NFTA_SET_ELEM_LIST_TABLE: table of the set to be changed (NLA_STRING)
-//  * @NFTA_SET_ELEM_LIST_SET: name of the set to be changed (NLA_STRING)
-//  * @NFTA_SET_ELEM_LIST_ELEMENTS: list of set elements (NLA_NESTED: nft_set_elem_attributes)
-//  * @NFTA_SET_ELEM_LIST_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
-//  */
-// enum nft_set_elem_list_attributes {
-// 	NFTA_SET_ELEM_LIST_UNSPEC,
-// 	NFTA_SET_ELEM_LIST_TABLE,
-// 	NFTA_SET_ELEM_LIST_SET,
-// 	NFTA_SET_ELEM_LIST_ELEMENTS,
-// 	NFTA_SET_ELEM_LIST_SET_ID,
-// 	__NFTA_SET_ELEM_LIST_MAX
-// };
-// #define NFTA_SET_ELEM_LIST_MAX	(__NFTA_SET_ELEM_LIST_MAX - 1)
+	/**
+	 * enum nft_set_elem_list_attributes - nf_tables set element list netlink attributes
+	 *
+	 * @NFTA_SET_ELEM_LIST_TABLE: table of the set to be changed (NLA_STRING)
+	 * @NFTA_SET_ELEM_LIST_SET: name of the set to be changed (NLA_STRING)
+	 * @NFTA_SET_ELEM_LIST_ELEMENTS: list of set elements (NLA_NESTED: nft_set_elem_attributes)
+	 * @NFTA_SET_ELEM_LIST_SET_ID: uniquely identifies a set in a transaction (NLA_U32)
+	 */
+	nft_set_elem_list_attributes: {
+		NFTA_SET_ELEM_LIST_UNSPEC: 		0,
+		NFTA_SET_ELEM_LIST_TABLE: 		1,
+		NFTA_SET_ELEM_LIST_SET: 		2,
+		NFTA_SET_ELEM_LIST_ELEMENTS: 	3,
+		NFTA_SET_ELEM_LIST_SET_ID: 		4,
+		NFTA_SET_ELEM_LIST_SPEC: 		['','s','s','l/nft_set_elem_attributes','n/32']
+	},
 
-// /**
-//  * enum nft_data_types - nf_tables data types
-//  *
-//  * @NFT_DATA_VALUE: generic data
-//  * @NFT_DATA_VERDICT: netfilter verdict
-//  *
-//  * The type of data is usually determined by the kernel directly and is not
-//  * explicitly specified by userspace. The only difference are sets, where
-//  * userspace specifies the key and mapping data types.
-//  *
-//  * The values 0xffffff00-0xffffffff are reserved for internally used types.
-//  * The remaining range can be freely used by userspace to encode types, all
-//  * values are equivalent to NFT_DATA_VALUE.
-//  */
-// enum nft_data_types {
-// 	NFT_DATA_VALUE,
-// 	NFT_DATA_VERDICT	= 0xffffff00U,
-// };
+	nft_datadata_attributes: {
+		NFTA_DATA_UNSPEC: 		0,
+		NFTA_DATA_VALUE: 		1,
+		NFTA_DATA_SPEC: 		['', 'r/nft_data_attributes']
+	},
 
-// #define NFT_DATA_RESERVED_MASK	0xffffff00U
+	/**
+	 * enum nft_data_types - nf_tables data types
+	 *
+	 * @NFT_DATA_VALUE: generic data
+	 * @NFT_DATA_VERDICT: netfilter verdict
+	 *
+	 * The type of data is usually determined by the kernel directly and is not
+	 * explicitly specified by userspace. The only difference are sets, where
+	 * userspace specifies the key and mapping data types.
+	 *
+	 * The values 0xffffff00-0xffffffff are reserved for internally used types.
+	 * The remaining range can be freely used by userspace to encode types, all
+	 * values are equivalent to NFT_DATA_VALUE.
+	 */
+	// nft_data_types: {
+	// 	NFT_DATA_VALUE: 	0,
+	// 	NFT_DATA_VERDICT: 	0xffffff00U
+	// },
 
 
 // /**

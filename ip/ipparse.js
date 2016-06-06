@@ -214,7 +214,7 @@ var ipparse = {
 				}
 			}
 
-			ret.event.ifname = ch['ifname'];
+			ret.ifname = ch['ifname'];
 			if(Buffer.isBuffer(ch['address'])) {
 				ret.event.address = ipparse.getBufferAsHexAddr(ch['address']);
 			} else {

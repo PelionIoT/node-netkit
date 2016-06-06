@@ -71,4 +71,5 @@
 
 	"add set filter blackhole { type ipv4_addr }",
 	"list set blackhole"
+	"list elements filter blackhole"
 ]

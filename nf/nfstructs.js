@@ -26,6 +26,28 @@ nfstructs = (function(){
 		return "0x" + b.toString('hex');
 	}
 
+	var get_number_value_be = function(value, size) {
+		var b = new Buffer(size);
+		b.fill(0);
+		switch(size) {
+			case 1:
+				b.writeUInt8(value);
+				break;
+			case 2:
+				b.writeUInt16BE(value);
+				break;
+			case 4:
+				b.writeUInt32BE(value);
+				break;
+			// case 8:
+			// 	b.writeUInt
+			// 	break;
+			default:
+				throw new Error("Bad meta value size specified: " + size);
+		}
+		return "0x" + b.toString('hex');
+	}
+
 	var get_string_value = function(value, value_size) {
 		var b = new Buffer(value_size);
 		b.fill(0);
@@ -158,33 +180,52 @@ nfstructs = (function(){
 	        };
 	}
 
-	var nat_expression = function(type, address, family) {
+	var nat_expression = function(type, address, port, family) {
 
-		return [
-			{
+		var ret = [];
+
+		ret.push({
 	            elem:
 	            {
 					name: "immediate",
 					data: {
-						DREG: 		nft.nft_registers.NFT_REG_1,
+						DREG: 	nft.nft_registers.NFT_REG_1,
 						DATA: {
 							VALUE: '0x' + address
 						}		
 	                }
 				}
-			},
-			{
-				elem:
+			});
+
+		if(port !== null) {
+			ret.push(
 				{
-					name: "nat",
-					data: {
-						TYPE:       (type === 'snat' ? 0 : 1),
-						FAMILY: 	(family === 'ip' ? 2 : 6),
-						REGADDRMIN: 1
-	                }
-	            }
-	        }
-        ];
+		            elem:
+		            {
+						name: "immediate",
+						data: {
+							DREG: 	nft.nft_registers.NFT_REG_2,
+							DATA: {
+								VALUE: get_number_value_be(port,4)
+							}		
+		                }
+					}
+				});
+		}
+
+		ret.push({
+			elem:
+			{
+				name: "nat",
+				data: {
+					TYPE:       (type === 'snat' ? 0 : 1),
+					FAMILY: 	(family === 'ip' ? 2 : 6),
+					REGADDRMIN: 1
+                }
+            }
+        });
+
+      	return ret;
 	}
 
 	var protocol = function(prot) {

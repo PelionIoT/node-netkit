@@ -237,16 +237,22 @@ rule_action
 		}
 
 nat_expr
-	= ty:("dnat" / "snat") _ na:nat_address
+	= ty:("dnat" / "snat") _ na:nat_address np:nat_port?
 		{
 			debug('nat_expr');
-			return structs.build_nat_expression(ty, na, command_object.family);
+			return structs.build_nat_expression(ty, na, np, command_object.family);
 		}
 
 nat_address
 	= na:(octets / quads)
 		{
 			return na;
+		}
+
+nat_port
+	= ":" np:[0-9]+
+		{
+			return np.join("");
 		}
 
 rule_misc

@@ -127,6 +127,9 @@ delete_entity
 	/ "rule" _ table_identifier _ chain_identifier _ rule_handle
 		{ command_object.type = "rule"; }
 
+	/ "element" _ set_identifier _ element_expression
+		{ command_object.type = "set_elem_list"; }
+
 flush_entity
 	= "table" _ table_name
 		{ command_object.type = "table"; }
@@ -167,7 +170,7 @@ set_identifier
 		{ command_object.params.set = st; command_object.params.table = ti; }
 
 rule_expression
-	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? misc:rule_misc?
+	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? nat:nat_expr? misc:rule_misc?
 		{
 
 			var exprs = [];
@@ -192,6 +195,11 @@ rule_expression
 			}
 			if(lgst != undefined) exprs.push(lgst);
 			if(act != undefined) exprs.push(act);
+			if(nat != undefined) {
+				nat.forEach(function(n){
+					exprs.push(n)
+				});
+			}
 			if(misc != undefined) exprs.push(misc);
 
 			command_object.params.expressions = exprs;
@@ -226,6 +234,19 @@ rule_action
 	= ra:(drop / accept) __
 		{
 			return(ra);
+		}
+
+nat_expr
+	= ty:("dnat" / "snat") _ na:nat_address
+		{
+			debug('nat_expr');
+			return structs.build_nat_expression(ty, na, command_object.family);
+		}
+
+nat_address
+	= na:(octets / quads)
+		{
+			return na;
 		}
 
 rule_misc
@@ -392,11 +413,6 @@ ipv4addr
 	= octets:octets
 		{  debug("ipv4addr");
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
-			var addr = new Buffer(4);
-			addr.writeUInt8( parseInt(octets[0], 10), 0);
-			addr.writeUInt8( parseInt(octets[1], 10), 1);
-			addr.writeUInt8( parseInt(octets[2], 10), 2);
-			addr.writeUInt8( parseInt(octets[3], 10), 3);
 
 			expressions_array.push(
 			{
@@ -408,7 +424,7 @@ ipv4addr
 						OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
 						DATA: 		{
 										// overkill but throws for bad hex val
-										VALUE: "0x" + addr.toString('hex')
+										VALUE: "0x" + octets
 									} // C0A83800 = 192.168.56.0
 	                }
 				}
@@ -519,18 +535,13 @@ ipv4addr_element
 	= ","? __ octets:octets
 		{  debug("ipv4addr");
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
-			var addr = new Buffer(4);
-			addr.writeUInt8( parseInt(octets[0], 10), 0);
-			addr.writeUInt8( parseInt(octets[1], 10), 1);
-			addr.writeUInt8( parseInt(octets[2], 10), 2);
-			addr.writeUInt8( parseInt(octets[3], 10), 3);
 
 			return {
 	            key:
 	            {
 	            	VALUE: {
 						// overkill but throws for bad hex val
-						VALUE: "0x" + addr.toString('hex')
+						VALUE: "0x" + octets
 	            	}
 				}
 			};
@@ -541,10 +552,10 @@ ipv4addr_element
 hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
-			command_object.params.type = ht;
 			command_object.params.hook = {};
 			command_object.params.hook.hooknum = hn;
 			command_object.params.hook.priority = hp;
+			command_object.params.type = ht;
 		}
 
 hooktype
@@ -789,7 +800,14 @@ ipv4cidr
 octets
 	= oct1:([0-9]+) "." oct2:([0-9]+) "." oct3:([0-9]+) "." oct4:([0-9]+)
 		{
-			return [ oct1.join(""), oct2.join(""), oct3.join(""), oct4.join("") ];
+			var addr = new Buffer(4);
+			var octets = [ oct1.join(""), oct2.join(""), oct3.join(""), oct4.join("") ];
+			addr.writeUInt8( parseInt(octets[0], 10), 0);
+			addr.writeUInt8( parseInt(octets[1], 10), 1);
+			addr.writeUInt8( parseInt(octets[2], 10), 2);
+			addr.writeUInt8( parseInt(octets[3], 10), 3);
+
+			return addr.toString('hex');
 		}
 
 quads

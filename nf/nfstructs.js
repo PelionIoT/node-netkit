@@ -35,7 +35,7 @@ nfstructs = (function(){
 
 
 	var meta_int = function(meta_key, value, value_size, set) {
-		if(set === null) {
+		if(typeof set === 'undefined') {
 	        return [
 		        {
 		            elem:
@@ -88,7 +88,8 @@ nfstructs = (function(){
 	}
 
 	var meta_string = function(meta_key, value, value_size, set) {
-		if(set === null) {
+
+		if(typeof set === 'undefined') {
 			// just return a meta match expression
 	        return [
 		        {
@@ -157,6 +158,35 @@ nfstructs = (function(){
 	        };
 	}
 
+	var nat_expression = function(type, address, family) {
+
+		return [
+			{
+	            elem:
+	            {
+					name: "immediate",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_1,
+						DATA: {
+							VALUE: '0x' + address
+						}		
+	                }
+				}
+			},
+			{
+				elem:
+				{
+					name: "nat",
+					data: {
+						TYPE:       (type === 'snat' ? 0 : 1),
+						FAMILY: 	(family === 'ip' ? 2 : 6),
+						REGADDRMIN: 1
+	                }
+	            }
+	        }
+        ];
+	}
+
 	var protocol = function(prot) {
 		return [
 			{
@@ -191,7 +221,8 @@ nfstructs = (function(){
 		build_meta_integer: meta_int,
 		build_meta_string: meta_string,
 		build_protocol: protocol,
-		build_packet_selector: packet_selector
+		build_packet_selector: packet_selector,
+		build_nat_expression: nat_expression
 	}
 
 })();

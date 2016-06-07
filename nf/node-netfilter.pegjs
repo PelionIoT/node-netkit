@@ -170,7 +170,7 @@ set_identifier
 		{ command_object.params.set = st; command_object.params.table = ti; }
 
 rule_expression
-	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? act:rule_action? nat:nat_expr? misc:rule_misc?
+	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? nat:nat_expr? misc:rule_misc? act:rule_action? 
 		{
 
 			var exprs = [];
@@ -194,13 +194,13 @@ rule_expression
 				});
 			}
 			if(lgst != undefined) exprs.push(lgst);
-			if(act != undefined) exprs.push(act);
 			if(nat != undefined) {
 				nat.forEach(function(n){
 					exprs.push(n)
 				});
 			}
 			if(misc != undefined) exprs.push(misc);
+			if(act != undefined) exprs.push(act);
 
 			command_object.params.expressions = exprs;
 		}
@@ -492,7 +492,7 @@ accept
 		}
 
 counter
-	= "counter"
+	= "counter" __
 		{
 	        return(
 	        {
@@ -722,8 +722,10 @@ log_flags
 		{ return d.toNumber(); }
 
 meta_stmt
-	= "meta" _ mp:meta_params __
-		{ return mp; }
+	= "meta" _ mp:meta_params __ me:mac_expression? __
+		{
+			if(me != null) mp = mp.concat(me); return mp; 
+		}
 
 meta_params
 	// see netfilter/nftables/src/meta.c line:363
@@ -743,7 +745,7 @@ meta_params
 		{ return structs.build_meta_string(nft.nft_meta_keys.IIFNAME, val, 14); }
 	/ "oifname" _ val:(string)
 		{ return structs.build_meta_string(nft.nft_meta_keys.OIFNAME, val, 14); }
-	/ "iiftype" _ val:(hex / decimal)
+	/ "iiftype" _ val:ether_type
 		{ return structs.build_meta_integer(nft.nft_meta_keys.IIFTYPE, val, 2); }
 	/ "oiftype" _ val:(hex / decimal)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.OIFTYPE, val, 2); }
@@ -781,7 +783,21 @@ ether_type
 	/ "arp"	{ return "0x0806"; }
 	/ "ip6" { return "0x86DD"; }
 	/ "vlan"{ return "0x8100"; }
+	/ "ether"{ return "0x001"; }
 
+mac_expression
+	= ma:mac_address
+		{
+			return structs.build_mac_payload(ma);
+		}
+
+mac_address
+	= ma:([0-9a-fA-F][0-9a-fA-F]":"[0-9a-fA-F][0-9a-fA-F]":"[0-9a-fA-F][0-9a-fA-F]":"[0-9a-fA-F][0-9a-fA-F]":"[0-9a-fA-F][0-9a-fA-F]":"[0-9a-fA-F][0-9a-fA-F])
+		{
+			var ret = ma.join("");
+			ret = ret.split(':').join("");
+			return(ret);
+		}
 
 ipv6cidr
 	= "/" cd:([0-9][0-9]?[0-9]?)

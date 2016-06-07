@@ -7,7 +7,7 @@ var options = {
 	// set the amount of packet data that nflog copies to userspace
 	// mode: COPY_NONE, COPY_META, COPY_PACKET (part of the packet we are interested in)
 	// range: size of packet to get
- 	packet_copy: { mode: "copy_packet", range: 0xFFFF },
+ 	packet_copy: { mode: "copy_none", range: 0xFFFF },
 
  	// set the group number of the events to listen to (default: 0)
 	res_id: 0,
@@ -28,7 +28,7 @@ var options = {
  	// 	pushes the log buffer to userspace if no new logged packets have occured.
  	// 	Basically, nflog implements a buffer to reduce the computational cost
  	// 	of delivering the log message to userspace.
-	timeout: 100
+	timeout: 1000
 
 	// There are two existing flags:
 	// 	- NFULNL_CFG_F_SEQ: This enables local nflog sequence numbering.

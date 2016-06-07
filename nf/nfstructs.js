@@ -270,6 +270,35 @@ nfstructs = (function(){
 		];
 	}
 
+	var mac_payload = function(mac) {
+
+		return [
+			{
+				elem:
+				{
+					name: "payload",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_1,
+						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_LL_HEADER,
+						OFFSET: 	nft.llhdr_offsets.saddr,
+						LEN: 		nft.llhdr_sizes.saddr
+		            }
+		        }
+		    },
+		    {
+		        elem:
+		        {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
+						DATA: 		{ VALUE: "0x" + mac } //nft.ip_proto.IPPROTO_TCP
+		            }
+				}
+			}
+		];
+
+	}
 
 	return {
 
@@ -277,7 +306,8 @@ nfstructs = (function(){
 		build_meta_string: meta_string,
 		build_protocol: protocol,
 		build_packet_selector: packet_selector,
-		build_nat_expression: nat_expression
+		build_nat_expression: nat_expression,
+		build_mac_payload: mac_payload
 	}
 
 })();

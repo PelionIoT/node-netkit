@@ -47,6 +47,17 @@
 	"add chain mangle postrouting { type filter hook postrouting priority -150 }",
 	"add rule mangle postrouting ip protocol 1 meta priority set 2 counter",
 
+	// setup nat travesal rules
+	"add table nat",
+	"add chain nat pre { type nat hook prerouting priority 0 }",
+	"add chain nat post { type nat hook postrouting priority 0 }",
+	"add rule nat pre udp dport 53 ip saddr 10.0.0.0/24 dnat 208.67.222.222:53",
+	"add rule nat post ip saddr 10.0.0.0/24 meta oif 2 snat 10.10.102.53",
+
+	// filtering and blocking forwarding to the wan device
+	"add rule filter forward ip ct state new meta oif 2 log prefix \"New outbound connection\" group 0 accept counter"
+	"add rule filter forward meta iiftype ether b4:75:0e:ed:8f:d1 drop counter",
+
 	"delete table filter",
 	"delete chain filter input",
 	"delete rule filter input handle 5",

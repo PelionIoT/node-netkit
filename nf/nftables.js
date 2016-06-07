@@ -185,6 +185,16 @@ nft = {
 		check: 		2
 	},
 
+
+	llhdr_offsets: {
+		saddr: 		6
+	},
+
+	llhdr_sizes: {
+		saddr: 		6
+	},
+
+
 	/*
 	* nft register defines
 	*/

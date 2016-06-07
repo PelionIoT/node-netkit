@@ -211,9 +211,20 @@ nfstructs = (function(){
 		                }
 					}
 				});
-		}
-
-		ret.push({
+			ret.push({
+				elem:
+				{
+					name: "nat",
+					data: {
+						TYPE:       (type === 'snat' ? 0 : 1),
+						FAMILY: 	(family === 'ip' ? 2 : 6),
+						REGADDRMIN: nft.nft_registers.NFT_REG_1,
+						REGPROTOMIN: nft.nft_registers.NFT_REG_2
+	                }
+	            }
+	        });
+		} else {
+					ret.push({
 			elem:
 			{
 				name: "nat",
@@ -224,6 +235,9 @@ nfstructs = (function(){
                 }
             }
         });
+
+		}
+
 
       	return ret;
 	}

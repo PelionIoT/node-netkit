@@ -136,6 +136,9 @@ var nfcommand = {
 					case "set":
 						opts['type_flags'] =  nl.NLM_F_ATOMIC;
 						break;
+					case "chain":
+						opts['type_flags'] =  nl.NLM_F_ATOMIC;
+						break;
 					default:
 						opts['type_flags'] =  nl.NLM_F_ACK;
 						break;

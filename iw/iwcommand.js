@@ -77,6 +77,8 @@ var iwcommand = (function() {
 				break;
 			case nl80211.commands.NL80211_CMD_GET_INTERFACE:
 				break;
+			case nl80211.commands.NL80211_CMD_GET_SURVEY:
+				break;
 			default:
 				throw new Error("command option not supported yet");
 		}

@@ -765,7 +765,7 @@ var iwtypes = {
         NL80211_WLANATTR_UNSPEC                         : 0,
 
         NL80211_WLANATTR_WIPHY                          : 1,
-        NL80211_WLANATTR_WIPHY_NAME                     : 2,
+        NL80211_WLANATTR_WIPHYNAME                     : 2,
 
         NL80211_WLANATTR_IFINDEX                        : 3,
         NL80211_WLANATTR_IFNAME                         : 4,
@@ -773,114 +773,114 @@ var iwtypes = {
 
         NL80211_WLANATTR_MAC                            : 6,
 
-        NL80211_WLANATTR_KEY_DATA                       : 7,
-        NL80211_WLANATTR_KEY_IDX                        : 8,
-        NL80211_WLANATTR_KEY_CIPHER                     : 9,
-        NL80211_WLANATTR_KEY_SEQ                        : 10,
-        NL80211_WLANATTR_KEY_DEFAULT                    : 11,
+        NL80211_WLANATTR_KEYDATA                       : 7,
+        NL80211_WLANATTR_KEYIDX                        : 8,
+        NL80211_WLANATTR_KEYCIPHER                     : 9,
+        NL80211_WLANATTR_KEYSEQ                        : 10,
+        NL80211_WLANATTR_KEYDEFAULT                    : 11,
 
-        NL80211_WLANATTR_BEACON_INTERVAL                : 12,
-        NL80211_WLANATTR_DTIM_PERIOD                    : 13,
-        NL80211_WLANATTR_BEACON_HEAD                    : 14,
-        NL80211_WLANATTR_BEACON_TAIL                    : 15,
+        NL80211_WLANATTR_BEACONINTERVAL                : 12,
+        NL80211_WLANATTR_DTIMPERIOD                    : 13,
+        NL80211_WLANATTR_BEACONHEAD                    : 14,
+        NL80211_WLANATTR_BEACONTAIL                    : 15,
 
-        NL80211_WLANATTR_STA_AID                        : 16,
-        NL80211_WLANATTR_STA_FLAGS                      : 17,
-        NL80211_WLANATTR_STA_LISTEN_INTERVAL            : 18,
-        NL80211_WLANATTR_STA_SUPPORTED_RATES            : 19,
-        NL80211_WLANATTR_STA_VLAN                       : 20,
+        NL80211_WLANATTR_STAAID                        : 16,
+        NL80211_WLANATTR_STAFLAGS                      : 17,
+        NL80211_WLANATTR_STALISTENINTERVAL            : 18,
+        NL80211_WLANATTR_STASUPPORTEDRATES            : 19,
+        NL80211_WLANATTR_STAVLAN                       : 20,
         NL80211_WLANATTR_STAINFO                        : 21,
 
-        NL80211_WLANATTR_WIPHY_BANDS                    : 22,
+        NL80211_WLANATTR_WIPHYBANDS                    : 22,
 
-        NL80211_WLANATTR_MNTR_FLAGS                     : 23,
+        NL80211_WLANATTR_MNTRFLAGS                     : 23,
 
-        NL80211_WLANATTR_MESH_ID                        : 24,
-        NL80211_WLANATTR_STA_PLINK_ACTION               : 25,
-        NL80211_WLANATTR_MPATH_NEXT_HOP                 : 26,
-        NL80211_WLANATTR_MPATH_INFO                     : 27,
+        NL80211_WLANATTR_MESHID                        : 24,
+        NL80211_WLANATTR_STAPLINKACTION               : 25,
+        NL80211_WLANATTR_MPATHNEXTHOP                 : 26,
+        NL80211_WLANATTR_MPATHINFO                     : 27,
 
-        NL80211_WLANATTR_BSS_CTS_PROT                   : 28,
-        NL80211_WLANATTR_BSS_SHORT_PREAMBLE             : 29,
-        NL80211_WLANATTR_BSS_SHORT_SLOT_TIME            : 30,
+        NL80211_WLANATTR_BSSCTSPROT                   : 28,
+        NL80211_WLANATTR_BSSSHORTPREAMBLE             : 29,
+        NL80211_WLANATTR_BSSSHORTSLOT_TIME            : 30,
 
-        NL80211_WLANATTR_HT_CAPABILITY                  : 31,
+        NL80211_WLANATTR_HTCAPABILITY                  : 31,
 
-        NL80211_WLANATTR_SUPPORTED_IFTYPES              : 32,
+        NL80211_WLANATTR_SUPPORTEDIFTYPES              : 32,
 
-        NL80211_WLANATTR_REG_ALPHA2                     : 33,
-        NL80211_WLANATTR_REG_RULES                      : 34,
+        NL80211_WLANATTR_REGALPHA2                     : 33,
+        NL80211_WLANATTR_REGRULES                      : 34,
 
-        NL80211_WLANATTR_MESH_CONFIG                    : 35,
+        NL80211_WLANATTR_MESHCONFIG                    : 35,
 
-        NL80211_WLANATTR_BSS_BASIC_RATES                : 36,
+        NL80211_WLANATTR_BSSBASICRATES                : 36,
 
-        NL80211_WLANATTR_WIPHY_TXQ_PARAMS               : 37,
-        NL80211_WLANATTR_WIPHY_FREQ                     : 38,
-        NL80211_WLANATTR_WIPHY_CHANNEL_TYPE             : 39,
+        NL80211_WLANATTR_WIPHYTXQPARAMS               : 37,
+        NL80211_WLANATTR_WIPHYFREQ                     : 38,
+        NL80211_WLANATTR_WIPHYCHANNELTYPE             : 39,
 
-        NL80211_WLANATTR_KEY_DEFAULT_MGMT               : 40,
+        NL80211_WLANATTR_KEYDEFAULTMGMT               : 40,
 
-        NL80211_WLANATTR_MGMT_SUBTYPE                   : 41,
+        NL80211_WLANATTR_MGMTSUBTYPE                   : 41,
         NL80211_WLANATTR_IE                             : 42,
 
-        NL80211_WLANATTR_MAX_NUM_SCAN_SSIDS             : 43,
+        NL80211_WLANATTR_MAXNUMSCANSSIDS             : 43,
 
-        NL80211_WLANATTR_SCAN_FREQUENCIES               : 44,
-        NL80211_WLANATTR_SCAN_SSIDS                     : 45,
+        NL80211_WLANATTR_SCANFREQUENCIES               : 44,
+        NL80211_WLANATTR_SCANSSIDS                     : 45,
         NL80211_WLANATTR_GENERATION                     : 46, /* replaces old SCAN_GENERATION */
         NL80211_WLANATTR_BSS                            : 47,
 
-        NL80211_WLANATTR_REG_INITIATOR                  : 48,
-        NL80211_WLANATTR_REG_TYPE                       : 49,
+        NL80211_WLANATTR_REGINITIATOR                  : 48,
+        NL80211_WLANATTR_REGTYPE                       : 49,
 
-        NL80211_WLANATTR_SUPPORTED_COMMANDS             : 50,
+        NL80211_WLANATTR_SUPPORTEDCOMMANDS             : 50,
 
         NL80211_WLANATTR_FRAME                          : 51,
         NL80211_WLANATTR_SSID                           : 52,
         NL80211_WLANATTR_AUTH_TYPE                      : 53,
         NL80211_WLANATTR_REASON_CODE                    : 54,
 
-        NL80211_WLANATTR_KEY_TYPE                       : 55,
+        NL80211_WLANATTR_KEYTYPE                       : 55,
 
-        NL80211_WLANATTR_MAX_SCAN_IE_LEN                : 56,
-        NL80211_WLANATTR_CIPHER_SUITES                  : 57,
+        NL80211_WLANATTR_MAXSCANIELEN                : 56,
+        NL80211_WLANATTR_CIPHERSUITES                  : 57,
 
-        NL80211_WLANATTR_FREQ_BEFORE                    : 58,
-        NL80211_WLANATTR_FREQ_AFTER                     : 59,
+        NL80211_WLANATTR_FREQBEFORE                    : 58,
+        NL80211_WLANATTR_FREQAFTER                     : 59,
 
-        NL80211_WLANATTR_FREQ_FIXED                     : 60,
+        NL80211_WLANATTR_FREQFIXED                     : 60,
 
 
-        NL80211_WLANATTR_WIPHY_RETRY_SHORT              : 61,
-        NL80211_WLANATTR_WIPHY_RETRY_LONG               : 62,
-        NL80211_WLANATTR_WIPHY_FRAG_THRESHOLD           : 63,
-        NL80211_WLANATTR_WIPHY_RTS_THRESHOLD            : 64,
+        NL80211_WLANATTR_WIPHYRETRYSHORT              : 61,
+        NL80211_WLANATTR_WIPHYRETRYLONG               : 62,
+        NL80211_WLANATTR_WIPHYFRAGTHRESHOLD           : 63,
+        NL80211_WLANATTR_WIPHYRTSTHRESHOLD            : 64,
 
-        NL80211_WLANATTR_TIMED_OUT                      : 65,
+        NL80211_WLANATTR_TIMEDOUT                      : 65,
 
-        NL80211_WLANATTR_USE_MFP                        : 66,
+        NL80211_WLANATTR_USEMFP                        : 66,
 
-        NL80211_WLANATTR_STA_FLAGS2                     : 67,
+        NL80211_WLANATTR_STAFLAGS2                     : 67,
 
-        NL80211_WLANATTR_CONTROL_PORT                   : 68,
+        NL80211_WLANATTR_CONTROLPORT                   : 68,
 
         NL80211_WLANATTR_TESTDATA                       : 69,
 
         NL80211_WLANATTR_PRIVACY                        : 70,
 
-        NL80211_WLANATTR_DISCONNECTED_BY_AP             : 71,
-        NL80211_WLANATTR_STATUS_CODE                    : 72,
+        NL80211_WLANATTR_DISCONNECTEDBYAP             : 71,
+        NL80211_WLANATTR_STATUSCODE                    : 72,
 
-        NL80211_WLANATTR_CIPHER_SUITES_PAIRWISE         : 73,
-        NL80211_WLANATTR_CIPHER_SUITE_GROUP             : 74,
-        NL80211_WLANATTR_WPA_VERSIONS                   : 75,
-        NL80211_WLANATTR_AKM_SUITES                     : 76,
+        NL80211_WLANATTR_CIPHERSUITESPAIRWISE         : 73,
+        NL80211_WLANATTR_CIPHERSUITEGROUP             : 74,
+        NL80211_WLANATTR_WPAVERSIONS                   : 75,
+        NL80211_WLANATTR_AKMSUITES                     : 76,
 
-        NL80211_WLANATTR_REQ_IE                         : 77,
-        NL80211_WLANATTR_RESP_IE                        : 78,
+        NL80211_WLANATTR_REQIE                         : 77,
+        NL80211_WLANATTR_RESPIE                        : 78,
 
-        NL80211_WLANATTR_PREV_BSSID                     : 79,
+        NL80211_WLANATTR_PREVBSSID                     : 79,
 
         NL80211_WLANATTR_KEY                            : 80,
         NL80211_WLANATTR_KEYS                           : 81,
@@ -889,246 +889,246 @@ var iwtypes = {
 
         NL80211_WLANATTR_4ADDR                          : 83,
 
-        NL80211_WLANATTR_SURVEY_INFO                    : 84,
+        NL80211_WLANATTR_SURVEYINFO                    : 84,
 
         NL80211_WLANATTR_PMKID                          : 85,
-        NL80211_WLANATTR_MAX_NUM_PMKIDS                 : 86,
+        NL80211_WLANATTR_MAXNUMPMKIDS                 : 86,
 
         NL80211_WLANATTR_DURATION                       : 87,
 
         NL80211_WLANATTR_COOKIE                         : 88,
 
-        NL80211_WLANATTR_WIPHY_COVERAGE_CLASS           : 89,
+        NL80211_WLANATTR_WIPHYCOVERAGECLASS           : 89,
 
-        NL80211_WLANATTR_TX_RATES                       : 90,
+        NL80211_WLANATTR_TXRATES                       : 90,
 
-        NL80211_WLANATTR_FRAME_MATCH                    : 91,
+        NL80211_WLANATTR_FRAMEMATCH                    : 91,
 
         NL80211_WLANATTR_ACK                            : 92,
 
-        NL80211_WLANATTR_PS_STATE                       : 93,
+        NL80211_WLANATTR_PSSTATE                       : 93,
 
         NL80211_WLANATTR_CQM                            : 94,
 
-        NL80211_WLANATTR_LOCAL_STATE_CHANGE             : 95,
+        NL80211_WLANATTR_LOCALSTATECHANGE             : 95,
 
-        NL80211_WLANATTR_AP_ISOLATE                     : 96,
+        NL80211_WLANATTR_APISOLATE                     : 96,
 
-        NL80211_WLANATTR_WIPHY_TX_POWER_SETTING         : 97,
-        NL80211_WLANATTR_WIPHY_TX_POWER_LEVEL           : 98,
+        NL80211_WLANATTR_WIPHYTXPOWERSETTING         : 97,
+        NL80211_WLANATTR_WIPHYTXPOWERLEVEL           : 98,
 
-        NL80211_WLANATTR_TX_FRAME_TYPES                 : 99,
-        NL80211_WLANATTR_RX_FRAME_TYPES                 : 100,
-        NL80211_WLANATTR_FRAME_TYPE                     : 101,
+        NL80211_WLANATTR_TXFRAMETYPES                 : 99,
+        NL80211_WLANATTR_RXFRAMETYPES                 : 100,
+        NL80211_WLANATTR_FRAMETYPE                     : 101,
 
-        NL80211_WLANATTR_CONTROL_PORT_ETHERTYPE         : 102,
-        NL80211_WLANATTR_CONTROL_PORT_NO_ENCRYPT        : 103,
+        NL80211_WLANATTR_CONTROLPORTETHERTYPE         : 102,
+        NL80211_WLANATTR_CONTROLPORTNOENCRYPT        : 103,
 
-        NL80211_WLANATTR_SUPPORT_IBSS_RSN               : 104,
+        NL80211_WLANATTR_SUPPORTIBSSRSN               : 104,
 
-        NL80211_WLANATTR_WIPHY_ANTENNA_TX               : 105,
-        NL80211_WLANATTR_WIPHY_ANTENNA_RX               : 106,
+        NL80211_WLANATTR_WIPHYANTENNATX               : 105,
+        NL80211_WLANATTR_WIPHYANTENNARX               : 106,
 
-        NL80211_WLANATTR_MCAST_RATE                     : 107,
+        NL80211_WLANATTR_MCASTRATE                     : 107,
 
-        NL80211_WLANATTR_OFFCHANNEL_TX_OK               : 108,
+        NL80211_WLANATTR_OFFCHANNELTXOK               : 108,
 
-        NL80211_WLANATTR_BSS_HT_OPMODE                  : 109,
+        NL80211_WLANATTR_BSSHTOPMODE                  : 109,
 
-        NL80211_WLANATTR_KEY_DEFAULT_TYPES              : 110,
+        NL80211_WLANATTR_KEYDEFAULTTYPES              : 110,
 
-        NL80211_WLANATTR_MAX_REMAIN_ON_CHANNEL_DURATION : 111,
+        NL80211_WLANATTR_MAXREMAINONCHANNELDURATION : 111,
 
-        NL80211_WLANATTR_MESH_SETUP                     : 112,
+        NL80211_WLANATTR_MESHSETUP                     : 112,
 
-        NL80211_WLANATTR_WIPHY_ANTENNA_AVAIL_TX         : 113,
-        NL80211_WLANATTR_WIPHY_ANTENNA_AVAIL_RX         : 114,
+        NL80211_WLANATTR_WIPHYANTENNAAVAILTX         : 113,
+        NL80211_WLANATTR_WIPHYANTENNAAVAILRX         : 114,
 
-        NL80211_WLANATTR_SUPPORT_MESH_AUTH              : 115,
-        NL80211_WLANATTR_STA_PLINK_STATE                : 116,
+        NL80211_WLANATTR_SUPPORTMESHAUTH              : 115,
+        NL80211_WLANATTR_STAPLINKSTATE                : 116,
 
-        NL80211_WLANATTR_WOWLAN_TRIGGERS                : 117,
-        NL80211_WLANATTR_WOWLAN_TRIGGERS_SUPPORTED      : 118,
+        NL80211_WLANATTR_WOWLANTRIGGERS                : 117,
+        NL80211_WLANATTR_WOWLANTRIGGERSSUPPORTED      : 118,
 
-        NL80211_WLANATTR_SCHED_SCAN_INTERVAL            : 119,
+        NL80211_WLANATTR_SCHEDSCANINTERVAL            : 119,
 
-        NL80211_WLANATTR_INTERFACE_COMBINATIONS         : 120,
-        NL80211_WLANATTR_SOFTWARE_IFTYPES               : 121,
+        NL80211_WLANATTR_INTERFACECOMBINATIONS         : 120,
+        NL80211_WLANATTR_SOFTWAREIFTYPES               : 121,
 
-        NL80211_WLANATTR_REKEY_DATA                     : 122,
+        NL80211_WLANATTR_REKEYDATA                     : 122,
 
-        NL80211_WLANATTR_MAX_NUM_SCHED_SCAN_SSIDS       : 123,
-        NL80211_WLANATTR_MAX_SCHED_SCAN_IE_LEN          : 124,
+        NL80211_WLANATTR_MAXNUMSCHEDSCANSSIDS       : 123,
+        NL80211_WLANATTR_MAXSCHEDSCANIELEN          : 124,
 
-        NL80211_WLANATTR_SCAN_SUPP_RATES                : 125,
+        NL80211_WLANATTR_SCANSUPPRATES                : 125,
 
-        NL80211_WLANATTR_HIDDEN_SSID                    : 126,
+        NL80211_WLANATTR_HIDDENSSID                    : 126,
 
-        NL80211_WLANATTR_IE_PROBE_RESP                  : 127,
-        NL80211_WLANATTR_IE_ASSOC_RESP                  : 128,
+        NL80211_WLANATTR_IEPROBERESP                  : 127,
+        NL80211_WLANATTR_IEASSOCRESP                  : 128,
 
-        NL80211_WLANATTR_STA_WME                        : 129,
-        NL80211_WLANATTR_SUPPORT_AP_UAPSD               : 130,
+        NL80211_WLANATTR_STAWME                        : 129,
+        NL80211_WLANATTR_SUPPORTAPUAPSD               : 130,
 
-        NL80211_WLANATTR_ROAM_SUPPORT                   : 131,
+        NL80211_WLANATTR_ROAMSUPPORT                   : 131,
 
-        NL80211_WLANATTR_SCHED_SCAN_MATCH               : 132,
-        NL80211_WLANATTR_MAX_MATCH_SETS                 : 133,
+        NL80211_WLANATTR_SCHEDSCANMATCH               : 132,
+        NL80211_WLANATTR_MAXMATCHSETS                 : 133,
 
-        NL80211_WLANATTR_PMKSA_CANDIDATE                : 134,
+        NL80211_WLANATTR_PMKSACANDIDATE                : 134,
 
-        NL80211_WLANATTR_TX_NO_CCK_RATE                 : 135,
+        NL80211_WLANATTR_TXNOCCKRATE                 : 135,
 
-        NL80211_WLANATTR_TDLS_ACTION                    : 136,
-        NL80211_WLANATTR_TDLS_DIALOG_TOKEN              : 137,
-        NL80211_WLANATTR_TDLS_OPERATION                 : 138,
-        NL80211_WLANATTR_TDLS_SUPPORT                   : 139,
-        NL80211_WLANATTR_TDLS_EXTERNAL_SETUP            : 140,
+        NL80211_WLANATTR_TDLSACTION                    : 136,
+        NL80211_WLANATTR_TDLSDIALOGTOKEN              : 137,
+        NL80211_WLANATTR_TDLSOPERATION                 : 138,
+        NL80211_WLANATTR_TDLSSUPPORT                   : 139,
+        NL80211_WLANATTR_TDLSEXTERNALSETUP            : 140,
 
-        NL80211_WLANATTR_DEVICE_AP_SME                  : 141,
+        NL80211_WLANATTR_DEVICEAPSME                  : 141,
 
-        NL80211_WLANATTR_DONT_WAIT_FOR_ACK              : 142,
+        NL80211_WLANATTR_DONTWAITFORACK              : 142,
 
-        NL80211_WLANATTR_FEATURE_FLAGS                  : 143,
+        NL80211_WLANATTR_FEATUREFLAGS                  : 143,
 
-        NL80211_WLANATTR_PROBE_RESP_OFFLOAD             : 144,
+        NL80211_WLANATTR_PROBERESPOFFLOAD             : 144,
 
-        NL80211_WLANATTR_PROBE_RESP                     : 145,
+        NL80211_WLANATTR_PROBERESP                     : 145,
 
-        NL80211_WLANATTR_DFS_REGION                     : 146,
+        NL80211_WLANATTR_DFSREGION                     : 146,
 
-        NL80211_WLANATTR_DISABLE_HT                     : 147,
-        NL80211_WLANATTR_HT_CAPABILITY_MASK             : 148,
+        NL80211_WLANATTR_DISABLEHT                     : 147,
+        NL80211_WLANATTR_HTCAPABILITYMASK             : 148,
 
-        NL80211_WLANATTR_NOACK_MAP                      : 149,
+        NL80211_WLANATTR_NOACKMAP                      : 149,
 
-        NL80211_WLANATTR_INACTIVITY_TIMEOUT             : 150,
+        NL80211_WLANATTR_INACTIVITYTIMEOUT             : 150,
 
-        NL80211_WLANATTR_RX_SIGNAL_DBM                  : 151,
+        NL80211_WLANATTR_RXSIGNALDBM                  : 151,
 
-        NL80211_WLANATTR_BG_SCAN_PERIOD                 : 152,
+        NL80211_WLANATTR_BGSCANPERIOD                 : 152,
 
         NL80211_WLANATTR_WDEV                           : 153,
 
-        NL80211_WLANATTR_USER_REG_HINT_TYPE             : 154,
+        NL80211_WLANATTR_USERREGHINTTYPE             : 154,
 
-        NL80211_WLANATTR_CONN_FAILED_REASON             : 155,
+        NL80211_WLANATTR_CONNFAILEDREASON             : 155,
 
-        NL80211_WLANATTR_SAE_DATA                       : 156,
+        NL80211_WLANATTR_SAEDATA                       : 156,
 
-        NL80211_WLANATTR_VHT_CAPABILITY                 : 157,
+        NL80211_WLANATTR_VHTCAPABILITY                 : 157,
 
-        NL80211_WLANATTR_SCAN_FLAGS                     : 158,
+        NL80211_WLANATTR_SCANFLAGS                     : 158,
 
-        NL80211_WLANATTR_CHANNEL_WIDTH                  : 159,
-        NL80211_WLANATTR_CENTER_FREQ1                   : 160,
-        NL80211_WLANATTR_CENTER_FREQ2                   : 161,
+        NL80211_WLANATTR_CHANNELWIDTH                  : 159,
+        NL80211_WLANATTR_CENTERFREQ1                   : 160,
+        NL80211_WLANATTR_CENTERFREQ2                   : 161,
 
-        NL80211_WLANATTR_P2P_CTWINDOW                   : 162,
-        NL80211_WLANATTR_P2P_OPPPS                      : 163,
+        NL80211_WLANATTR_P2PCTWINDOW                   : 162,
+        NL80211_WLANATTR_P2POPPPS                      : 163,
 
-        NL80211_WLANATTR_LOCAL_MESH_POWER_MODE          : 164,
+        NL80211_WLANATTR_LOCALMESHPOWERMODE          : 164,
 
-        NL80211_WLANATTR_ACL_POLICY                     : 165,
+        NL80211_WLANATTR_ACLPOLICY                     : 165,
 
-        NL80211_WLANATTR_MAC_ADDRS                      : 166,
+        NL80211_WLANATTR_MACADDRS                      : 166,
 
-        NL80211_WLANATTR_MAC_ACL_MAX                    : 167,
+        NL80211_WLANATTR_MACACLMAX                    : 167,
 
-        NL80211_WLANATTR_RADAR_EVENT                    : 168,
+        NL80211_WLANATTR_RADAREVENT                    : 168,
 
-        NL80211_WLANATTR_EXT_CAPA                       : 169,
-        NL80211_WLANATTR_EXT_CAPA_MASK                  : 170,
+        NL80211_WLANATTR_EXTCAPA                       : 169,
+        NL80211_WLANATTR_EXTCAPAMASK                  : 170,
 
-        NL80211_WLANATTR_STA_CAPABILITY                 : 171,
-        NL80211_WLANATTR_STA_EXT_CAPABILITY             : 172,
+        NL80211_WLANATTR_STACAPABILITY                 : 171,
+        NL80211_WLANATTR_STAEXTCAPABILITY             : 172,
 
-        NL80211_WLANATTR_PROTOCOL_FEATURES              : 173,
-        NL80211_WLANATTR_SPLIT_WIPHY_DUMP               : 174,
+        NL80211_WLANATTR_PROTOCOLFEATURES              : 173,
+        NL80211_WLANATTR_SPLITWIPHYDUMP               : 174,
 
-        NL80211_WLANATTR_DISABLE_VHT                    : 175,
-        NL80211_WLANATTR_VHT_CAPABILITY_MASK            : 176,
+        NL80211_WLANATTR_DISABLEVHT                    : 175,
+        NL80211_WLANATTR_VHTCAPABILITYMASK            : 176,
 
         NL80211_WLANATTR_MDID                           : 177,
-        NL80211_WLANATTR_IE_RIC                         : 178,
+        NL80211_WLANATTR_IERIC                         : 178,
 
-        NL80211_WLANATTR_CRIT_PROT_ID                   : 179,
-        NL80211_WLANATTR_MAX_CRIT_PROT_DURATION         : 180,
+        NL80211_WLANATTR_CRITPROTID                   : 179,
+        NL80211_WLANATTR_MAXCRITPROTDURATION         : 180,
 
-        NL80211_WLANATTR_PEER_AID                       : 181,
+        NL80211_WLANATTR_PEERAID                       : 181,
 
-        NL80211_WLANATTR_COALESCE_RULE                  : 182,
+        NL80211_WLANATTR_COALESCERULE                  : 182,
 
-        NL80211_WLANATTR_CH_SWITCH_COUNT                : 183,
-        NL80211_WLANATTR_CH_SWITCH_BLOCK_TX             : 184,
-        NL80211_WLANATTR_CSA_IES                        : 185,
-        NL80211_WLANATTR_CSA_C_OFF_BEACON               : 186,
-        NL80211_WLANATTR_CSA_C_OFF_PRESP                : 187,
+        NL80211_WLANATTR_CHSWITCHCOUNT                : 183,
+        NL80211_WLANATTR_CHSWITCHBLOCKTX             : 184,
+        NL80211_WLANATTR_CSAIES                        : 185,
+        NL80211_WLANATTR_CSACOFFBEACON               : 186,
+        NL80211_WLANATTR_CSACOFFPRESP                : 187,
 
-        NL80211_WLANATTR_RXMGMT_FLAGS                   : 188,
+        NL80211_WLANATTR_RXMGMTFLAGS                   : 188,
 
-        NL80211_WLANATTR_STA_SUPPORTED_CHANNELS         : 189,
+        NL80211_WLANATTR_STASUPPORTEDCHANNELS         : 189,
 
-        NL80211_WLANATTR_STA_SUPPORTED_OPER_CLASSES     : 190,
+        NL80211_WLANATTR_STASUPPORTEDOPERCLASSES     : 190,
 
-        NL80211_WLANATTR_HANDLE_DFS                     : 191,
+        NL80211_WLANATTR_HANDLEDFS                     : 191,
 
-        NL80211_WLANATTR_SUPPORT_5_MHZ                  : 192,
-        NL80211_WLANATTR_SUPPORT_10_MHZ                 : 193,
+        NL80211_WLANATTR_SUPPORT5MHZ                  : 192,
+        NL80211_WLANATTR_SUPPORT10MHZ                 : 193,
 
-        NL80211_WLANATTR_OPMODE_NOTIF                   : 194,
+        NL80211_WLANATTR_OPMODENOTIF                   : 194,
 
-        NL80211_WLANATTR_VENDOR_ID                      : 195,
-        NL80211_WLANATTR_VENDOR_SUBCMD                  : 196,
-        NL80211_WLANATTR_VENDOR_DATA                    : 197,
-        NL80211_WLANATTR_VENDOR_EVENTS                  : 198,
+        NL80211_WLANATTR_VENDORID                      : 195,
+        NL80211_WLANATTR_VENDORSUBCMD                  : 196,
+        NL80211_WLANATTR_VENDORDATA                    : 197,
+        NL80211_WLANATTR_VENDOREVENTS                  : 198,
 
-        NL80211_WLANATTR_QOS_MAP                        : 199,
+        NL80211_WLANATTR_QOSMAP                        : 199,
 
-        NL80211_WLANATTR_MAC_HINT                       : 200,
-        NL80211_WLANATTR_WIPHY_FREQ_HINT                : 201,
+        NL80211_WLANATTR_MACHINT                       : 200,
+        NL80211_WLANATTR_WIPHYFREQHINT                : 201,
 
-        NL80211_WLANATTR_MAX_AP_ASSOC_STA               : 202,
+        NL80211_WLANATTR_MAXAPASSOCSTA               : 202,
 
-        NL80211_WLANATTR_TDLS_PEER_CAPABILITY           : 203,
+        NL80211_WLANATTR_TDLSPEERCAPABILITY           : 203,
 
-        NL80211_WLANATTR_SOCKET_OWNER                   : 204,
+        NL80211_WLANATTR_SOCKETOWNER                   : 204,
 
-        NL80211_WLANATTR_CSA_C_OFFSETS_TX               : 205,
-        NL80211_WLANATTR_MAX_CSA_COUNTERS               : 206,
+        NL80211_WLANATTR_CSACOFFSETSTX               : 205,
+        NL80211_WLANATTR_MAXCSACOUNTERS               : 206,
 
-        NL80211_WLANATTR_TDLS_INITIATOR                 : 207,
+        NL80211_WLANATTR_TDLSINITIATOR                 : 207,
 
-        NL80211_WLANATTR_USE_RRM                        : 208,
+        NL80211_WLANATTR_USERRM                        : 208,
 
-        NL80211_WLANATTR_WIPHY_DYN_ACK                  : 209,
+        NL80211_WLANATTR_WIPHYDYNACK                  : 209,
 
         NL80211_WLANATTR_TSID                           : 210,
-        NL80211_WLANATTR_USER_PRIO                      : 211,
-        NL80211_WLANATTR_ADMITTED_TIME                  : 212,
+        NL80211_WLANATTR_USERPRIO                      : 211,
+        NL80211_WLANATTR_ADMITTEDTIME                  : 212,
 
-        NL80211_WLANATTR_SMPS_MODE                      : 213,
+        NL80211_WLANATTR_SMPSMODE                      : 213,
 
-        NL80211_WLANATTR_OPER_CLASS                     : 214,
+        NL80211_WLANATTR_OPERCLASS                     : 214,
 
-        NL80211_WLANATTR_MAC_MASK                       : 215,
+        NL80211_WLANATTR_MACMASK                       : 215,
 
-        NL80211_WLANATTR_WIPHY_SELF_MANAGED_REG         : 216,
+        NL80211_WLANATTR_WIPHYSELFMANAGEDREG         : 216,
 
-        NL80211_WLANATTR_EXT_FEATURES                   : 217,
+        NL80211_WLANATTR_EXTFEATURES                   : 217,
 
-        NL80211_WLANATTR_SURVEY_RADIO_STATS             : 218,
+        NL80211_WLANATTR_SURVEYRADIOSTATS             : 218,
 
-        NL80211_WLANATTR_NETNS_FD                       : 219,
+        NL80211_WLANATTR_NETNSFD                       : 219,
 
-        NL80211_WLANATTR_SCHED_SCAN_DELAY               : 220,
+        NL80211_WLANATTR_SCHEDSCANDELAY               : 220,
 
-        NL80211_WLANATTR_REG_INDOOR                     : 221,
+        NL80211_WLANATTR_REGINDOOR                     : 221,
 
-        NL80211_WLANATTR_MAX_NUM_SCHED_SCAN_PLANS       : 222,
-        NL80211_WLANATTR_MAX_SCAN_PLAN_INTERVAL         : 223,
-        NL80211_WLANATTR_MAX_SCAN_PLAN_ITERATIONS       : 224,
-        NL80211_WLANATTR_SCHED_SCAN_PLANS               : 225,
+        NL80211_WLANATTR_MAXNUMSCHEDSCANPLANS       : 222,
+        NL80211_WLANATTR_MAXSCANPLANINTERVAL         : 223,
+        NL80211_WLANATTR_MAXSCANPLANITERATIONS       : 224,
+        NL80211_WLANATTR_SCHEDSCANPLANS               : 225,
         NL80211_WLANATTR_SPEC                           :  {
                                                             1            : 'n/32',
                                                             3            : 'n/32',
@@ -1942,13 +1942,13 @@ var iwtypes = {
         NL80211_SURVEY_UNSPEC:          0,
         NL80211_SURVEY_FREQUENCY:       1,
         NL80211_SURVEY_NOISE:           2,
-        NL80211_SURVEY_IN_USE:          3,
+        NL80211_SURVEY_INUSE:          3,
         NL80211_SURVEY_TIME:            4,
-        NL80211_SURVEY_TIME_BUSY:       5,
-        NL80211_SURVEY_TIME_EXT_BUSY:   6,
-        NL80211_SURVEY_TIME_RX:         7,
-        NL80211_SURVEY_TIME_TX:         8,
-        NL80211_SURVEY_TIME_SCAN:       9,
+        NL80211_SURVEY_TIMEBUSY:       5,
+        NL80211_SURVEY_TIMEEXTBUSY:   6,
+        NL80211_SURVEY_TIMERX:         7,
+        NL80211_SURVEY_TIMETX:         8,
+        NL80211_SURVEY_TIMESCAN:       9,
         NL80211_SURVEY_SPEC:            ['', 'n/32', 'n/8', '', 'n/64', 'n/64', 'n/64', 'n/64', 'n/64', 'n/64']
 
     },

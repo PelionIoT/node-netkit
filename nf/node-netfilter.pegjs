@@ -506,7 +506,7 @@ counter
 ////////////////////////////////////////////////////////////////////////////
 // Sets
 settype_expression
-	= "{" __ "type" _ st:set_type "}"
+	= "{" __ "type" __ st:set_type __ "}"
 		{
 			command_object.params.set 
 			command_object.params.flags = 0;
@@ -538,7 +538,7 @@ element_expression
 
 
 ipv4addr_element
-	= ","? __ octets:octets
+	= ","? _ octets:octets
 		{  debug("ipv4addr");
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
 

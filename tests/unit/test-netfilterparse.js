@@ -14,7 +14,7 @@ exports.testNfParse = function(test){
 	test.doesNotThrow(function() {
 
 		nnf_commands.forEach(function(command) {
-			//console.log(command);
+			console.log("command: " + command);
 			parser.parse(command);
 		});
 

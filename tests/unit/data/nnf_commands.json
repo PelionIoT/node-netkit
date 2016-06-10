@@ -54,9 +54,8 @@
 	"add rule nat pre udp dport 53 ip saddr 10.0.0.0/24 dnat 208.67.222.222:53",
 	"add rule nat post ip saddr 10.0.0.0/24 meta oif 2 snat 10.10.102.53",
 
-	// filtering and blocking forwarding to the wan device
-	"add rule filter forward ip ct state new meta oif 2 log prefix \"New outbound connection\" group 0 accept counter"
-	"add rule filter forward meta iiftype ether b4:75:0e:ed:8f:d1 drop counter",
+	"add rule filter forward ct state new meta oif 2 log prefix \"New outbound connection\" group 0 counter accept",
+	"add rule filter forward meta iiftype ether b4:75:0e:ed:8f:d1 counter drop",
 
 	"delete table filter",
 	"delete chain filter input",
@@ -81,6 +80,6 @@
 	"flush ip chain filter input",
 
 	"add set filter blackhole { type ipv4_addr }",
-	"list set blackhole"
+	"list set blackhole",
 	"list elements filter blackhole"
 ]

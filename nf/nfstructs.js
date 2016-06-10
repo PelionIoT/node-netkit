@@ -206,7 +206,7 @@ nfstructs = (function(){
 						data: {
 							DREG: 	nft.nft_registers.NFT_REG_2,
 							DATA: {
-								VALUE: get_number_value_be(port,4)
+								VALUE: get_number_value_be(port,2)
 							}		
 		                }
 					}

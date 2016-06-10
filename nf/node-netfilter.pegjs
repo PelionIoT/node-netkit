@@ -561,7 +561,7 @@ hook_expression          //{ type filter hook input priority 0 }
 			command_object.params.hook = {};
 			command_object.params.hook.hooknum = hn;
 			command_object.params.hook.priority = hp;
-			command_object.params.type = ht;
+			command_object.params.hook.type = ht;
 		}
 
 hooktype

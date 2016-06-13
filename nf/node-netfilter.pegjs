@@ -36,6 +36,7 @@ flush
 	var bignum = require('bignum');
 	var structs = require('./nfstructs.js');
 	var debug = cmn.logger.debug;
+	var util = require('util');
 
 	var payload_len = 0;
 	var expressions_array = [];
@@ -737,9 +738,9 @@ meta_params
 		{ return structs.build_meta_integer(nft.nft_meta_keys.PRIORITY, val, 4, s); }
 	/ "mark" _ s:"set"?__ val:(hex / decimal)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.MARK, val, 4, s); }
-	/ "iif" _ val:(hex / decimal)
+	/ "iif" _ val:(interface_to_index)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.IIF, val, 4); }
-	/ "oif" _ val:(hex / decimal)
+	/ "oif" _ val:(interface_to_index)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.OIF, val, 4); }
 	/ "iifname" _ val:(string)
 		{ return structs.build_meta_string(nft.nft_meta_keys.IIFNAME, val, 14); }
@@ -776,6 +777,17 @@ meta_params
 	/ "cgroup" _ val:(hex / decimal)
 		{ return structs.build_meta_integer(nft.nft_meta_keys.CGROUP, val, 4); }
 
+interface_to_index
+	= name:idstring __
+		{
+			var index = cmn.nativelib.ifNameToIndex(name);
+			if(util.isError(index)) {
+				error(util.inspect(index));
+				throw(index);
+			} else {
+				return index;
+			}
+		}
 
 // include/uapi/linux/if_ether.h
 ether_type
@@ -880,6 +892,9 @@ decimal
 
 string
 	= str:([ 0-9a-zA-Z])+ { return str.join(""); }
+
+idstring
+	= str:([0-9a-zA-Z])+ { return str.join(""); }
 _
 	= ([ \t])+
 

@@ -81,5 +81,22 @@
 
 	"add set filter blackhole { type ipv4_addr }",
 	"list set blackhole",
-	"list elements filter blackhole"
+	"list elements filter blackhole",
+
+
+
+	"add table filter",
+	"add chain filter input { type filter hook input priority 0 }",
+	"add chain filter forward { type filter hook forward priority 0 }",
+	"add chain filter output { type filter hook output priority 0 }",
+	"add rule filter input ct state established accept",
+	"add rule filter input ct state related accept",
+	"add rule filter input meta iif lo accept",
+	"add rule filter input tcp dport 22 log counter accept",
+	"add rule filter input log counter drop",
+	"add rule filter output ct state established accept",
+	"add rule filter output ct state related accept",
+	"add rule filter output oif lo accept",
+	"add rule filter output ct state new counter accept"
+
 ]

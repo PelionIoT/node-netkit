@@ -448,9 +448,9 @@ module.exports = (function() {
         peg$c212 = { type: "literal", value: "priority", description: "\"priority\"" },
         peg$c213 = function(ht, hn, hp) {
         			command_object.params.hook = {};
+        			command_object.params.type = ht;
         			command_object.params.hook.hooknum = hn;
         			command_object.params.hook.priority = hp;
-        			command_object.params.hook.type = ht;
         		},
         peg$c214 = "filter",
         peg$c215 = { type: "literal", value: "filter", description: "\"filter\"" },

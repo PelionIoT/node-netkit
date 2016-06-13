@@ -560,9 +560,9 @@ hook_expression          //{ type filter hook input priority 0 }
 	= "{" __ "type" _ ht:hooktype _ "hook" _ hn:hooknum _ "priority" _ hp:hookprio __ "}"
 		{
 			command_object.params.hook = {};
+			command_object.params.type = ht;
 			command_object.params.hook.hooknum = hn;
 			command_object.params.hook.priority = hp;
-			command_object.params.hook.type = ht;
 		}
 
 hooktype

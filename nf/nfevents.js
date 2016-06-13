@@ -307,7 +307,7 @@ nfevents = (function(){
 							} else {
 								cb(null, ul.parseNfulogAttributes(bufs));
 							}
-						});
+						}, opts.threshold);
 					}, function(err) {
 						cmn.logger.error(util.inspect(err));
 					})

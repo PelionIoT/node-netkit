@@ -99,7 +99,7 @@ protected:
 
 		public:
 			// need Buffer
-			sockMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), self(s)
+			sockMsgReq(NetlinkSocket *s) : replies(0), recvBuffer(NULL),_backing(NULL), len(0), callback_threshold(0), self(s)
 				{ work.data = this; first_seq = last_seq = s->seq; }
 			sockMsgReq(NetlinkSocket *s, v8obj handle) : sockMsgReq(s) { this->Wrap(handle); }
 			void reqRef() {	this->Ref(); }
@@ -125,6 +125,8 @@ protected:
 			int len;
 			unsigned int first_seq; // sequence bounds
 			unsigned int last_seq;  // for this request
+			int callback_threshold;
+			int callback_count;
 			NetlinkSocket *self;
 	};
 

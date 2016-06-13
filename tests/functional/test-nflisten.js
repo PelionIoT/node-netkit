@@ -28,12 +28,16 @@ var options = {
  	// 	pushes the log buffer to userspace if no new logged packets have occured.
  	// 	Basically, nflog implements a buffer to reduce the computational cost
  	// 	of delivering the log message to userspace.
-	timeout: 1000
+	timeout: 1000,
 
 	// There are two existing flags:
 	// 	- NFULNL_CFG_F_SEQ: This enables local nflog sequence numbering.
 	// 	- NFULNL_CFG_F_SEQ_GLOBAL: This enables global nflog sequence numbering.
 	//flags: "NFULNL_CFG_F_SEQ, NFULNL_CFG_F_SEQ_GLOBAL"
+
+	// Set the number of listen events to receive before the listen thread calls 
+	// back into the v8 thread.  threshold:100 means propagate one event for every 100 received
+	threshold: 100
 };
 
 nk.nfListen(options, function(err, buf){

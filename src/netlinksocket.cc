@@ -317,6 +317,7 @@ NAN_METHOD(NetlinkSocket::Sendmsg) {
  * when the calling scope is destroyed.
  * @method onRecv
  * @param replycb {Function} the reply callback. cb(err,bufs)
+ * @param threshold {int32} the threshold value used when filtering callbacks to v8
  *
  */
 NAN_METHOD(NetlinkSocket::OnRecv) {
@@ -332,6 +333,12 @@ NAN_METHOD(NetlinkSocket::OnRecv) {
 		Request_t* recvmsg_req = new Request_t(sock,v8req); // new request sequnce starts at zero
 		recvmsg_req->reqRef();
 		recvmsg_req->onReplyCB.SetFunction(Local<Function>::Cast(info[0]));
+
+		if(info.Length() > 1 && info[1]->IsInt32()) {
+			Local<Value> thresh;
+			recvmsg_req->callback_threshold = (int) info[1]->Int32Value();
+			recvmsg_req->callback_count = recvmsg_req->callback_threshold;
+		}
 
 		memset(&recvmsg_req->self->handle,0,sizeof(uv_poll_t));
 		(recvmsg_req->self->handle).data = recvmsg_req;
@@ -634,35 +641,54 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 		Handle<Object> retbufs = Nan::New<v8::Object>();
 		int n = 0;
 		while(job->replies && job->reply_queue.remove(req)) {
-			if(req.iserr) nlError = true;
-			if(req.hasBuffer()) {
-				retbufs->Set(n,req.ExportBuffer());
-			}
-			n++; job->replies--;
-		}
-		retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
+			if(job->callback_threshold) {
+				job->callback_count--;
 
-		if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
-			// if we don't have a reply callback,
-			if(!nlError) {
-				argv[0] = fals->ToBoolean();
-				argv[1] = retbufs->ToObject();
-				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+				if(job->callback_count == 0) {
+					if(req.iserr) nlError = true;
+					if(req.hasBuffer()) {
+						retbufs->Set(n,req.ExportBuffer());
+					}
+					n++;
+					job->replies--;
+					job->callback_count = job->callback_threshold;
+				}
 			} else {
-				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
-				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
-			}
-		} else if (!job->onReplyCB.IsEmpty()) {
-			if(!nlError) {
-				argv[0] = fals->ToBoolean();
-				argv[1] = retbufs->ToObject();
-				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
-			} else {
-				argv[0] = tru->ToBoolean();
-				argv[1] = retbufs->ToObject();
-				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+				if(req.iserr) nlError = true;
+				if(req.hasBuffer()) {
+					retbufs->Set(n,req.ExportBuffer());
+				}
+				n++;
+				job->replies--;
 			}
 		}
+
+		if(n > 0) {
+			retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
+
+			if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
+				// if we don't have a reply callback,
+				if(!nlError) {
+					argv[0] = fals->ToBoolean();
+					argv[1] = retbufs->ToObject();
+					job->onSendCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+				} else {
+					argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
+					job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
+				}
+			} else if (!job->onReplyCB.IsEmpty()) {
+				if(!nlError) {
+					argv[0] = fals->ToBoolean();
+					argv[1] = retbufs->ToObject();
+					job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+				} else {
+					argv[0] = tru->ToBoolean();
+					argv[1] = retbufs->ToObject();
+					job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+				}
+			}
+		}
+
 	} else { // failure on job creation. we did not get to the point of sending a packet.
 		if(!job->onSendCB.IsEmpty()) {
 			argv[0] = _net::err_ev_to_JS(job->err,"Error in sendMsg(): ")->ToObject();

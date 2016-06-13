@@ -58,6 +58,7 @@ var iwcommand = (function() {
 
 		    infotype: 'wlanattr',
 		    params: iwnl.nl80211_sta_info,
+		    transform: opts.transform
 		};
 
 		if(typeof opts.ifname !== 'undefined') {
@@ -126,7 +127,9 @@ var iwcommand = (function() {
 					} else {
 						sock.close();
 						var retval = attrs.generateNetlinkResponse(bufs);
-						retval = transform_command(opts.command, retval);
+						if(typeof opts.transform === 'undefined' || opts.transform === true) {
+							retval = transform_command(opts.command, retval);
+						}
 						return cb(null, retval);
 					}
 				});

@@ -207,22 +207,25 @@ rule_expression
 		}
 
 table
-	= ta:[a-zA-Z]+
+	= ta:string_label
 		{
 			return ta.join("");
 		}
 
 chain
-	= chain:[a-zA-Z]+
+	= chain:string_label
 		{
 			return chain.join("");
 		}
 
 set
-	= set:[a-zA-Z]+
+	= set:string_label
 		{
 			return set.join("");
 		}
+
+string_label
+	= [-_0-9a-zA-Z]+
 
 rule_handle
 	= "handle" _ rh:( hex / decimal )

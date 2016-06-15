@@ -54,7 +54,7 @@
 	"add rule nat pre udp dport 53 ip saddr 10.0.0.0/24 dnat 208.67.222.222:53",
 	"add rule nat post ip saddr 10.0.0.0/24 meta oif lo snat 10.10.102.53",
 
-	"add rule filter forward ct state new meta oif lo log prefix \"New outbound connection\" group 0 counter accept",
+	"add rule filter forward meta oif lo ct state new log prefix \"New outbound connection\" group 0 counter accept",
 	"add rule filter forward meta iiftype ether b4:75:0e:ed:8f:d1 counter drop",
 
 	"delete table filter",

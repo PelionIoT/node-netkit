@@ -171,7 +171,7 @@ set_identifier
 		{ command_object.params.set = st; command_object.params.table = ti; }
 
 rule_expression
-	= rd:rule_definition? ct:connection_track* meta:meta_stmt* lgst:log_stmt? nat:nat_expr? misc:rule_misc? act:rule_action? 
+	= rd:rule_definition? meta:meta_stmt* ct:connection_track* lgst:log_stmt? nat:nat_expr? misc:rule_misc? act:rule_action? 
 		{
 
 			var exprs = [];

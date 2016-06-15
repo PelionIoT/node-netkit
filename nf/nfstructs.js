@@ -300,6 +300,49 @@ nfstructs = (function(){
 
 	}
 
+	var protocol_ip6 = function(prot) {
+		return [
+			{
+				elem:
+				{
+					name: "payload",
+					data: {
+						DREG: 		nft.nft_registers.NFT_REG_1,
+						BASE: 		nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER,
+						OFFSET: 	nft.ipv6hdr_offsets.nexthdr,
+						LEN: 		nft.ipv6hdr_sizes.nexthdr
+		            }
+		        }
+		    },
+		    {
+		        elem:
+		        {
+					name: "cmp",
+					data: {
+						SREG: 		nft.nft_registers.NFT_REG_1,
+						OP:			nft.nft_cmp_ops.NFT_CMP_EQ,
+						DATA: 		{ VALUE: prot } //nft.ip_proto.IPPROTO_TCP
+		            }
+				}
+			}
+		];
+	}
+
+
+	var icmp6_type = function(type) {
+		return {
+			elem:
+			{
+				name: "cmp",
+				data: {
+					SREG: 		nft.nft_registers.NFT_REG_1,
+					OP: 		nft.nft_cmp_ops.NFT_CMP_EQ,
+					DATA: 		{ VALUE: get_number_value(type, 1) } // 0x0016 = 22 - ssh protocol
+				}
+			}
+		};
+	}
+
 	return {
 
 		build_meta_integer: meta_int,
@@ -307,7 +350,9 @@ nfstructs = (function(){
 		build_protocol: protocol,
 		build_packet_selector: packet_selector,
 		build_nat_expression: nat_expression,
-		build_mac_payload: mac_payload
+		build_mac_payload: mac_payload,
+		build_icmp6_type: icmp6_type,
+		build_protocol_ip6: protocol_ip6
 	}
 
 })();

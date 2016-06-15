@@ -52,9 +52,9 @@
 	"add chain nat pre { type nat hook prerouting priority 0 }",
 	"add chain nat post { type nat hook postrouting priority 0 }",
 	"add rule nat pre udp dport 53 ip saddr 10.0.0.0/24 dnat 208.67.222.222:53",
-	"add rule nat post ip saddr 10.0.0.0/24 meta oif 2 snat 10.10.102.53",
+	"add rule nat post ip saddr 10.0.0.0/24 meta oif lo snat 10.10.102.53",
 
-	"add rule filter forward ct state new meta oif 2 log prefix \"New outbound connection\" group 0 counter accept",
+	"add rule filter forward ct state new meta oif lo log prefix \"New outbound connection\" group 0 counter accept",
 	"add rule filter forward meta iiftype ether b4:75:0e:ed:8f:d1 counter drop",
 
 	"delete table filter",
@@ -96,7 +96,7 @@
 	"add rule filter input log counter drop",
 	"add rule filter output ct state established accept",
 	"add rule filter output ct state related accept",
-	"add rule filter output oif lo accept",
+	"add rule filter output meta oif lo accept",
 	"add rule filter output ct state new counter accept"
 
 ]

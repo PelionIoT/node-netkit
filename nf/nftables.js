@@ -194,6 +194,17 @@ nft = {
 		saddr: 		6
 	},
 
+	icmp6hdr_offsets: {
+		icmp6_type: 	0,
+		icmp6_code: 	1,
+		icmp6_cksum: 	2
+	},
+
+	icmp6hdr_sizes: {
+		icmp6_type: 	1,
+		icmp6_code: 	1,
+		icmp6_cksum: 	2
+	},
 
 	/*
 	* nft register defines

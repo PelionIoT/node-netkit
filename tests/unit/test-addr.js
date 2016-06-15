@@ -93,11 +93,13 @@ var enp0s8_aaaa_c =
 
 exports.testAddrFlush = function(test) {
 		// flush everything on enp0s8
+		test.expect(2);
 		test.doesNotThrow(function() {
 			nk.ipAddress("flush","inet","enp0s8",null,null,function(err,bufs){
 			 	if(err) throw new Error("testAddrFlush() Error: " + util.inspect(err));
 				nk.ipAddress("flush","inet6","enp0s8",null,null,function(err,bufs){
 				 	if(err) throw new Error("testAddrFlush() Error: " + util.inspect(err));
+				 	test.ok(true);
 				 	test.done();
 				});
 			});
@@ -358,6 +360,7 @@ exports.group = {
 			nk.ipAddress("show","inet6","enp0s8",null,null,function(err,bufs){
 				if(err) throw new Error("testAddrShowThreeIpv6() Error: " + util.inspect(err));
 				test.deepEqual(bufs, [enp0s8_aaaa_c, enp0s8_aaaa_b, enp0s8_aaaa_a]);
+				test.ok(true);
 			    test.done();
 			} );
 		});

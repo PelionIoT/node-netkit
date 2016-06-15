@@ -273,7 +273,7 @@ rule_definition
 	= ctr:(rule_criteria)+
 
 rule_criteria
-	= rps:rule_packet_selector _ pfv:packet_field_value __
+	= rps:rule_packet_selector _ pfv:ip_packet_field_value __
 
 rule_packet_selector
 	= pt:packet_type
@@ -287,6 +287,7 @@ packet_type
 	/ pkt:ip   _ fld:ip_field  { fld.payload_base = pkt; return fld; }
 	/ pkt:ip6  _ fld:ip6_field { fld.payload_base = pkt; return fld; }
 	/ pkt:udp  _ fld:udp_field { fld.payload_base = pkt; return fld; }
+	/ pkt:icmpv6  _ fld:icmpv6_field { fld.payload_base = pkt; return fld; }
 
 //  packet type bases
 tcp
@@ -303,11 +304,24 @@ udp
 			return nft.nft_payload_bases.NFT_PAYLOAD_TRANSPORT_HEADER;
 		}
 
+icmpv6
+	= "icmpv6"
+		{
+			expressions_array = expressions_array.concat(structs.build_protocol_ip6('0x3A'));
+			return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER;
+		}
+
 ip
-	= "ip" !"6" { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
+	= "ip" !"6" 
+		{ 
+			return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; 
+		}
 
 ip6
-	= "ip6"  { return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; }
+	= "ip6"  
+		{ 
+			return nft.nft_payload_bases.NFT_PAYLOAD_NETWORK_HEADER; 
+		}
 
 
 /*
@@ -354,12 +368,33 @@ udp_field
 	= "sport" { return { offset: nft.udphdr_offsets.source, len: nft.udthdr_sizes.source };	}
 	/ "dport" { return { offset: nft.udphdr_offsets.dest, len: nft.udphdr_sizes.dest };	}
 	/ "length" { return { offset: nft.udphdr_offsets.dest, len: nft.udphdr_sizes.len };	}
-	/ "checksum" { return { offset: nft.udphdr_offsets.check, len: nft.udphdr_sizes.check };	}
+	/ "checksum" { return { offset: nft.udphdr_offsets.check, len: nft.udphdr_sizes.check }; }
 
-packet_field_value
-	= nm:number { return nm; }
+icmpv6_field
+	= "type" { return { offset: nft.ipv6hdr_offsets.nexthdr, len: nft.ipv6hdr_sizes.nexthdr }; }
+
+ip_packet_field_value
+	= pv:icmp6_type_field_value { return pv; }
+	/ nm:number { return nm; }
 	/ ad:ipaddress { return ad; }
 	/ other:([a-z]*) { throw new Error("Only numeric field types currently supported"); }
+
+icmp6_type_field_value
+	= "destination-unreachable" { expressions_array.push(structs.build_icmp6_type(0x76)); }
+	/ "packet-too-big"   		{ expressions_array.push(structs.build_icmp6_type(0x77)); }
+	/ "time-exceeded"			{ expressions_array.push(structs.build_icmp6_type(0x78)); }
+	/ "param-problem"			{ expressions_array.push(structs.build_icmp6_type(0x79)); }		
+	/ "echo-request"			{ expressions_array.push(structs.build_icmp6_type(0x80)); }
+	/ "echo-reply"				{ expressions_array.push(structs.build_icmp6_type(0x81)); }
+	/ "mld-listener-query"		{ expressions_array.push(structs.build_icmp6_type(0x82)); }
+	/ "mld-listener-report"		{ expressions_array.push(structs.build_icmp6_type(0x83)); }
+	/ "mld-listener-reduction"	{ expressions_array.push(structs.build_icmp6_type(0x84)); }
+	/ "nd-router-solicit"		{ expressions_array.push(structs.build_icmp6_type(0x85)); }
+	/ "nd-router-advert"		{ expressions_array.push(structs.build_icmp6_type(0x86)); }
+	/ "nd-neighbor-solicit"		{ expressions_array.push(structs.build_icmp6_type(0x87)); }
+	/ "nd-neighbor-advert"		{ expressions_array.push(structs.build_icmp6_type(0x88)); }
+	/ "nd-redirect"				{ expressions_array.push(structs.build_icmp6_type(0x89)); }
+	/ "router-renumbering"		{ expressions_array.push(structs.build_icmp6_type(0x90)); }
 
 ipaddress
 	= ipa:(ipv4address / ipv6address)

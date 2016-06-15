@@ -137,6 +137,9 @@ flush_entity
 
 	/ "chain" _ table_identifier _ chain_name
 		{ command_object.type = "chain"; }
+
+	/ "ruleset"
+		{ command_object.type = "ruleset"; }
 //
 
 family

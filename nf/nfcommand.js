@@ -82,6 +82,9 @@ var nfcommand = {
 					case "TABLE":
 						opts['cmd'] =  nf.NFT_MSG_DELRULE;
 						break;
+					case "RULESET":
+						opts['cmd'] =  nf.NFT_MSG_DELTABLE;
+						break;
 					default:
 						opts['cmd'] =  nf['NFT_MSG_DEL' + type];
 						break;
@@ -158,7 +161,15 @@ var nfcommand = {
 				break;
 			case "delete":
 			case "flush":
-				opts['type_flags'] = nl.NLM_F_ACK;
+				switch(type){
+					case "ruleset":
+						opts['type'] = "table";
+						opts['type_flags'] = nl.NLM_F_ACK;
+						break;
+					default:
+						opts['type_flags'] = nl.NLM_F_ACK;
+						break;
+				}
 				break;
 			case "update":
 				opts['type_flags'] =  nl.NLM_F_ACK;

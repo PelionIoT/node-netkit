@@ -63,6 +63,8 @@
 
 	"flush table filter",
 	"flush chain filter input",
+	"flush ruleset",
+	"flush ip6 ruleset",
 
 	"list ip tables",
 	"list ip table filter",

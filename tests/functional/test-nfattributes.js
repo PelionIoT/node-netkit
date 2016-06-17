@@ -234,26 +234,44 @@ var nft = nk.nf.nft;
 
 
 nk.nnfApply( 
-	{ 
-		command: "add", 
-		type: "rule", 
-		family: "ip",
-		params: 
-			{ table: 'filter',
-	          chain: 'output',
-//	          handle: 6,
-//	          position: 5,
-	          expressions: 
-	           [ { elem: 
-	                { name: 'payload',
-	                  data: { dreg: 1, base: 1, offset: 16, len: 4 } } },
-	             { elem: 
-	                { name: 'cmp',
-	                  data: { sreg: 1, op: 0, data: { value: '0x0a0a6601' } } } },
-	             { elem: 
-	                { name: 'immediate',
-	                  data: { dreg: 0, data: { verdict: { code: 1 } } } } } ] }
-	}, 
+	{ command: 'add',
+  type: 'rule',
+  family: 'ip',
+  params: 
+   { table: 'filter',
+     chain: 'input',
+     //handle: 7,
+     expressions: 
+      [ { elem: 
+           { name: 'payload',
+             data: { dreg: 1, base: 1, offset: 9, len: 1 } } },
+        { elem: 
+           { name: 'cmp',
+             data: { sreg: 1, op: 0, data: { value: '0x06' } } } },
+        { elem: 
+           { name: 'payload',
+             data: { dreg: 1, base: 2, offset: 2, len: 2 } } },
+        { elem: 
+           { name: 'cmp',
+             data: { sreg: 1, op: 0, data: { value: '0x0016' } } } },
+        { elem: { name: 'ct', data: { dreg: 1, key: 0 } } },
+        { elem: 
+           { name: 'bitwise',
+             data: 
+              { sreg: 1,
+                dreg: 1,
+                len: 4,
+                mask: { value: '0x08000000' },
+                xor: { value: '0x00000000' } } } },
+        { elem: 
+           { name: 'cmp',
+             data: { sreg: 1, op: 1, data: { value: '0x00000000' } } } },
+        { elem: 
+           { name: 'log',
+             data: { prefix: 'New SSH connection', group: 0 } } },
+        { elem: 
+           { name: 'immediate',
+             data: { dreg: 0, data: { verdict: { code: 1 } } } } } ] } }, 
 
 	function(err, bufs){
 

@@ -4,6 +4,7 @@ var Attribute = require('../nl/nlattr.js');
 var cmn = require('../libs/common.js');
 var nf = require('../nl/nfnetlink.js');
 var util = require('util');
+var nl = nf.nl;
 
 var bufferpack = cmn.bufferpack;
 var debug = cmn.logger.debug;
@@ -70,7 +71,11 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 
 		// is this the done message of a multi-part message?
 		var type = this.netlink_type.getTypeFromBuffer(bufs[i]);
-		//debug("type = " + type);
+		// debug("type = " + type);
+
+		if(type === nl.NLMSG_DONE || type === nl.NLMSG_ERROR) {
+			continue;
+		}
 
 		// get the total message length and parse all the raw attributes
 		var cur_result = {};
@@ -79,13 +84,21 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		var genmsg = this.netlink_type.parseGenmsg(data);
 		if(typeof genmsg._cmd !== 'undefined') type = genmsg._cmd;
 		var family = 2;
-		if(typeof genmsg._family !== 'undefined') family = genmsg._family;
+		if(typeof genmsg._family !== 'undefined') {
+			family = genmsg._family;
+			if(family === 0) {
+				debug("family == 0, ignore");
+				continue;
+			}
+		}
 
 		if(typeof genmsg !== 'undefined') cur_result.genmsg = genmsg;
-		cur_result.payload = this.parseNlAttrsFromBuffer(data, type, family);
+		var cmd = type & 0xFF;
+		cur_result.payload = this.parseNlAttrsFromBuffer(data, cmd, family);
 
 		// get the message flags
 		var flags = data.readUInt16LE(6);
+		debug("flags = " + flags);
 		if(flags & nl.NLM_F_MULTI) {
 			// determine if this should be filtered based on the  parameters of the command
 			var filter = false;
@@ -316,7 +329,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 };
 
 NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type, family) {
-	debug("msghdr: " + buffer.slice(0,16).toString('hex') );
+	//debug("msghdr: " + buffer.slice(0,16).toString('hex') );
 
 	var ret = {};
 

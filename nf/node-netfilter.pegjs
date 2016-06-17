@@ -65,7 +65,7 @@ operation
 	/ 	"insert"	_ 	family? 		insert_entity	{ command_object.command = "insert"; }
 	/ 	"delete"	_	family? 		delete_entity	{ command_object.command = "delete"; }
 	/ 	"flush" 	_	family? 		flush_entity	{ command_object.command = "flush"; }
-	/  	"monitor"   _	family? 		monitor_entity	{ command_object.command = "monitor"; }
+	/  	"monitor"  	{ command_object.command = "monitor"; }
 
 list_entity
 	= "table" !"s" _ table_name
@@ -141,19 +141,7 @@ flush_entity
 
 	/ "ruleset"
 		{ command_object.type = "ruleset"; }
-//
-
-monitor_entity
-	= "table"
-		{ command_object.type = "table"; }
-
-	/ "chain"
-		{ command_object.type = "chain"; }
-
-	/ "rule"
-		{ command_object.type = "rule"; }
 	
-
 family
 	= family:("ip" "6"?) __
 		{

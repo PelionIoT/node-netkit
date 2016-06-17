@@ -96,6 +96,7 @@ nf = {
 	},
 
 	nft: nft,
+	nl: nl,
 
 	nft_command_map: [
 		"add",
@@ -168,8 +169,8 @@ nf = {
 		}else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
 				+ type + ") **"
-			error(msg);
-			throw new Error(msg);
+			debug(msg);
+			//throw new Error(msg);
 		}
 
 		return retVal;
@@ -200,7 +201,7 @@ nf = {
 	},
 
 	getTypeFromBuffer: function(buffer) {
-		return buffer.readUInt16LE(4) & 0x00FF;
+		return buffer.readUInt16LE(4); //& 0x00FF;
 	},
 
 	readUInt16: function(buffer, idx) {

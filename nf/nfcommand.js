@@ -28,7 +28,10 @@ var nfcommand = {
 					attrs, function(err,bufs){
 
 					if(listen) {
-						cb(null, attrs.generateNetlinkResponse(bufs));
+						var ret = attrs.generateNetlinkResponse(bufs);
+						if(ret.length) {							
+							cb(null, ret[0].payload);
+						}
 					} else if(err) {
 						return cb(err);
 					} else {
@@ -41,6 +44,7 @@ var nfcommand = {
 	},
 
 	build_command: function(opts,cb) {
+		if(!opts.type) opts.type ='rule';
 		opts.subsys = nlnf.NFNL_SUBSYS_NFTABLES;
 		nfcommand.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
@@ -49,9 +53,8 @@ var nfcommand = {
 	},
 
 	set_cmd: function(opts, cb) {
-
 		var command = opts['command'];
-		var type = opts['type'].toUpperCase();
+		var type = opts.type.toUpperCase();
 		switch(command) {
 			case "get":
 				opts['cmd'] = nf['NFT_MSG_GET'+ type];

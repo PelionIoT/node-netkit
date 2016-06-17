@@ -66,14 +66,11 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 	// parse all response messages
 	for(var i = 0; i < bufs.length; i++) {
 		var data = bufs[i];
+		//console.log(bufs[i].toString('hex'));
 
 		// is this the done message of a multi-part message?
 		var type = this.netlink_type.getTypeFromBuffer(bufs[i]);
-		if(type === nl.NLMSG_DONE) {
-			return result_array;
-		} else if(type === nl.NLMSG_ERROR) {
-			return {};
-		}
+		//debug("type = " + type);
 
 		// get the total message length and parse all the raw attributes
 		var cur_result = {};
@@ -81,29 +78,30 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		// get the generic netfiler generation
 		var genmsg = this.netlink_type.parseGenmsg(data);
 		if(typeof genmsg._cmd !== 'undefined') type = genmsg._cmd;
+		var family = 2;
+		if(typeof genmsg._family !== 'undefined') family = genmsg._family;
 
 		if(typeof genmsg !== 'undefined') cur_result.genmsg = genmsg;
-		cur_result.payload = this.parseNlAttrsFromBuffer(data, type);
+		cur_result.payload = this.parseNlAttrsFromBuffer(data, type, family);
 
 		// get the message flags
 		var flags = data.readUInt16LE(6);
 		if(flags & nl.NLM_F_MULTI) {
-
 			// determine if this should be filtered based on the  parameters of the command
 			var filter = false;
-			var op = cur_result.payload.operation;
-			if(op.startsWith('new')) {
-				var that = this;
-				var entity = cur_result.payload[op.substring(3)]; 
-				if(typeof this.parameters === 'object') {
+			// var op = cur_result.payload.command;
+			// if(op.startsWith('new')) {
+			// 	var that = this;
+			// 	var entity = cur_result.payload[op.substring(3)]; 
+			// 	if(typeof this.parameters === 'object') {
 
-					Object.keys(this.parameters).forEach(function(key){
-						if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key]){
-							//filter = true;
-						}
-					});
-				}
-			}
+			// 		Object.keys(this.parameters).forEach(function(key){
+			// 			if(!entity.hasOwnProperty(key) ||  entity[key] !== that.parameters[key]){
+			// 				filter = true;
+			// 			}
+			// 		});
+			// 	}
+			// }
 			// mutlipart message add to array result
 			if(!filter){
 				if(typeof transform != 'undefined') {
@@ -123,6 +121,12 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 			if(typeof cur_result != 'undefined') {
 				result_array.push(cur_result);
 			}
+		}
+
+		if(type === nl.NLMSG_DONE) {
+			return result_array;
+		} else if(type === nl.NLMSG_ERROR) {
+			return {};
 		}
 	}
 	return result_array;
@@ -192,24 +196,22 @@ NlAttributes.prototype.parseNlAttrs = function(params, attrs, expr_name) {
 };
 
 NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, keys) {
-	var ret = {};
 	var index = start;
 	var nested_attributes = [];
 	var nested_indexes = [];
 	var parent_value = "";
-	var expression_count;
-	var expression_ret = null;
-	var element_ret = null;
-	var element_ret_count;
-	var info_ret = null;
-	var info_parents = [];
 	var inIndex = false;
 	//console.dir(keys);
+
+	var output = {};
+	var pstack = [];
+	var cur = output;
 
 	while(index < total_len) {
 		var len = buffer.readUInt16LE(index);
 		var round_len = len + ((len % 4) ? 4 - (len % 4) : 0);
 		var remaining = buffer.slice(index, index + round_len);
+		var nestEndCount = 0;
 		//console.log('\n');
 		//console.log('index = ' + index + ' round_len = ' + round_len);
 		var attribute = new Attribute(this);
@@ -251,6 +253,8 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 
 					while(index >= l) {
 						// Yes, so get the attribute list of what we were parsing before
+						nestEndCount++;
+
 						nested_indexes.pop();
 						var attr = nested_attributes.pop();
 						keys = attr.attribute_list;
@@ -265,55 +269,54 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 			}
 		}
 
-		//debug('attribute.key --> ' + attribute.key + ' attribute.value -> ' + attribute.value + " nest = " + attribute.isNested);
-		if(typeof(attribute.value) !== 'undefined') {
-			if(element_ret !== null) {
-				element_ret[element_ret_count++] = attribute.key + " = " + attribute.value;
-			} else if(expression_ret !== null) {
-				expression_ret[expression_count++] = attribute.key + " = " + attribute.value;
-			 } else if(info_ret !== null) {
-			 	info_ret[attribute.key] = attribute.value;
-			 	if(typeof attribute.nestEnd !== 'undefined') {
-		 			info_ret = info_parents.pop();
-			 	}
+		// debug('attribute.key --> ' + attribute.key + ' attribute.value -> ' + attribute.value + " nest = " + attribute.isNested);
+		// debug("nest = " + attribute.isNest +
+		// 	" expr = " + attribute.isExpression +
+		// 	" list = " + attribute.isList + 
+		// 	" nestEnd = " + nestEndCount );
 
+		if(attribute.isNest) {
+			pstack.push(cur);
+			var obj = {};
+			if(util.isArray(cur)) {
+				cur.push(obj);
 			} else {
-				ret[attribute.key] = attribute.value;
+				cur[attribute.key] = obj;				
 			}
+			cur = obj;
+			if(attribute.key === 'elem') {
+				var eobj = {};
+				cur[attribute.key] = eobj;
+				cur = eobj; 			
+			}
+
+		} else if(attribute.isExpression) {
+			pstack.push(cur);
+			var exp = {};
+			cur[attribute.key] = exp;
+			cur = exp;
+		} else if(attribute.isList) {
+			pstack.push(cur);
+			var list = [];
+			cur[attribute.key] = list;
+			cur = list;
 		} else {
-			if(attribute.key ==='expressions') {
-				expression_ret = []; expression_count = 0;
-				ret[attribute.key] = expression_ret;
-
-			} else if(attribute.key === 'elem') {
-				element_ret = []; element_ret_count = 0;
-				expression_ret[expression_count++] = element_ret;
-			} else if(attribute.key === 'infodata') {
-				//
-			} else if(this.command_type === 'wlanattr') {
-				if(attribute.isNested) {
-					if(info_ret !== null) {
-						var new_ret = {};
-						info_parents.push(info_ret);
-
-						info_ret[attribute.key] = new_ret;
-						info_ret = new_ret;
-					} else {
-						info_parents.push(ret);
-						info_ret = {};
-						ret[attribute.key] = info_ret;
-					}
-				}
+			if(util.isArray(cur)) {
+				cur.push(attribute.value);
+			} else {
+				cur[attribute.key] = attribute.value;
 			}
 		}
 
+		while(nestEndCount--) {
+			cur = pstack.pop();
+		}
 	}
-
-	return ret;
+	return output;
 };
 
-NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
-	//debug("msghdr: " + buffer.slice(0,16).toString('hex') );
+NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type, family) {
+	debug("msghdr: " + buffer.slice(0,16).toString('hex') );
 
 	var ret = {};
 
@@ -327,26 +330,30 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type) {
 
 		var index = 16; // start after the msghdr
 
-		var attribute_map = this.netlink_type.getAttributeMap(type);
-		if(type === -1) return {};
+		try {
+			var attribute_map = this.netlink_type.getAttributeMap(type);
+			if(type === -1) return {};
 
-		var name = attribute_map.name;
-		var keys = attribute_map.keys;
+			var keys = attribute_map.keys;
 
-		// skip the header,header payload padding that rounds the message up to multiple of 16
-		if(this.netlink_type.getPayloadSize) {
-			index += this.netlink_type.getPayloadSize(type);
-		} else {
-			index += 4;
+			// skip the header,header payload padding that rounds the message up to multiple of 16
+			if(this.netlink_type.getPayloadSize) {
+				index += this.netlink_type.getPayloadSize(type);
+			} else {
+				index += 4;
+			}
+
+			//debug('start index = ' + index);
+			//debug("buffer: " + buffer.slice(index).toString('hex') );
+			var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
+			//this.logAttributeBuffers();
+
+			this.netlink_type.updatePayloadParams(family, type, ret);
+			ret.params = payload;
+
+		} catch(err) {
+			debug(util.inspect(err));
 		}
-
-		//debug('start index = ' + index);
-		//debug("buffer: " + buffer.slice(index).toString('hex') );
-		var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
-		//this.logAttributeBuffers();
-
-		ret.operation = this.netlink_type.getNlTypeName(type);
-		ret[name] = payload;
 	}
 
 	return ret;

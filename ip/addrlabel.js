@@ -17,8 +17,8 @@ addrlbl_attributes = {
 };
 
 
-module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb) {
-	// debug("operation = " + operation);
+module.exports.addrlabel = function(command, family, ifname, prefix, label, cb) {
+	// debug("command = " + command);
 
 	var netkitObject = this;
 	var opts;
@@ -40,9 +40,9 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 		}
 	});
 
-	if(!operation || operation === 'list') {
+	if(!command || command === 'list') {
 		if(ifname === null){
-			cb(new Error("Error: address " + operation + " ifname parameter required"));
+			cb(new Error("Error: address " + command + " ifname parameter required"));
 			return;
 		}
 		var opts = {
@@ -54,9 +54,9 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 		};
 		ipcommand.sendInquiry(netkitObject,filters,opts,cb);
 		return;
-	} else if(operation === 'add') {
+	} else if(command === 'add') {
 		if(prefix === null){
-			cb(new Error("address " + operation + " prefix required"));
+			cb(new Error("address " + command + " prefix required"));
 			return;
 		}
 
@@ -68,9 +68,9 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 			ifname: ifname,
 			label: label
 		}
-	} else if(operation === 'delete') {
+	} else if(command === 'delete') {
 		if(prefix === null && label === null){
-			cb(new Error("Error: address " + operation + " prefix or label parameters required"));
+			cb(new Error("Error: address " + command + " prefix or label parameters required"));
 			return;
 		}
 
@@ -82,7 +82,7 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 			ifname: ifname,
 			label: label
 		}
-	} else if(operation === 'flush') {
+	} else if(command === 'flush') {
 
 		var netkitObject = this;
 		var getaddr_command_opts = {
@@ -131,11 +131,11 @@ module.exports.addrlabel = function(operation, family, ifname, prefix, label, cb
 
 
 	} else {
-		console.error("event type = '" + operation + "'' : Not supported");
+		console.error("event type = '" + command + "'' : Not supported");
 		return;
 	}
 
-	if(operation !== 'flush') {
+	if(command !== 'flush') {
 		netlinkAddrLabelCommand.call(netkitObject,opts, sock, function(err,bufs) {
 			if(err) {
 				cb(err);

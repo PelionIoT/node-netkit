@@ -12,8 +12,8 @@ var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
-module.exports.address = function(operation,family,ifname,addr,label,cb) {
-	// debug("operation = " + operation);
+module.exports.address = function(command,family,ifname,addr,label,cb) {
+	// debug("command = " + command);
 
 	var netkitObject = this;
 	var opts;
@@ -24,13 +24,13 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 		if(family === 'inet') { fam = rt.AF_INET; }
 		else if(family === 'inet6') { fam = rt.AF_INET6; }
 		else {
-			cb(new Error("Error: address " + operation + " unrecognized family " + family));
+			cb(new Error("Error: address " + command + " unrecognized family " + family));
 			return;
 		}
 	} else { fam = rt.AF_UNSPEC; }
 
-	if(ifname === null && operation !== 'show'){
-		cb(new Error("Error: address " + operation + " parameter ifname is required"));
+	if(ifname === null && command !== 'show'){
+		cb(new Error("Error: address " + command + " parameter ifname is required"));
 		return;
 	}
 
@@ -51,9 +51,9 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 		}
 	});
 
-	if(!operation || operation === 'show') {
+	if(!command || command === 'show') {
 		if(ifname === null){
-			cb(new Error("Error: address " + operation + " ifname parameter required"));
+			cb(new Error("Error: address " + command + " ifname parameter required"));
 			return;
 		}
 		var opts = {
@@ -66,9 +66,9 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 		};
 		ipcommand.sendInquiry(netkitObject,filters,opts,cb);
 		return;
-	} else if(operation === 'add') {
+	} else if(command === 'add') {
 		if(addr === null){
-			cb(new Error("Error: address " + operation + " addr required"));
+			cb(new Error("Error: address " + command + " addr required"));
 			return;
 		}
 
@@ -80,9 +80,9 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 			ifname: ifname,
 			label: label
 		}
-	} else if(operation === 'change') {
+	} else if(command === 'change') {
 		if(addr === null){
-			cb(new Error("Error: address " + operation + " addr parameter required"));
+			cb(new Error("Error: address " + command + " addr parameter required"));
 			return;
 		}
 
@@ -94,9 +94,9 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 			ifname: ifname,
 			label: label
 		}
-	} else if(operation === 'delete') {
+	} else if(command === 'delete') {
 		if(addr === null && label === null){
-			cb(new Error("Error: address " + operation + " addr or label parameters required"));
+			cb(new Error("Error: address " + command + " addr or label parameters required"));
 			return;
 		}
 
@@ -108,7 +108,7 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 			ifname: ifname,
 			label: label
 		}
-	} else if(operation === 'flush') {
+	} else if(command === 'flush') {
 
 		var netkitObject = this;
 		var getaddr_command_opts = {
@@ -166,11 +166,11 @@ module.exports.address = function(operation,family,ifname,addr,label,cb) {
 			}
 		});
 	} else {
-		console.error("event type = '" + operation + "'' : Not supported");
+		console.error("event type = '" + command + "'' : Not supported");
 		return;
 	}
 
-	if(operation !== 'flush') {
+	if(command !== 'flush') {
 		netlinkAddrCommand.call(netkitObject,opts, sock, function(err,bufs) {
 			if(err) {
 				sock.close();

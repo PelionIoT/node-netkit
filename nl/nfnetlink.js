@@ -48,6 +48,16 @@ nf = {
 	NFNL_SUBSYS_NFT_COMPAT:			11,
 	NFNL_SUBSYS_COUNT:				12,
 
+
+	NFNLGRP_NONE: 					0,
+	NFNLGRP_CONNTRACK_NEW: 			1,
+	NFNLGRP_CONNTRACK_UPDATE: 		2,
+	NFNLGRP_CONNTRACK_DESTROY: 		3,
+	NFNLGRP_CONNTRACK_EXP_NEW: 		4,
+	NFNLGRP_CONNTRACK_EXP_UPDATE: 	5,
+	NFNLGRP_CONNTRACK_EXP_DESTROY: 	6,
+	NFNLGRP_NFTABLES: 				7,
+
 	NFT_MSG_NEWTABLE: 		0,
 	NFT_MSG_GETTABLE: 		1,
 	NFT_MSG_DELTABLE: 		2,
@@ -87,26 +97,45 @@ nf = {
 
 	nft: nft,
 
-	nft_types_name_map: [
-		"newtable",
-		"gettable",
-		"deltable",
-		"newchain",
-		"getchain",
-		"delchain",
-		"newrule",
-		"getrule",
-		"delrule",
-		"newset",
-		"getset",
-		"delset",
-		"newsetelem",
-		"getsetelem",
-		"delsetelem",
-		"newgen",
-		"getgen"
+	nft_command_map: [
+		"add",
+		"get",
+		"delete",
+		"add",
+		"get",
+		"delete",
+		"add",
+		"get",
+		"delete",
+		"add",
+		"get",
+		"delete",
+		"add",
+		"get",
+		"delete",
+		"add",
+		"get"
 	],
 
+	nft_type_map: [
+		"table",
+		"table",
+		"table",
+		"chain",
+		"chain",
+		"chain",
+		"rule",
+		"rule",
+		"rule",
+		"set",
+		"set",
+		"set",
+		"setelem",
+		"setelem",
+		"setelem",
+		"gen",
+		"gen"
+	],
 
 	getAttributeMap: function(type) {
 
@@ -139,7 +168,7 @@ nf = {
 		}else {
 			var msg = "WARNING: ** Received unsupported message type from netlink socket(type="
 				+ type + ") **"
-			error.warn(msg);
+			error(msg);
 			throw new Error(msg);
 		}
 
@@ -155,8 +184,10 @@ nf = {
 		return command_object;
 	},
 
-	getNlTypeName: function(type) {
-		return nf.nft_types_name_map[type];
+	updatePayloadParams: function(family, type, ret) {
+		ret.command = nf.nft_command_map[type];
+		ret.type = nf.nft_type_map[type];
+		ret.family = family == 2 ? 'ip' : 'ip6'; 
 	},
 
 	get_prefix: function() {

@@ -108,9 +108,9 @@ var ipparse = {
 		//debug("data --> " + buf.toJSON());
 		// debug("links --> " + JSON.stringify(links));
 		var at = rt.parseRtattributes(buf);
-		if(typeof at['operation'] !== 'undefined') {
+		if(typeof at['command'] !== 'undefined') {
 			//console.dir(at);
-			var handler_name = 'packageInfo' + at['operation'].slice(3);
+			var handler_name = 'packageInfo' + at['command'].slice(3);
 			//debug("handler_name = " + handler_name);
 			var boundApply = ipparse[handler_name];
 
@@ -185,7 +185,7 @@ var ipparse = {
 
 		var ch;
 		var genmsg;
-		if(typeof link_result['operation'] !== 'undefined') {
+		if(typeof link_result['command'] !== 'undefined') {
 			ch = link_result;
 			genmsg = link_result.payload;
 			// error('FIRST = ' + util.inspect(ch, {depth:null}));
@@ -201,7 +201,7 @@ var ipparse = {
 
 		var ret = {};
 		try{
-			ret.name = ch['operation'] ? ch['operation'] : 'newLink';
+			ret.name = ch['command'] ? ch['command'] : 'newLink';
 			ret.ifnum = genmsg._if_index;
 			ret.event = {};
 
@@ -299,7 +299,7 @@ var ipparse = {
 		var data = {
 			ifname: ipparse.getLinkFromIndex(links,linkno)['ifname'], // the interface name as labeled by the OS
 			ifnum: linkno, // the interface number, as per system call
-			event:  {	name: ch['operation'],
+			event:  {	name: ch['command'],
 						address: addr['address'] + '/' + ch['payload']['_prefix_len'],
 						family: ipparse.getFamily(addr['family']),
 						scope: ipparse.getScope(ch['payload']['_scope']),
@@ -394,7 +394,7 @@ var ipparse = {
 
 		var ret = {};
 
-		ret.name = ch['operation'];
+		ret.name = ch['command'];
 		ret.type = ipparse.routeType(ch['payload']['_type']);
 
 		var fam = ch['payload']['_family'];

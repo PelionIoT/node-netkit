@@ -11,7 +11,7 @@ var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
-module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
+module.exports.route = function(command,ifname,inetdest,inetsrc,cb) {
 	var netkitObject = this;
 	var route_opts;
 	var sock_opts = {};
@@ -32,13 +32,13 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 	// debug("inetsrc = " + inetsrc);
 	// debug("inetdest = " + inetdest);
 
-	if(!operation || operation === 'show') {
+	if(!command || command === 'show') {
 		var getneigh_command_opts = {
 			type: 	rt.RTM_GETROUTE,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
 		return ipcommand.sendInquiry(netkitObject,null,getneigh_command_opts,cb);
-	} else if(operation === 'add') {
+	} else if(command === 'add') {
 		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
@@ -57,7 +57,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 				ifname: ifname
 			}
 		}
-	} else if(operation === 'change') {
+	} else if(command === 'change') {
 		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
@@ -76,7 +76,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 				ifname: ifname
 			}
 		}
-	} else if(operation === 'replace') {
+	} else if(command === 'replace') {
 		if(inetsrc === null && inetdest !== null) {
 			route_opts = {
 				type: rt.RTM_NEWROUTE, // the command
@@ -95,7 +95,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 				ifname: ifname
 			}
 		}
-	} else if(operation === 'delete') {
+	} else if(command === 'delete') {
 		if(inetsrc === null && inetdest !== null) {
 
 			route_opts = {
@@ -117,7 +117,7 @@ module.exports.route = function(operation,ifname,inetdest,inetsrc,cb) {
 		}
 
 	} else {
-		console.error("event type = '" + operation + "'' : Not supported");
+		console.error("event type = '" + command + "'' : Not supported");
 		return;
 	}
 

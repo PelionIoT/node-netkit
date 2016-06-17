@@ -1,17 +1,21 @@
 var nf = nfnetlink = require('../nl/nfnetlink.js')
 var nl = require('../nl/netlink.js');
 var util = require('util');
+var cmn = require("../libs/common.js");
 
 nlnetfilter = {
 
 	nf: nfnetlink,
 
 	netfilterSend: function(sock, opts, attrs, cb) {
-		var netkitObject = this;
+		var netkitObject = cmn.nativelib;
 		var sock = netkitObject.newNetlinkSocket();
+		var listen = (opts.command === 'monitor') ? true : false; 
+		var subs = listen ? (0x1 << (nf.NFNLGRP_NFTABLES -1)) : 0;
 
 		var sock_opts = {
 				sock_class: nl.NETLINK_NETFILTER,
+				subscriptions: subs
 			};
 
 		sock.create(sock_opts,function(err) {
@@ -20,7 +24,15 @@ nlnetfilter = {
 				return cb(new Error("socket.create() Error: " + util.inspect(err)));
 			} else {
 				nf.sendNetfilterCommand(opts, sock, attrs, function(err,bufs){
-					if(err) {
+					if(listen) {
+						sock.onRecv(function(err,bufs){
+							if(err) {
+								cb(new Error("onRecv() Error: " + util.inspect(err)));
+							} else {
+								cb(null, bufs);
+							}
+						});
+					} else if(err) {
 						sock.close();
 						return cb(err);
 					} else {

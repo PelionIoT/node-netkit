@@ -12,7 +12,7 @@ var error = cmn.logger.error;
 var netutils = cmn.netutils;
 
 
-module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
+module.exports.neighbor = function(command,ifname,inetdest,lladdr,cb) {
 	var netkitObject = this;
 	var neigh_opts;
 	var sock_opts = {};
@@ -31,13 +31,13 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 		}
 	}
 
-	if(!operation || operation === 'show') {
+	if(!command || command === 'show') {
 		var getneigh_command_opts = {
 			type: 	rt.RTM_GETNEIGH,
 			flags: 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH
 		};
 		return ipcommand.sendInquiry(netkitObject,null,getneigh_command_opts,cb);
-	} else if(operation === 'add') {
+	} else if(command === 'add') {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK,
@@ -46,7 +46,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 			lladdr: lladdr,
 			ifname: ifname
 		}
-	} else if(operation === 'change') {
+	} else if(command === 'change') {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
@@ -55,7 +55,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 			lladdr: lladdr,
 			ifname: ifname
 		}
-	} else if(operation === 'replace') {
+	} else if(command === 'replace') {
 		neigh_opts = {
 			type: rt.RTM_NEWNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_REPLACE|nl.NLM_F_ACK,
@@ -64,7 +64,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 			lladdr: lladdr,
 			ifname: ifname
 		}
-	} else if(operation === 'delete') {
+	} else if(command === 'delete') {
 		neigh_opts = {
 			type: rt.RTM_DELNEIGH, // the command
 			flags: nl.NLM_F_REQUEST|nl.NLM_F_ACK,
@@ -74,7 +74,7 @@ module.exports.neighbor = function(operation,ifname,inetdest,lladdr,cb) {
 			ifname: ifname
 		}
 	} else {
-		console.error("event type = '" + operation + "'' : Not supported");
+		console.error("event type = '" + command + "'' : Not supported");
 		return;
 	}
 

@@ -51,30 +51,30 @@ module.exports.link = function(opts, cb) {
 	}
 
 
-	if(!opts.operation || opts.operation === 'show') {
+	if(!opts.command || opts.command === 'show') {
 		opts.type = 	rt.RTM_GETLINK;
 		opts.flags = 	netkitObject.nl.NLM_F_REQUEST|netkitObject.nl.NLM_F_ROOT|netkitObject.nl.NLM_F_MATCH;
 		//return ipcommand.sendInquiry(netkitObject,null,opts,cb);
-	} else if(opts.operation === 'up') {
+	} else if(opts.command === 'up') {
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
 		opts.info_flags = 0x01; // up
 		opts.info_change = 0x01;
-	} else if(opts.operation === 'down') {
+	} else if(opts.command === 'down') {
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
 		opts.info_flags = 0x00;  // down
 		opts.info_change = 0x01;
-	} else if(opts.operation === 'set') {
+	} else if(opts.command === 'set') {
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_ACK;
 
-	} else if(opts.operation === 'add') {
+	} else if(opts.command === 'add') {
 
 		opts.type = rt.RTM_NEWLINK; // the command
 		opts.flags = nl.NLM_F_REQUEST|nl.NLM_F_CREATE|nl.NLM_F_EXCL|nl.NLM_F_ACK;
 		opts.family = family;
-	// } else if(operation === 'delete') {
+	// } else if(command === 'delete') {
 	// 	link_opts = {
 	// 		type: rt.RTM_DELLINK, // the command
 	// 		flags: nl.NLM_F_REQUEST|nl.NLM_F_ACK,
@@ -84,7 +84,7 @@ module.exports.link = function(opts, cb) {
 	// 		ifname: ifname
 	// 	}
 	} else {
-		console.error("event type = '" + opts.operation + "'' : Not supported");
+		console.error("event type = '" + opts.command + "'' : Not supported");
 		return;
 	}
 

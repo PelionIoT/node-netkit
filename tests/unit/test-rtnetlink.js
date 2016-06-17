@@ -29,7 +29,7 @@ exports.testMessageTypes = function(test){
 
 		test.deepEqual(
 			rt.parseRtattributes(Buffer([22,0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])),
-			{ payload: undefined, operation: 'newLink' },
+			{ payload: undefined, command: 'newLink' },
 			"full message size but no attributes should result in empty link object" );
 
 		test.deepEqual(

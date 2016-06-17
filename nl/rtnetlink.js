@@ -512,8 +512,8 @@ rt = {
 		return rt.payload_sizes[type - 16];
 	},
 
-	getNlTypeName: function(type) {
-		return rt.rtm_types_name_map[type - 16];
+	updatePayloadParams: function(family, type, ret) {
+		ret.command = rt.rtm_types_name_map[type - 16];
 	},
 
 	get_prefix: function() {
@@ -756,7 +756,7 @@ rt = {
 			ret = rt.parseAttrs(data, index, total_len, keys);
 
 			ret['payload'] = payload;
-			ret['operation'] = this.getRtmTypeName(type);
+			ret['command'] = this.getRtmTypeName(type);
 		}
 		return ret;
 	},

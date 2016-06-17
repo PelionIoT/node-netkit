@@ -11,12 +11,12 @@ var parser = require("./node-netfilter.js");
 var nfcommand = {
 
 	command: function(command, cb) {
-		//console.dir(command);
-		var that = this;
-		var nft = that.nf.nft;
-
 		var opts = parser.parse(command);
-		opts.sybsys = nlnf.NFNL_SUBSYS_NFTABLES;
+		nfcommand.command_by_structure(opts,cb);
+	},
+
+	command_by_structure: function(opts, cb) {
+		var listen = (opts.command === 'monitor') ? true : false; 
 		nfcommand.build_command(opts,function(err){
 			//console.log(util.inspect(opts, {depth: null}));
 			if(err) {
@@ -24,9 +24,12 @@ var nfcommand = {
 			} else {
 
 				var attrs = new NlAttributes(opts.type, opts.params, nlnf );
-				nlnetfilter.netfilterSend.call(that, null, opts,
+				nlnetfilter.netfilterSend(null, opts,
 					attrs, function(err,bufs){
-					if(err) {
+
+					if(listen) {
+						cb(null, attrs.generateNetlinkResponse(bufs));
+					} else if(err) {
 						return cb(err);
 					} else {
 						//console.dir(bufs);
@@ -38,11 +41,10 @@ var nfcommand = {
 	},
 
 	build_command: function(opts,cb) {
+		opts.subsys = nlnf.NFNL_SUBSYS_NFTABLES;
 		nfcommand.set_cmd(opts,cb);
 		nlnetfilter.set_family(opts,cb);
 		nfcommand.set_type(opts,cb);
-		opts['subsys'] = nf.NFNL_SUBSYS_NFTABLES;
-
 		return cb();
 	},
 
@@ -102,6 +104,9 @@ var nfcommand = {
 						opts['cmd'] =  nf['NFT_MSG_GET' + type];
 						break;
 				}
+				break;
+			case "monitor":
+				opts['cmd'] =  nf.NFT_MSG_NEWSET;
 				break;
 			default:
 				return cb(new Error(command +
@@ -195,6 +200,9 @@ var nfcommand = {
 						return cb(new Error(command + " not implemented for type " + type));
 						break;
 				}
+				break;
+			case "monitor":
+				opts['type_flags'] = nl.NLM_F_REQUEST | nl.NLM_F_ACK;			
 				break;
 			default:
 				return cb(new Error(command +

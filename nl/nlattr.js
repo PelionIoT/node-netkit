@@ -78,7 +78,7 @@ Attribute.prototype.makeFromBuffer =  function(attr_list, attr_buffer) {
 	var index = attr_buffer.readUInt16LE(2); // & (~0x20);
 	try {
 		var remain = Object.keys(attr_list)[index].split('_');
-		this.key = remain.pop().toLowerCase();;
+		this.key = remain.pop().toLowerCase();
 	} catch(e) {
 		throw Error("index [" + index + "] does not exist in object: " + util.inspect(attr_list) );
 	}
@@ -204,8 +204,8 @@ Attribute.prototype.getBuffer = function() {
 };
 
 Attribute.prototype.setBuffer = function() {
-	// console.dir(this)
-	//debug('this.spec.type = ' + this.spec.type);
+	//  console.dir(this)
+	// debug('this.spec.type = ' + this.spec.type);
 	var buf = null;
 	switch(this.spec.type) {
 		case('s'): // string type attribute
@@ -306,7 +306,7 @@ Attribute.prototype.getNumberBuffer = function() {
 			this.netlink_type.writeUInt32(buf,this.value.valueOf(),0,len);
 			break;
 		case 8:
-			if(this.value.startsWith("0x")) {
+			if(isNaN(this.value) && this.value.startsWith("0x")) {
 				this.value = this.value.slice(2);
 				this.value = bignum(this.value, 16);
 			} else {
@@ -425,9 +425,10 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			// 	end++;
 			// }
 			return buf.slice(0,len);//.toString('ascii');
-			break;
 	}
-	return '0x' + Number(val).toString(16);
+	var ret = Number(val).toString(16);
+	while(ret.length < 2*len) { ret = '0' + ret; }
+	return '0x' + ret;
 };
 
 module.exports = Attribute;

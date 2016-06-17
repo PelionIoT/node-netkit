@@ -64,8 +64,8 @@ var iwnl = {
 		return command_object;
 	},
 
-	getNlTypeName: function(type) {
-		return iwnl.types_name_map[type];
+	updatePayloadParams: function(family, type, ret) {
+		ret.command = iwnl.types_name_map[type];
 	},
 
 	get_prefix: function() {

@@ -424,9 +424,9 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			// 	if(pair[1] === 0) break;
 			// 	end++;
 			// }
-			return buf.slice(0,len);//.toString('ascii');
+			return '0x' + buf.slice(0,len).toString('hex');
 	}
-	var ret = Number(val).toString(16);
+	var ret = bignum(val).toString(16);
 	while(ret.length < 2*len) { ret = '0' + ret; }
 	return '0x' + ret;
 };

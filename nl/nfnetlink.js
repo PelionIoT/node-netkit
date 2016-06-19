@@ -161,7 +161,7 @@ nf = {
 		} else if(nf.NFT_MSG_NEWSETELEM <= type && type <= nf.NFT_MSG_DELSETELEM) {
 		    //debug('SETELEM');
 			retVal.name = 'setelem';
-			retVal.keys = nft.nft_set_elem_list_attributes
+			retVal.keys = nft.nft_setelemlist_attributes
 		} else if(nf.NFT_MSG_NEWGEN <= type && type <= nf.NFT_MSG_DELGEN) {
 		    //debug('GEN');
 			retVal.name = 'gen';

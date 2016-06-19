@@ -98,7 +98,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 
 		// get the message flags
 		var flags = data.readUInt16LE(6);
-		debug("flags = " + flags);
+		//debug("flags = " + flags);
 		if(flags & nl.NLM_F_MULTI) {
 			// determine if this should be filtered based on the  parameters of the command
 			var filter = false;
@@ -225,13 +225,21 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 		var round_len = len + ((len % 4) ? 4 - (len % 4) : 0);
 		var remaining = buffer.slice(index, index + round_len);
 		var nestEndCount = 0;
-		//console.log('\n');
-		//console.log('index = ' + index + ' round_len = ' + round_len);
-		var attribute = new Attribute(this);
+		// console.log('\n');
+		// console.log('index = ' + index + ' round_len = ' + round_len);
 
-		if(!inIndex) {
-			attribute.makeFromBuffer(keys, remaining);
-			this.attribute_array.push(attribute);
+		var attribute = null;
+		try {
+			attribute = new Attribute(this);
+
+			if(!inIndex) {
+				attribute.makeFromBuffer(keys, remaining);
+				this.attribute_array.push(attribute);
+			}			
+		} catch(err) {
+			error(util.inspect(err));
+			index += round_len + 4;
+			continue;
 		}
 
 		if(attribute.isIndexed) {
@@ -329,7 +337,7 @@ NlAttributes.prototype.parseAttrsBuffer = function(buffer, start, total_len, key
 };
 
 NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type, family) {
-	//debug("msghdr: " + buffer.slice(0,16).toString('hex') );
+	// debug("msghdr: " + buffer.slice(0,16).toString('hex') );
 
 	var ret = {};
 
@@ -343,21 +351,24 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type, family) {
 
 		var index = 16; // start after the msghdr
 
+		var attribute_map = this.netlink_type.getAttributeMap(type);
+		if(type === -1) { 
+			error("parseNlAttrsFromBuffer: no attribute map found for netlink type: " + type);
+			return {};
+		}
+
+		var keys = attribute_map.keys;
+
+		// skip the header,header payload padding that rounds the message up to multiple of 16
+		if(this.netlink_type.getPayloadSize) {
+			index += this.netlink_type.getPayloadSize(type);
+		} else {
+			index += 4;
+		}
+
 		try {
-			var attribute_map = this.netlink_type.getAttributeMap(type);
-			if(type === -1) return {};
-
-			var keys = attribute_map.keys;
-
-			// skip the header,header payload padding that rounds the message up to multiple of 16
-			if(this.netlink_type.getPayloadSize) {
-				index += this.netlink_type.getPayloadSize(type);
-			} else {
-				index += 4;
-			}
-
-			//debug('start index = ' + index);
-			//debug("buffer: " + buffer.slice(index).toString('hex') );
+			// debug('start index = ' + index);
+			// debug("buffer: " + buffer.slice(index).toString('hex') );
 			var payload = this.parseAttrsBuffer(buffer, index, total_len, keys );
 			//this.logAttributeBuffers();
 
@@ -365,7 +376,7 @@ NlAttributes.prototype.parseNlAttrsFromBuffer = function(buffer, type, family) {
 			ret.params = payload;
 
 		} catch(err) {
-			debug(util.inspect(err));
+			debug("parseNlAttrsFromBuffer error: " + util.inspect(err));
 		}
 	}
 

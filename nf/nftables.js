@@ -743,7 +743,7 @@ nft = {
 		NFTA_SETELEMLIST_SET: 		2,
 		NFTA_SETELEMLIST_ELEMENTS: 	3,
 		NFTA_SETELEMLIST_SET_ID: 		4,
-		NFTA_SETELEMLIST_SPEC: 		['','s','s','l/nft_setelemcontainer_attributes','n/32']
+		NFTA_SETELEMLIST_SPEC: 		['','s','s','r/nft_setelemcontainer_attributes','n/32']
 	},
 
 	nft_datadata_attributes: {

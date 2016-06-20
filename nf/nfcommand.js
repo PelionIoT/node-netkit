@@ -61,7 +61,8 @@ var nfcommand = {
 				break;
 			case "add":
 				switch(type) {
-					case "SET_ELEM_LIST":
+					case "SETELEM":
+						opts.type = 'setelemlist';
 						opts.cmd =  nf.NFT_MSG_NEWSETELEM;
 						break;
 
@@ -70,6 +71,7 @@ var nfcommand = {
 						opts.cmd =  nf['NFT_MSG_NEW' + type];
 						break;
 					case "RULE":
+					case "CHAIN":
 						opts.cmd =  nf['NFT_MSG_NEW' + type];
 						if(typeof opts.params.handle !== 'undefined') delete opts.params.handle;
 						break;

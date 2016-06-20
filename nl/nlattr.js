@@ -402,20 +402,22 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 	var len = buffer.readUInt16LE(0) - 4; // take away attribute header len
 	var buf = buffer.slice(4,4 + len);
 	var val;
+
 	switch (len) {
 		case 1:
-			val = buf.readUInt8(0);
+			val = bignum(buf.readUInt8(0));
 			break;
 		case 2:
-			val = this.netlink_type.readUInt16(buf,0);
+			val = bignum(this.netlink_type.readUInt16(buf,0));
 			break;
 		case 4:
-			val = this.netlink_type.readUInt32(buf,0);
+			val = bignum(this.netlink_type.readUInt32(buf,0));
 			break;
 		case 8:
 			// TODO: verify the ordering of the 4 byte chunks
-			val = this.netlink_type.readUInt32(buf,0);
-			val |= this.netlink_type.readUInt32(buf,4) << 32;
+			var val1 = bignum(this.netlink_type.readUInt32(buf,0)).shiftLeft(32);
+			var val2 = bignum(this.netlink_type.readUInt32(buf,4));
+			val = val1.add(val2).toString(16);
 			break;
 		default:
 			//throw new Error("bad generic number field size: " + this.spec.size);
@@ -424,9 +426,9 @@ Attribute.prototype.getBufferAsGeneric = function(buffer) {
 			// 	if(pair[1] === 0) break;
 			// 	end++;
 			// }
-			return '0x' + buf.slice(0,len).toString('hex');
+			return '0x' + buf.slice(4).toString('hex');
 	}
-	var ret = bignum(val).toString(16);
+	var ret = val.toString(16);
 	while(ret.length < 2*len) { ret = '0' + ret; }
 	return '0x' + ret;
 };

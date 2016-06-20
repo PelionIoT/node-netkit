@@ -22,7 +22,7 @@ var nfcommand = {
 			if(err) {
 				cb(err);
 			} else {
-
+				opts.batch = true;
 				var attrs = new NlAttributes(opts.type, opts.params, nlnf );
 				nlnetfilter.netfilterSend(null, opts,
 					attrs, function(err,bufs){
@@ -53,26 +53,35 @@ var nfcommand = {
 	},
 
 	set_cmd: function(opts, cb) {
-		var command = opts['command'];
+		var command = opts.command;
 		var type = opts.type.toUpperCase();
 		switch(command) {
 			case "get":
-				opts['cmd'] = nf['NFT_MSG_GET'+ type];
+				opts.cmd = nf['NFT_MSG_GET'+ type];
 				break;
 			case "add":
 				switch(type) {
 					case "SET_ELEM_LIST":
-						opts['cmd'] =  nf.NFT_MSG_NEWSETELEM;
+						opts.cmd =  nf.NFT_MSG_NEWSETELEM;
+						break;
+
+					case "SET":
+						opts.params.id = nfcommand.randomIntInclusive(0, 0xFFFFFFFF);
+						opts.cmd =  nf['NFT_MSG_NEW' + type];
+						break;
+					case "RULE":
+						opts.cmd =  nf['NFT_MSG_NEW' + type];
+						if(typeof opts.params.handle !== 'undefined') delete opts.params.handle;
 						break;
 					default:
-						opts['cmd'] =  nf['NFT_MSG_NEW' + type];
+						opts.cmd =  nf['NFT_MSG_NEW' + type];
 						break;
 				}
 				break;
 			case "insert":
 				switch(type) {
 					case "RULE":
-						opts['cmd'] =  nf.NFT_MSG_NEWRULE;
+						opts.cmd =  nf.NFT_MSG_NEWRULE;
 						break;
 					default:
 						return cb(new Error(command + "only implemented for type rule"));
@@ -80,36 +89,36 @@ var nfcommand = {
 				}
 				break;
 			case "delete":
-				opts['cmd'] =  nf['NFT_MSG_DEL' + type];
+				opts.cmd =  nf['NFT_MSG_DEL' + type];
 				break;
 			case "flush":
 				switch(type) {
 					case "TABLE":
-						opts['cmd'] =  nf.NFT_MSG_DELRULE;
+						opts.cmd =  nf.NFT_MSG_DELRULE;
 						break;
 					case "RULESET":
-						opts['cmd'] =  nf.NFT_MSG_DELTABLE;
+						opts.cmd =  nf.NFT_MSG_DELTABLE;
 						break;
 					default:
-						opts['cmd'] =  nf['NFT_MSG_DEL' + type];
+						opts.cmd =  nf['NFT_MSG_DEL' + type];
 						break;
 				}
 				break;
 			case "update":
-				opts['cmd'] =  nf['NFT_MSG_NEW' + type];
+				opts.cmd =  nf['NFT_MSG_NEW' + type];
 				break;
 			case "list":
 				switch(type) {
 					case "SET":
-						opts['cmd'] =  nf.NFT_MSG_GETSETELEM;
+						opts.cmd =  nf.NFT_MSG_GETSETELEM;
 						break;
 					default:
-						opts['cmd'] =  nf['NFT_MSG_GET' + type];
+						opts.cmd =  nf['NFT_MSG_GET' + type];
 						break;
 				}
 				break;
 			case "monitor":
-				opts['cmd'] =  nf.NFT_MSG_NEWSET;
+				opts.cmd =  nf.NFT_MSG_NEWSET;
 				break;
 			default:
 				return cb(new Error(command +
@@ -145,7 +154,7 @@ var nfcommand = {
 						opts['type_flags'] =  nl.NLM_F_ATOMIC;
 						break;
 					case "set":
-						opts['type_flags'] =  nl.NLM_F_ATOMIC;
+						opts['type_flags'] =  nl.NLM_F_MATCH | nl.NLM_F_ATOMIC;
 						break;
 					case "chain":
 						opts['type_flags'] =  nl.NLM_F_ATOMIC;
@@ -213,6 +222,10 @@ var nfcommand = {
 				break;
 		}
 	},
+
+	randomIntInclusive: function(low, high) {
+    		return Math.floor(Math.random() * (high - low + 1) + low);
+	}
 
 };
 

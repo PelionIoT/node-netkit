@@ -665,7 +665,7 @@ nft = {
 		NFTA_SET_FLAGS: 		3,
 		NFTA_SET_KEYTYPE: 		4,
 		NFTA_SET_KEYLEN: 		5,
-		NFTA_SET_DATATYPE: 	6,
+		NFTA_SET_DATATYPE: 		6,
 		NFTA_SET_DATALEN: 		7,
 		NFTA_SET_POLICY: 		8,
 		NFTA_SET_DESC: 			9,
@@ -704,7 +704,7 @@ nft = {
 	        NFTA_SETELEM_EXPIRATION: 	5,
 	        NFTA_SETELEM_USERDATA: 		6,
 	        NFTA_SETELEM_EXPR: 			7,
-			NFTA_SETELEM_SPEC: 	['', 'r/nft_data_attributes', 'r/nft_data_attributes', 'n/32', 'n/64', 'n/64', 'g', 'r/nft_expr_attributes']
+			NFTA_SETELEM_SPEC: 	['', 'g', 'r/nft_data_attributes', 'n/32', 'n/64', 'n/64', 'g', 'r/nft_expr_attributes']
 	},
 
 	/**
@@ -722,6 +722,13 @@ nft = {
 	// 	NFTA_SETELEM_SPEC: 	['','r/nft_datadata_attributes', 'r/nft_data_attributes', 'n/32'],
 	// },
 
+	nft_setelemcontainer_attributes: {
+		NFTA_SETELEM_UNSPEC: 	0,
+		NFTA_SETELEM_KEY: 		1,
+		NFTA_SETELEM_SPEC: 	['','r/nft_setelem_attributes'],
+	},
+
+
 	/**
 	 * enum nft_set_elem_list_attributes - nf_tables set element list netlink attributes
 	 *
@@ -736,7 +743,7 @@ nft = {
 		NFTA_SETELEMLIST_SET: 		2,
 		NFTA_SETELEMLIST_ELEMENTS: 	3,
 		NFTA_SETELEMLIST_SET_ID: 		4,
-		NFTA_SETELEMLIST_SPEC: 		['','s','s','r/nft_setelem_attributes','n/32']
+		NFTA_SETELEMLIST_SPEC: 		['','s','s','l/nft_setelemcontainer_attributes','n/32']
 	},
 
 	nft_datadata_attributes: {

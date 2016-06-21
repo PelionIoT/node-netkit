@@ -87,7 +87,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		if(typeof genmsg._family !== 'undefined') {
 			family = genmsg._family;
 			if(family === 0) {
-				debug("family == 0, ignore");
+				//debug("family == 0, ignore genmsg = " + util.inspect(genmsg));
 				continue;
 			}
 		}

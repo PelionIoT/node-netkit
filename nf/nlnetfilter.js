@@ -6,6 +6,7 @@ var cmn = require("../libs/common.js");
 nlnetfilter = {
 
 	nf: nfnetlink,
+	nl: nl,
 
 	netfilterSend: function(sock, opts, attrs, cb) {
 		var netkitObject = cmn.nativelib;

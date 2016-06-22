@@ -459,8 +459,8 @@ module.exports = (function() {
         peg$c241 = function(st) {
         			command_object.params.set 
         			command_object.params.flags = 0;
-        			command_object.params.key_type = st.skt;
-        			command_object.params.key_len = st.skl;
+        			command_object.params.keytype = st.skt;
+        			command_object.params.keylen = st.skl;
         			command_object.params.id = 1; //sid;
         		},
         peg$c242 = "ipv4_addr",

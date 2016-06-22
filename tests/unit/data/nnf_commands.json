@@ -84,8 +84,8 @@
 	"add set filter blackhole { type ipv4_addr }",
 	"list set blackhole",
 	"list elements filter blackhole",
-
-
+	"add element filter blackhole { 192.168.1.1, 192.168.1.2 }",
+	"add element filter blackhole { 192.168.1.1 192.168.1.2 }"
 
 	"add table filter",
 	"add chain filter input { type filter hook input priority 0 }",

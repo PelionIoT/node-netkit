@@ -580,7 +580,7 @@ element_expression
 
 
 ipv4addr_element
-	= ","? _ octets:octets
+	= ","? __ octets:octets
 		{  debug("ipv4addr");
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
 

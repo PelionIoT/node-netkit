@@ -612,7 +612,7 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
+	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
 
 	// This is needed so we can access the v8 code through the HandleScope
 	auto isolate = Isolate::GetCurrent();

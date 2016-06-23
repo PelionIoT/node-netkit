@@ -612,7 +612,7 @@ void NetlinkSocket::on_recvmsg(uv_poll_t* handle, int status, int events) {
 }
 
 void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
-	//GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
+	GLOG_DEBUG3("NetlinkSocket::post_recvmsg");
 
 	// This is needed so we can access the v8 code through the HandleScope
 	auto isolate = Isolate::GetCurrent();
@@ -640,6 +640,8 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 
 		Handle<Object> retbufs = Nan::New<v8::Object>();
 		int n = 0;
+		// GLOG_DEBUG3("NetlinkSocket::post_recvmsg: job->replies = %d", job->replies);
+
 		while(job->replies && job->reply_queue.remove(req)) {
 			if(job->callback_threshold) {
 				job->callback_count--;
@@ -663,29 +665,27 @@ void NetlinkSocket::post_recvmsg(uv_work_t *work, int status) {
 			}
 		}
 
-		if(n > 0) {
-			retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
+		retbufs->Set(Nan::New("length").ToLocalChecked(),Nan::New<Integer>(n));
 
-			if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
-				// if we don't have a reply callback,
-				if(!nlError) {
-					argv[0] = fals->ToBoolean();
-					argv[1] = retbufs->ToObject();
-					job->onSendCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
-				} else {
-					argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
-					job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
-				}
-			} else if (!job->onReplyCB.IsEmpty()) {
-				if(!nlError) {
-					argv[0] = fals->ToBoolean();
-					argv[1] = retbufs->ToObject();
-					job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
-				} else {
-					argv[0] = tru->ToBoolean();
-					argv[1] = retbufs->ToObject();
-					job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
-				}
+		if(job->onReplyCB.IsEmpty() && !job->onSendCB.IsEmpty()) {
+			// if we don't have a reply callback,
+			if(!nlError) {
+				argv[0] = fals->ToBoolean();
+				argv[1] = retbufs->ToObject();
+				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+			} else {
+				argv[0] = _net::errno_to_JS(_net::OTHER_ERROR,"Error from netlink socket reply.")->ToObject();
+				job->onSendCB.Call(Nan::GetCurrentContext()->Global(),1,argv);
+			}
+		} else if (!job->onReplyCB.IsEmpty()) {
+			if(!nlError) {
+				argv[0] = fals->ToBoolean();
+				argv[1] = retbufs->ToObject();
+				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
+			} else {
+				argv[0] = tru->ToBoolean();
+				argv[1] = retbufs->ToObject();
+				job->onReplyCB.Call(Nan::GetCurrentContext()->Global(),2,argv);
 			}
 		}
 

@@ -704,7 +704,7 @@ nft = {
 	        NFTA_SETELEM_EXPIRATION: 	5,
 	        NFTA_SETELEM_USERDATA: 		6,
 	        NFTA_SETELEM_EXPR: 			7,
-			NFTA_SETELEM_SPEC: 	['', 'g', 'r/nft_data_attributes', 'n/32', 'n/64', 'n/64', 'g', 'r/nft_expr_attributes']
+			NFTA_SETELEM_SPEC: 	['', 'r/nft_data_attributes', 'r/nft_data_attributes', 'n/32', 'n/64', 'n/64', 'g', 'r/nft_expr_attributes']
 	},
 
 	/**

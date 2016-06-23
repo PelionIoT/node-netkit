@@ -109,7 +109,7 @@ add_entity
 		{ command_object.type = "set"; }
 
 	/ "element" _ set_identifier _ element_expression
-		{ command_object.type = "set_elem_list"; }
+		{ command_object.type = "setelem"; }
 
 addtable_entity
 	= table_name
@@ -130,7 +130,7 @@ delete_entity
 		{ command_object.type = "rule"; }
 
 	/ "element" _ set_identifier _ element_expression
-		{ command_object.type = "set_elem_list"; }
+		{ command_object.type = "setelemlist"; }
 
 flush_entity
 	= "table" _ table_name
@@ -171,7 +171,7 @@ set_name
 
 set_identifier
 	= ti:table _ st:set
-		{ command_object.params.set = st; command_object.params.table = ti; }
+		{ command_object.params.table = ti; command_object.params.set = st; }
 
 rule_expression
 	= rd:rule_definition? meta:meta_stmt* ct:connection_track* lgst:log_stmt? nat:nat_expr? misc:rule_misc? act:rule_action? 
@@ -570,12 +570,9 @@ set_id
 		{ return d.toNumber(); }
 
 element_expression
-	= "{" __ el:ipv4addr_element* __ "}"
+	= "{" __ el:ipv4addr_element __ "}"
 	{
-		command_object.params.elements = [];
-		el.forEach(function(e) {
-			command_object.params.elements.push(e);
-		})
+		command_object.params.elements = el;
 	}
 
 
@@ -585,11 +582,9 @@ ipv4addr_element
 			if(command_object.family !== 'ip') throw new Error("family != ip when ip address specified")
 
 			return {
-	            key:
-	            {
-	            	VALUE: {
-						// overkill but throws for bad hex val
-						VALUE: "0x" + octets
+	            key: {
+	            	key: {
+						value: "0x" + octets
 	            	}
 				}
 			};

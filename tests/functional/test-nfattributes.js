@@ -278,7 +278,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     set: 'map0',
-		     elements: { key: { key: '0x0800010000000000', flags: 1 } } } }		
+		     elements: { key: { key: { value: '0x00000000' }, flags: 1 } } } }		
 	);
 }).then(function(){
 	return nk.nnfApply(
@@ -288,7 +288,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     set: 'map0',
-		     elements: { key: { key: '0x08000100c0a80000', data: { verdict: { code: 0 } } } } } }		
+		     elements: { key: { key: { value: '0xc0a80000' }, data: { verdict: { code: 0 } } } } } }		
 	);
 }).then(function(){
 	return nk.nnfApply(
@@ -298,7 +298,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     set: 'map0',
-		     elements: { key: { key: '0x08000100c0a80001', data: { verdict: { code: 1 } } } } } }		
+		     elements: { key: { key: { value: '0xc0a80001' }, data: { verdict: { code: 1 } } } } } }		
 	);
 }).then(function(){
 	return nk.nnfApply(
@@ -308,7 +308,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     set: 'map0',
-		     elements: { key: { key: '0x08000100c0a80002', data: { verdict: { code: 0 } } } } } }		
+		     elements: { key: { key: { value: '0xc0a80002' }, data: { verdict: { code: 0 } } } } } }		
 	);
 }).then(function(){
 	return nk.nnfApply(
@@ -318,7 +318,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     set: 'map0',
-		     elements: { key: { key: '0x08000100c0a80100', flags: 1 } } } }	
+		     elements: { key: { key: { value: '0xc0a80100' }, flags: 1 } } } }	
 	);	
 }).then(function(){
 	return nk.nnfApply(
@@ -328,7 +328,7 @@ nk.nnfApply(
 		  params: 
 		   { table: 'filter',
 		     chain: 'output',
-		     handle: 3,
+		     handle: 2,
 		     expressions: 
 		      [ { elem: 
 		           { name: 'payload',

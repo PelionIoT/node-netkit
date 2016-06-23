@@ -76,6 +76,7 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		if(type === nl.NLMSG_DONE || type === nl.NLMSG_ERROR) {
 			continue;
 		}
+		var isNetfilter = ((type >> 8) === nf.NFNL_SUBSYS_NFTABLES);
 
 		// get the total message length and parse all the raw attributes
 		var cur_result = {};
@@ -84,9 +85,10 @@ NlAttributes.prototype.generateNetlinkResponse = function(bufs, transform, filte
 		var genmsg = this.netlink_type.parseGenmsg(data);
 		if(typeof genmsg._cmd !== 'undefined') type = genmsg._cmd;
 		var family = 2;
+
 		if(typeof genmsg._family !== 'undefined') {
 			family = genmsg._family;
-			if(family === 0) {
+			if(isNetfilter && family === 0) {
 				//debug("family == 0, ignore genmsg = " + util.inspect(genmsg));
 				continue;
 			}

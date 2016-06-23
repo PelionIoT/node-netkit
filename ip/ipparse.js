@@ -243,8 +243,7 @@ var ipparse = {
 	},
 
 	transformInfoLinkFull: function(link_result, filters) {
-
-		var ch = link_result.payload.link;
+		var ch = link_result.payload.params;
 		var genmsg = link_result.genmsg;
 
 		if(typeof ch['operstate'] === 'undefined' || typeof ch['wireless'] !== 'undefined') {

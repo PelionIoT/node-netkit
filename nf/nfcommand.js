@@ -23,12 +23,12 @@ var nfcommand = (function(){
 		return new Promise(function(resolve,reject) {
 
 			var listen = (opts.command === 'monitor') ? true : false; 
+			opts.batch = true;
 			build_command(opts,function(err){
 				// console.log(util.inspect(opts, {depth: null}));
 				if(err) {
 					return reject(err);
 				} else {
-					opts.batch = true;
 					var attrs = new NlAttributes(opts.type, opts.params, nlnf );
 					nlnetfilter.netfilterSend(null, opts,
 						attrs, function(err,bufs){
@@ -207,6 +207,7 @@ var nfcommand = (function(){
 						break;
 					case "rule":
 						opts.type_flags = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;
+						opts.batch = false;
 						break;
 					case "chain":
 						opts.type_flags = nl.NLM_F_REQUEST | nl.NLM_F_ROOT | nl.NLM_F_MATCH;

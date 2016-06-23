@@ -306,7 +306,7 @@ Attribute.prototype.getNumberBuffer = function() {
 			this.netlink_type.writeUInt32(buf,this.value.valueOf(),0,len);
 			break;
 		case 8:
-			if(isNaN(this.value) && this.value.startsWith("0x")) {
+			if(!isNaN(this.value) && this.value.startsWith("0x")) {
 				this.value = this.value.slice(2);
 				this.value = bignum(this.value, 16);
 			} else {

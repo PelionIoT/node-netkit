@@ -1,3 +1,5 @@
+'use strict';
+
 var nk = require('../../index.js');
 var util = require('util');
 var nft = nk.nf.nft;
@@ -234,27 +236,103 @@ var nft = nk.nf.nft;
 
 
 nk.nnfApply( 
-	{ command: 'add',
-  type: 'rule',
-  family: 'ip',
-  params: 
-   { table: 'filter',
-     chain: 'output',
-//     handle: 12,
-     expressions: 
-      [ { elem: 
-           { name: 'payload',
-             data: { dreg: 1, base: 1, offset: 16, len: 4 } } },
-        { elem: { name: 'lookup', data: { set: 1835102256, sreg: 1, dreg: 0 } } } ] } }
-
-
-    , function(err, bufs){
-
-		if(err) {
-			console.error(util.inspect(err));
-		} else {
-			console.log("success!");
-			console.dir(bufs);
-		}
-	}
-);
+		{ command: 'add',
+	  type: 'table',
+	  family: 'ip',
+	  params: { name: 'filter', flags: 0, use: 0 } }
+).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'chain',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     handle: 1,
+		     name: 'output',
+		     hook: { hooknum: 3, priority: 0 },
+		     policy: 1,
+		     type: 'filter',
+		     counters: { packets: 0, bytes: 0 },
+		     use: 0 } }
+    );
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'set',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     name: 'map0',
+		     flags: 15,
+		     keytype: 7,
+		     keylen: 4,
+		     datatype: 4294967040,
+		     datalen: 16,
+		     desc: {} } }		
+	);
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'setelem',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     set: 'map0',
+		     elements: { key: { key: '0x0800010000000000', flags: 1 } } } }		
+	);
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'setelem',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     set: 'map0',
+		     elements: { key: { key: '0x08000100c0a80000', data: { verdict: { code: 0 } } } } } }		
+	);
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'setelem',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     set: 'map0',
+		     elements: { key: { key: '0x08000100c0a80001', data: { verdict: { code: 1 } } } } } }		
+	);
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'setelem',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     set: 'map0',
+		     elements: { key: { key: '0x08000100c0a80002', data: { verdict: { code: 0 } } } } } }		
+	);
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'setelem',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     set: 'map0',
+		     elements: { key: { key: '0x08000100c0a80100', flags: 1 } } } }	
+	);	
+}).then(function(){
+	return nk.nnfApply(
+		{ command: 'add',
+		  type: 'rule',
+		  family: 'ip',
+		  params: 
+		   { table: 'filter',
+		     chain: 'output',
+		     handle: 3,
+		     expressions: 
+		      [ { elem: 
+		           { name: 'payload',
+		             data: { dreg: 1, base: 1, offset: 16, len: 4 } } },
+		        { elem: { name: 'lookup', data: { set: 1835102256, sreg: 1, dreg: 0 } } } ] } }		
+	);
+});

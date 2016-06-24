@@ -81,6 +81,7 @@ var nfcommand = (function(){
 					case "CHAIN":
 						opts.cmd =  nlnf['NFT_MSG_NEW' + type];
 						if(typeof opts.params.handle !== 'undefined') delete opts.params.handle;
+						if(typeof opts.params.counters !== 'undefined') delete opts.params.counters;
 						break;
 					default:
 						opts.cmd =  nlnf['NFT_MSG_NEW' + type];

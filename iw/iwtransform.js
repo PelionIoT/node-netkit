@@ -10,10 +10,10 @@ var transform = (function(){
         get_station: function(opt) {
             //console.log(util.inspect(opt,{depth:null}));
             var ret;
-            ret  = opt.payload.station.stainfo;
+            ret  = opt.payload.params.stainfo;
 
-            ret.ifname = cmn.nativelib.ifIndexToName(opt.payload.station.ifindex);
-            ret.mac_addr = opt.payload.station.mac;
+            ret.ifname = cmn.nativelib.ifIndexToName(opt.payload.params.ifindex);
+            ret.mac_addr = opt.payload.params.mac;
 
             ret.tx_bytes = ret.txbytes || ret.txbytes64;
             ret.rx_bytes = ret.rxbytes || ret.rxbytes64;

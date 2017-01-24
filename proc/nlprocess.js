@@ -1,6 +1,6 @@
 var pr = require('../nl/prnetlink.js')
 var nl = require('../nl/netlink.js');
-
+var util = require('util');
 var cmn = require('../libs/common.js');
 var debug = cmn.logger.debug;
 var error = cmn.logger.error;

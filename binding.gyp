@@ -38,6 +38,7 @@
                 "cflags": [
                   "-Wall",
                   "-std=c++11",
+		  "-ggdb",
                   "-D_POSIX_C_SOURCE=200809L",
                   "-DERRCMN_DEBUG_BUILD=1"
                   ],
@@ -46,6 +47,7 @@
                 "cflags": [
                   "-Wall",
                   "-std=c++11",
+		  "-ggdb",
                   "-D_POSIX_C_SOURCE=200809L",
                   "-DNO_ERROR_CMN_OUTPUT=1",
                   ],

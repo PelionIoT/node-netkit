@@ -62,8 +62,9 @@ NAN_METHOD(NetlinkSocket::Init) {
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 	tpl->PrototypeTemplate()->SetInternalFieldCount(2);
 
-	tpl->InstanceTemplate()->Set(Nan::New("addMsg").ToLocalChecked(),
-		Nan::GetFunction(Nan::New<FunctionTemplate>(AddMsgToReq)).ToLocalChecked());
+	Nan::SetPrototypeMethod(tpl,"addMsg",AddMsgToReq);
+	// tpl->InstanceTemplate()->Set(Nan::New("addMsg").ToLocalChecked(),
+	// 	Nan::GetFunction(Nan::New<FunctionTemplate>(AddMsgToReq)).ToLocalChecked());
 
 	cstor_sockMsgReq.Reset(tpl->GetFunction());
 

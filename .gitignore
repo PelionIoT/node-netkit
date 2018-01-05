@@ -3,3 +3,5 @@ build
 /.project
 /.cproject
 nan*
+package-lock.json
+node_modules

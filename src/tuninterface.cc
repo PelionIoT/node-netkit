@@ -89,7 +89,8 @@ NAN_METHOD(TunInterface::Init) {
 		for(unsigned int n=0;n<keys->Length();n++) {
 			Local<String> keyname = keys->Get(n)->ToString();
 			String::Utf8Value utf8_keyname(keyname);
-			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname));
+			Nan::SetInstanceTemplate(tpl, "instanceProp", Nan::New<v8::String>("an instance property").ToLocalChecked());
+			Nan::SetInstanceTemplate(tpl, (char*)*utf8_keyname, base->Get(keyname)->ToString());
 		}
 	}
 
